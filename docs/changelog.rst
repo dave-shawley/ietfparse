@@ -3,4 +3,4 @@ Changelog
 
 * Next Release
 
-  - Create something amazing
+  - Add ``headers.parse_content_type``

@@ -3,4 +3,6 @@
 .. toctree::
    :hidden:
 
+   api
+   reference
    changelog
