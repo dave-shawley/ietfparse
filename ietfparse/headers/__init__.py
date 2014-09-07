@@ -43,6 +43,23 @@ class ContentType(object):
             for name in parameters:
                 self.parameters[name.lower()] = parameters[name]
 
+    def __str__(self):
+        if self.parameters:
+            return '{0}/{1}; {2}'.format(
+                self.content_type, self.content_subtype,
+                '; '.join('{0}={1}'.format(name, self.parameters[name])
+                          for name in sorted(self.parameters))
+            )
+        else:
+            return '{0}/{1}'.format(self.content_type, self.content_subtype)
+
+    def __repr__(self):  # pragma: no cover
+        return '<{0}.{1} {2}/{3}, {4} parameters>'.format(
+            self.__class__.__module__, self.__class__.__name__,
+            self.content_type, self.content_subtype,
+            len(self.parameters),
+        )
+
 
 def _remove_comments(value):
     return _COMMENT_RE.sub('', value)
