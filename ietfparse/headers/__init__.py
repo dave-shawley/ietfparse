@@ -60,8 +60,14 @@ class ContentType(object):
             len(self.parameters),
         )
 
+    def __eq__(self, other):
+        return (self.content_type == other.content_type and
+                self.content_subtype == other.content_subtype and
+                self.parameters == other.parameters)
+
 
 def _remove_comments(value):
+    """:rtype: str"""  # makes PyCharm happy
     return _COMMENT_RE.sub('', value)
 
 

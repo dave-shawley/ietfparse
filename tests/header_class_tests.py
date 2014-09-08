@@ -33,3 +33,26 @@ class WhenConvertingContentTypeWithParametersToStr(
     def test_parameters_sorted_by_name(self):
         parameters = self.returned[self.returned.index(';') + 1:].strip()
         self.assertEqual(parameters, 'one=1; three=3; two=2')
+
+
+class WhenComparingContentTypesForEquality(unittest.TestCase):
+
+    def test_type_equals_itself(self):
+        self.assertEqual(
+            headers.ContentType('primary', 'subtype'),
+            headers.ContentType('primary', 'subtype'))
+
+    def test_different_types_are_not_equal(self):
+        self.assertNotEqual(
+            headers.ContentType('text', 'json'),
+            headers.ContentType('application', 'json'))
+
+    def test_types_differing_by_case_are_equal(self):
+        self.assertEqual(
+            headers.ContentType('text', 'html', {'Level': '3.2'}),
+            headers.ContentType('text', 'HTML', {'level': '3.2'}))
+
+    def test_types_with_differing_params_are_not_equal(self):
+        self.assertNotEqual(
+            headers.ContentType('text', 'html', {'level': '1'}),
+            headers.ContentType('text', 'html', {'level': '2'}))
