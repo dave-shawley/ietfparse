@@ -71,10 +71,13 @@ def _remove_comments(value):
     return _COMMENT_RE.sub('', value)
 
 
-def parse_content_type(content_type):
+def parse_content_type(content_type, normalize_parameter_values=True):
     """Parse a content type like header.
 
     :param str content_type: the string to parse as a content type
+    :param bool normalize_parameter_values:
+        setting this to ``False`` will enable strict RFC2045 compliance
+        in which content parameter values are case preserving.
     :return: a :class:`.ContentType` instance
 
     """
@@ -83,6 +86,8 @@ def parse_content_type(content_type):
     parameters = {}
     for type_parameter in parts:
         name, value = type_parameter.split('=')
+        if normalize_parameter_values:
+            value = value.lower()
         parameters[name.strip()] = value.strip('"').strip()
 
     return ContentType(content_type, content_subtype, parameters)
