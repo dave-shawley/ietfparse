@@ -36,8 +36,8 @@ class ContentType(object):
     """
 
     def __init__(self, content_type, content_subtype, parameters=None):
-        self.content_type = content_type.lower()
-        self.content_subtype = content_subtype.lower()
+        self.content_type = content_type.strip().lower()
+        self.content_subtype = content_subtype.strip().lower()
         self.parameters = {}
         if parameters is not None:
             for name in parameters:

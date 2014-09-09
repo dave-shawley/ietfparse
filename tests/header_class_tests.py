@@ -5,6 +5,22 @@ from fluenttest import test_case
 from ietfparse import headers
 
 
+class WhenCreatingContentType(test_case.TestCase, unittest.TestCase):
+    @classmethod
+    def act(cls):
+        cls.value = headers.ContentType(
+            'ContentType', ' SubType ', parameters={'Key': 'Value'})
+
+    def should_normalize_primary_type(self):
+        self.assertEqual(self.value.content_type, 'contenttype')
+
+    def should_normalize_subtype(self):
+        self.assertEqual(self.value.content_subtype, 'subtype')
+
+    def should_convert_parameters_to_lowercase(self):
+        self.assertEqual(self.value.parameters['key'], 'Value')
+
+
 class WhenConvertingSimpleContentTypeToStr(
         test_case.TestCase, unittest.TestCase):
 
