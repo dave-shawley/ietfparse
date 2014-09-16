@@ -72,3 +72,39 @@ class WhenComparingContentTypesForEquality(unittest.TestCase):
         self.assertNotEqual(
             headers.ContentType('text', 'html', {'level': '1'}),
             headers.ContentType('text', 'html', {'level': '2'}))
+
+
+class WhenComparingContentTypesForOrdering(unittest.TestCase):
+
+    def test_primary_wildcard_is_less_than_anything_else(self):
+        self.assertLess(
+            headers.ContentType('*', '*'),
+            headers.ContentType('text', 'plain'))
+        self.assertLess(
+            headers.ContentType('*', '*'),
+            headers.ContentType('text', '*'))
+
+    def test_subtype_wildcard_is_less_than_concrete_types(self):
+        self.assertLess(
+            headers.ContentType('application', '*'),
+            headers.ContentType('application', 'json'))
+        self.assertLess(
+            headers.ContentType('text', '*'),
+            headers.ContentType('application', 'json'))
+
+    def test_type_with_fewer_parameters_is_lesser(self):
+        self.assertLess(
+            headers.ContentType('application', 'text',
+                                parameters={'1': 1}),
+            headers.ContentType('application', 'text',
+                                parameters={'1': 1, '2': 2}))
+
+    def test_otherwise_equal_types_ordered_by_primary(self):
+        self.assertLess(
+            headers.ContentType('first', 'one', parameters={'1': 1}),
+            headers.ContentType('second', 'one', parameters={'1': 1}))
+
+    def test_otherwise_equal_types_ordered_by_subtype(self):
+        self.assertLess(
+            headers.ContentType('application', 'first', parameters={'1': 1}),
+            headers.ContentType('application', 'second', parameters={'1': 1}))

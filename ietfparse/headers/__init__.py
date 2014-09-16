@@ -9,12 +9,14 @@ mentioned.
 
 """
 
+import functools
 import re
 
 
 _COMMENT_RE = re.compile(r'\(.*\)')
 
 
+@functools.total_ordering
 class ContentType(object):
 
     """A MIME ``Content-Type`` header.
@@ -64,6 +66,17 @@ class ContentType(object):
         return (self.content_type == other.content_type and
                 self.content_subtype == other.content_subtype and
                 self.parameters == other.parameters)
+
+    def __lt__(self, other):
+        if self.content_type == '*' and other.content_type != '*':
+            return True
+        if self.content_subtype == '*' and other.content_subtype != '*':
+            return True
+        if len(self.parameters) < len(other.parameters):
+            return True
+        if self.content_type < other.content_type:
+            return True
+        return self.content_subtype < other.content_subtype
 
 
 def _remove_comments(value):
