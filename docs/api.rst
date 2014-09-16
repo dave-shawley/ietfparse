@@ -34,3 +34,21 @@ in the content type is honored and comments are discarded.
 Notice that the ``(someday)`` comment embedded in the ``version``
 parameter was discarded and the ``msgtype`` parameter name was
 normalized as well.
+
+HTTP Accept
+-----------
+The :func:`parse_http_accept_header` function parses the HTTP
+:mailheader:`Accept` header into a sorted list of :class:`.ContentType`
+instances.  The list is sorted according to the specified quality values.
+Elements with the same quality value are ordered with the *most-specific*
+value first.  The following is a good example of this from section 5.3.2
+of :rfc:`7231#section-5.3.2`.
+
+>>> from ietfparse import headers
+>>> requested = headers.parse_http_accept_header(
+...     'text/*, text/plain, text/plain;format=flowed, */*')
+>>> [str(h) for h in requested]
+['text/plain; format=flowed', 'text/plain', 'text/*', '*/*']
+
+All of the requested types have the same quality - implicitly 1.0 so they
+are sorted purely by specificity.
