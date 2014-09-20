@@ -75,3 +75,24 @@ loosely described in Section 5.3 of :rfc:`7231#section-5.3`.
 ...   requested,
 ...   ['text/html', 'text/html;level=4', 'text/html;level=3'])
 'text/html
+
+.. py:currentmodule:: ietfparse.algorithms
+
+A more interesting case is to select the representation to produce based
+on what a server knows how to produce and what a client has requested.
+
+>>> from ietfparse import algorithms, headers
+>>> requested = headers.parse_http_accept_header(
+...   'application/vnd.example.com+json;version=2, '
+...   'application/vnd.example.com+json;q=0.75, '
+...   'application/json;q=0.5, text/javascript;q=0.25'
+... )
+>>> selected = algorithms.select_content_type(requested, [
+...   headers.parse_content_type('application/vnd.example.com+json;version=3'),
+...   headers.parse_content_type('application/vnd.example.com+json;version=2'),
+... ])
+>>> str(selected)
+'application/vnd.example.com+json; version=2'
+
+The :func:`select_content_type` function is an implementation of *Proactive
+Content Negotiation* as described in :rfc:`7231#section-3.4.1`.
