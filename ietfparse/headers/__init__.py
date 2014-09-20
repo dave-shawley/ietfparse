@@ -75,9 +75,9 @@ class ContentType(object):
             return True
         if len(self.parameters) < len(other.parameters):
             return True
-        if self.content_type < other.content_type:
-            return True
-        return self.content_subtype < other.content_subtype
+        if self.content_type == other.content_type:
+            return self.content_subtype < other.content_subtype
+        return self.content_type < other.content_type
 
 
 def _remove_comments(value):
