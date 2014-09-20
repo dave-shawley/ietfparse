@@ -2,7 +2,7 @@
 Functions for parsing headers.
 
 - :func:`.parse_content_type`: parse a ``Content-Type`` value
-- :func:`.parse_accept_header`: parse an ``Accept`` style header
+- :func:`.parse_http_accept_header`: parse an ``Accept`` style header
 
 This module also defines classes that might be of some use outside
 of the module.  They are not designed for direct usage unless otherwise

@@ -52,3 +52,26 @@ of :rfc:`7231#section-5.3.2`.
 
 All of the requested types have the same quality - implicitly 1.0 so they
 are sorted purely by specificity.
+
+
+Header Processing
+=================
+
+Header parsing is only part of what you need to write modern web
+applications.  You need to implement behaviors based on the headers as
+well.  :rfc:`7231#section-3.4` describes how *Content Negotiation* can
+be implemented.  This :func:`select_content_type` function implements
+the type selection portion of *Proactive Negotiation*.  It takes a list
+of requested content types (e.g., from :func:`parse_http_accept_header`)
+along with a list of content types that the server is capable of producing
+and returns the content type that is the *best match*.  The algorithm is
+loosely described in Section 5.3 of :rfc:`7231#section-5.3`.
+
+>>> from ietfparse import headers
+>>> requested = headers.parse_http_accept_header(
+...   'text/*;q=0.3, text/html;q=0.7, text/html;level=1, '
+...   'text/html;level=2;q=0.4, */*;q=0.5')
+>>> headers.select_content_type(
+...   requested,
+...   ['text/html', 'text/html;level=4', 'text/html;level=3'])
+'text/html
