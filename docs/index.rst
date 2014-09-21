@@ -3,6 +3,7 @@
 .. toctree::
    :hidden:
 
-   api
+   header-parsing
+   header-processing
    reference
    changelog
