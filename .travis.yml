@@ -12,7 +12,8 @@ deploy:
   provider: pypi
   user: daveshawley
   password:
-  distributions: "sdist bdist_wheel"
+    secure: U5mCjNIqm8nnEQTLu+UU4tGnNhMnNjWlUcK+tUBo8ZqStq+bCiwg1hwxywMtWPEAhbuEx9U5rGbsF/MkW4JGcct0hcmOQBLjj5IcS8hiueS5WnV/p/pCG5llhFmhZi7KJxgiGjNrgFEuZ/D5ULYq/n7zCsDOmYEcHSs6XhGfr00=
+  distributions: sdist bdist_wheel
   on:
     tags: true
     all_branches: true
