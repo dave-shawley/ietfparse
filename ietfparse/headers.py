@@ -43,7 +43,8 @@ def parse_content_type(content_type, normalize_parameter_values=True):
             value = value.lower()
         parameters[name.strip()] = value.strip('"').strip()
 
-    return datastructures.ContentType(content_type, content_subtype, parameters)
+    return datastructures.ContentType(content_type, content_subtype,
+                                      parameters)
 
 
 def parse_http_accept_header(header_value):
