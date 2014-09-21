@@ -6,4 +6,5 @@
    header-parsing
    header-processing
    reference
+   contributing
    changelog
