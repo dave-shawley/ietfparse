@@ -57,7 +57,7 @@ setuptools.setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
-        'Development Status :: 1 - Planning',
+        'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Text Processing',
