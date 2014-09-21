@@ -2,7 +2,7 @@ import unittest
 
 from fluenttest import test_case
 
-from ietfparse import headers
+from ietfparse import datastructures, headers
 
 
 class WhenParsingSimpleHttpAcceptHeader(test_case.TestCase, unittest.TestCase):
@@ -18,7 +18,8 @@ class WhenParsingSimpleHttpAcceptHeader(test_case.TestCase, unittest.TestCase):
         self.assertEqual(len(self.parsed), 2)
 
     def test_that_highest_priority_is_first(self):
-        self.assertEqual(self.parsed[0], headers.ContentType('audio', 'basic'))
+        self.assertEqual(
+            self.parsed[0], datastructures.ContentType('audio', 'basic'))
 
     def test_that_quality_parameter_is_removed(self):
         self.assertNotIn('q', self.parsed[1].parameters)
@@ -37,15 +38,15 @@ class WhenParsingHttpAcceptHeaderWithoutQualities(
     def test_that_most_specific_value_is_first(self):
         self.assertEqual(
             self.parsed[0],
-            headers.ContentType('text', 'plain', {'format': 'flowed'}))
+            datastructures.ContentType('text', 'plain', {'format': 'flowed'}))
 
     def test_that_specific_value_without_parameters_is_second(self):
         self.assertEqual(
-            self.parsed[1], headers.ContentType('text', 'plain'))
+            self.parsed[1], datastructures.ContentType('text', 'plain'))
 
     def test_that_subtype_wildcard_is_next_to_last(self):
         self.assertEqual(
-            self.parsed[2], headers.ContentType('text', '*'))
+            self.parsed[2], datastructures.ContentType('text', '*'))
 
     def test_that_least_specific_wildcard_is_least_preferred(self):
-        self.assertEqual(self.parsed[3], headers.ContentType('*', '*'))
+        self.assertEqual(self.parsed[3], datastructures.ContentType('*', '*'))

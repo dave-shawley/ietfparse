@@ -7,25 +7,17 @@ Implementations of algorithms from various specifications.
 This module implements some of the more interesting algorithms
 described in IETF RFCs.
 
-
 """
 from operator import attrgetter
 
 
 class NoMatch(Exception):
+    """No match was found when selecting a content type."""
     pass
 
 
 def _content_type_matches(candidate, pattern):
-    """Is ``candidate`` an exact match or sub-type of ``pattern``?
-
-    :param ietf.headers.ContentType candidate:
-    :param ietf.headers.ContentType pattern:
-
-    :return:
-    :rtype: bool
-
-    """
+    """Is ``candidate`` an exact match or sub-type of ``pattern``?"""
     def _wildcard_compare(type_spec, type_pattern):
         return type_pattern == '*' or type_spec == type_pattern
 
@@ -38,24 +30,23 @@ def _content_type_matches(candidate, pattern):
 def select_content_type(requested, available):
     """Selects the best content type.
 
-    :param requested: a sequence of :class:`~ietfparse.headers.ContentType`
-        instances
-    :param available: a sequence of :class:`~ietfparse.headers.ContentType`
-        instances that the server is capable of producing
+    :param requested: a sequence of :class:`.ContentType` instances
+    :param available: a sequence of :class:`.ContentType` instances
+        that the server is capable of producing
 
     :returns: the selected content type (from ``available``) and the
         pattern that it matched (from ``requested``)
-    :rtype: :class:`tuple`
+    :rtype: :class:`tuple` of :class:`.ContentType` instances
+    :raises: :class:`.NoMatch` when a suitable match was not found
 
     This function implements the *Proactive Content Negotiation*
     algorithm as described in sections 3.4.1 and 5.3 of :rfc:`7231`.
     The input is the `Accept`_ header as parsed by
-    :func:`~ietfparse.headers.parse_http_accept_header` and a list of
-    parsed :class:`~ietfparse.headers.ContentType` instances.  The
-    ``available`` sequence should be a sequence of content types that
-    the server is capable of producing.  The selected value should
-    ultimately be used as the `Content-Type`_ header in the generated
-    response.
+    :func:`.parse_http_accept_header` and a list of
+    parsed :class:`.ContentType` instances.  The ``available`` sequence
+    should be a sequence of content types that the server is capable of
+    producing.  The selected value should ultimately be used as the
+    `Content-Type`_ header in the generated response.
 
     .. _Accept: http://tools.ietf.org/html/rfc7231#section-5.3.2
     .. _Content-Type: http://tools.ietf.org/html/rfc7231#section-3.1.1.5

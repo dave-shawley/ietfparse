@@ -2,13 +2,13 @@ import unittest
 
 from fluenttest import test_case
 
-from ietfparse import headers
+from ietfparse.datastructures import ContentType
 
 
 class WhenCreatingContentType(test_case.TestCase, unittest.TestCase):
     @classmethod
     def act(cls):
-        cls.value = headers.ContentType(
+        cls.value = ContentType(
             'ContentType', ' SubType ', parameters={'Key': 'Value'})
 
     def should_normalize_primary_type(self):
@@ -26,7 +26,7 @@ class WhenConvertingSimpleContentTypeToStr(
 
     @classmethod
     def act(cls):
-        cls.returned = str(headers.ContentType('primary', 'subtype'))
+        cls.returned = str(ContentType('primary', 'subtype'))
 
     def test_only_contains_type_information(self):
         self.assertEqual(self.returned, 'primary/subtype')
@@ -37,7 +37,7 @@ class WhenConvertingContentTypeWithParametersToStr(
 
     @classmethod
     def act(cls):
-        cls.returned = str(headers.ContentType(
+        cls.returned = str(ContentType(
             'primary', 'subtype', {'one': '1', 'two': '2', 'three': 3}))
 
     def test_starts_with_primary_type(self):
@@ -55,56 +55,56 @@ class WhenComparingContentTypesForEquality(unittest.TestCase):
 
     def test_type_equals_itself(self):
         self.assertEqual(
-            headers.ContentType('primary', 'subtype'),
-            headers.ContentType('primary', 'subtype'))
+            ContentType('primary', 'subtype'),
+            ContentType('primary', 'subtype'))
 
     def test_different_types_are_not_equal(self):
         self.assertNotEqual(
-            headers.ContentType('text', 'json'),
-            headers.ContentType('application', 'json'))
+            ContentType('text', 'json'),
+            ContentType('application', 'json'))
 
     def test_types_differing_by_case_are_equal(self):
         self.assertEqual(
-            headers.ContentType('text', 'html', {'Level': '3.2'}),
-            headers.ContentType('text', 'HTML', {'level': '3.2'}))
+            ContentType('text', 'html', {'Level': '3.2'}),
+            ContentType('text', 'HTML', {'level': '3.2'}))
 
     def test_types_with_differing_params_are_not_equal(self):
         self.assertNotEqual(
-            headers.ContentType('text', 'html', {'level': '1'}),
-            headers.ContentType('text', 'html', {'level': '2'}))
+            ContentType('text', 'html', {'level': '1'}),
+            ContentType('text', 'html', {'level': '2'}))
 
 
 class WhenComparingContentTypesForOrdering(unittest.TestCase):
 
     def test_primary_wildcard_is_less_than_anything_else(self):
         self.assertLess(
-            headers.ContentType('*', '*'),
-            headers.ContentType('text', 'plain'))
+            ContentType('*', '*'),
+            ContentType('text', 'plain'))
         self.assertLess(
-            headers.ContentType('*', '*'),
-            headers.ContentType('text', '*'))
+            ContentType('*', '*'),
+            ContentType('text', '*'))
 
     def test_subtype_wildcard_is_less_than_concrete_types(self):
         self.assertLess(
-            headers.ContentType('application', '*'),
-            headers.ContentType('application', 'json'))
+            ContentType('application', '*'),
+            ContentType('application', 'json'))
         self.assertLess(
-            headers.ContentType('text', '*'),
-            headers.ContentType('application', 'json'))
+            ContentType('text', '*'),
+            ContentType('application', 'json'))
 
     def test_type_with_fewer_parameters_is_lesser(self):
         self.assertLess(
-            headers.ContentType('application', 'text',
+            ContentType('application', 'text',
                                 parameters={'1': 1}),
-            headers.ContentType('application', 'text',
+            ContentType('application', 'text',
                                 parameters={'1': 1, '2': 2}))
 
     def test_otherwise_equal_types_ordered_by_primary(self):
         self.assertLess(
-            headers.ContentType('first', 'one', parameters={'1': 1}),
-            headers.ContentType('second', 'one', parameters={'1': 1}))
+            ContentType('first', 'one', parameters={'1': 1}),
+            ContentType('second', 'one', parameters={'1': 1}))
 
     def test_otherwise_equal_types_ordered_by_subtype(self):
         self.assertLess(
-            headers.ContentType('application', 'first', parameters={'1': 1}),
-            headers.ContentType('application', 'second', parameters={'1': 1}))
+            ContentType('application', 'first', parameters={'1': 1}),
+            ContentType('application', 'second', parameters={'1': 1}))

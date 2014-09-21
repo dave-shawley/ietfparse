@@ -2,7 +2,7 @@ import unittest
 
 from fluenttest import test_case
 
-from ietfparse import headers
+from ietfparse import datastructures, headers
 
 
 class WhenParsingSimpleContentType(test_case.TestCase, unittest.TestCase):
@@ -47,7 +47,7 @@ class WhenParsingMediaTypeExamples(unittest.TestCase):
     """Test cases from RFC7231, Section 3.1.1.1"""
 
     def setUp(self):
-        self.normalized = headers.ContentType(
+        self.normalized = datastructures.ContentType(
             'text', 'html', {'charset': 'utf-8'})
 
     def test_that_simplest_header_matches(self):
