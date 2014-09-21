@@ -10,10 +10,7 @@ described in IETF RFCs.
 """
 from operator import attrgetter
 
-
-class NoMatch(Exception):
-    """No match was found when selecting a content type."""
-    pass
+from . import errors
 
 
 def _content_type_matches(candidate, pattern):
@@ -108,12 +105,12 @@ def select_content_type(requested, available):
             if _content_type_matches(candidate, pattern):
                 if candidate == pattern:  # exact match!!!
                     if pattern.quality == 0.0:
-                        raise NoMatch  # quality of 0 means NO
+                        raise errors.NoMatch  # quality of 0 means NO
                     return candidate, pattern
                 matches.append(Match(candidate, pattern))
 
     if not matches:
-        raise NoMatch
+        raise errors.NoMatch
 
     matches = sorted(matches,
                      key=attrgetter('match_type', 'parameter_distance'))

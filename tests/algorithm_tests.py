@@ -1,6 +1,6 @@
 import unittest
 
-from ietfparse import algorithms, headers
+from ietfparse import algorithms, errors, headers
 
 
 class ContentNegotiationTestCase(unittest.TestCase):
@@ -59,14 +59,14 @@ class WhenUsingProactiveContentNegotiation(ContentNegotiationTestCase):
         )
 
     def test_that_zero_quality_is_not_matched(self):
-        with self.assertRaises(algorithms.NoMatch):
+        with self.assertRaises(errors.NoMatch):
             algorithms.select_content_type(
                 self.requested,
                 [headers.parse_content_type('text/javascript')],
             )
 
     def test_that_inappropriate_value_is_not_matched(self):
-        with self.assertRaises(algorithms.NoMatch):
+        with self.assertRaises(errors.NoMatch):
             algorithms.select_content_type(
                 self.requested,
                 [headers.parse_content_type('image/png')],
