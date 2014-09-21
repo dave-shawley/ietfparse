@@ -1,5 +1,7 @@
+include CONTRIBUTING.rst
 include LICENSE
 include *requirements.txt
+include setupext.py
 include tox.ini
 graft docs
 graft tests

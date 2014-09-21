@@ -1,9 +1,13 @@
 #!/usr/bin/env python
+from __future__ import absolute_import
+
 import codecs
-import setuptools
 import sys
 
+import setuptools
+
 from ietfparse import __version__
+import setupext
 
 
 def read_requirements_file(name):
@@ -32,7 +36,6 @@ if sys.version_info < (3, ):
 with codecs.open('README.rst', 'rb', encoding='utf-8') as file_obj:
     long_description = '\n' + file_obj.read()
 
-
 setuptools.setup(
     name='ietfparse',
     version=__version__,
@@ -59,4 +62,5 @@ setuptools.setup(
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Text Processing',
     ],
+    cmdclass={'clean': setupext.Janitor},
 )

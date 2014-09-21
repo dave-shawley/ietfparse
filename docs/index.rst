@@ -3,4 +3,8 @@
 .. toctree::
    :hidden:
 
+   header-parsing
+   header-processing
+   reference
+   contributing
    changelog
