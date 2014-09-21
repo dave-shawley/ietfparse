@@ -13,7 +13,7 @@ mentioned.
 import functools
 import re
 
-from ietfparse import datastructures
+from . import datastructures
 
 
 _COMMENT_RE = re.compile(r'\(.*\)')
