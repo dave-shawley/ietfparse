@@ -1,6 +1,7 @@
 """
 Implementations of algorithms from various specifications.
 
+- :func:`.rewrite_url`: modify a portion of a URL.
 - :func:`.select_content_type`: select the best match between a
   HTTP ``Accept`` header and a list of available ``Content-Type`` s
 
@@ -10,6 +11,7 @@ described in IETF RFCs.
 """
 from operator import attrgetter
 
+from . compat import parse
 from . import errors
 
 
@@ -115,3 +117,47 @@ def select_content_type(requested, available):
     matches = sorted(matches,
                      key=attrgetter('match_type', 'parameter_distance'))
     return matches[0].candidate, matches[0].pattern
+
+
+def rewrite_url(input_url, **kwargs):
+    """
+    Create a new URL from `input_url` with modifications applied.
+
+    :param str input_url: the URL to modify
+    :keyword str host: if specified, this keyword sets the host
+        portion of the network location.  A value of :data:`None`
+        will remove the network location portion of the URL.
+    :keyword int port: if specified, this keyword sets the port
+        portion of the network location.  A value of :data:`None`
+        will remove the port from the URL.
+    :keyword bool enable_long_host: if this keyword is specified
+        and it is :data:`True`, then the host name length restriction
+        from :rfc:`3986#section-3.2.2` is relaxed.
+
+    :return: the modified URL
+    :raises ValueError: when a keyword parameter is given an invalid
+        value
+
+    """
+    scheme, netloc, path, query, fragment = parse.urlsplit(input_url)
+    host, port = parse.splitnport(netloc, defport=None)
+
+    if 'host' in kwargs:
+        host = kwargs['host']
+        if host is not None:
+            host = parse.quote(host.encode('utf-8'))
+            if len(host) > 255 and not kwargs.get('enable_long_host', False):
+                raise ValueError('host too long')
+
+    if 'port' in kwargs:
+        port = kwargs['port']
+        if port is not None:
+            port = int(kwargs['port'])
+            if port < 0:
+                raise ValueError('port is required to be non-negative')
+
+    if host is None or host == '':
+        netloc = None
+    else:
+        netloc = '{0}:{1}'.format(host, port) if port is not None else host
+    return parse.urlunsplit((scheme, netloc, path, query, fragment))

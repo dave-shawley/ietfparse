@@ -47,4 +47,37 @@ Templates which happens to handle our case quite well. :func:`rewrite_url`
 is closer to the :func:`~urllib.parse.urlsplit` and
 :func:`~urllib.parse.urlunsplit` case with a nicer interface.
 
+Relevant Specifications
+-----------------------
+
+- `[RFC1034]`_ *"Domain Names - concepts and facilities"*, esp. Section 3.5
+- `[RFC3986]`_ *"Uniform Resource Identifiers: Generic Syntax"*
+- `[RFC7230]`_ *"Hypertext Transfer Protocol (HTTP/1.1): Message
+  Syntax and Routing"*
+
+Known and Accepted Variances
+----------------------------
+Some of the IETF specifications require deep understanding of the underlying
+URL scheme.  These portions are not implemented since they would unnecessarily
+couple this library to an open-ended set of protocol specifications.  This
+section attempts to cover all such variances.
+
+The ``host`` portion of a URL is not strictly required to be a valid DNS
+name for schemes that are restricted to using DNS names.  For example,
+``http://-/`` is a questionably valid URL.  :rfc:`1035#section-3.5` prohibits
+domain names from beginning with a hyphen and :rfc:`7230#section-2.7.1`
+strongly implies (requires?) that the host be an IP literal or valid DNS
+name.  However, ``file:///-`` is perfectly acceptable, so the requirement
+specific to HTTP is left unenforced.
+
+Similarly, the ``port`` portion of a network location is usually a network
+port which is limited to 16-bits by both :rfc:`793` and :rfc:`768`.  This
+is strictly required to be a TCP port in the case of HTTP (:rfc:`7230`).
+This library only limits the ``port`` to a non-negative integer.  The other
+*SHOULD* that is not implemented is the suggestion that default port numbers
+are omitted - see section 3.2.3 of :rfc:`3986#section-3.2.3`.
+
 .. _Glory of REST: http://martinfowler.com/articles/richardsonMaturityModel.html
+.. _[RFC1034]: http://tools.ietf.org/html/rfc1034
+.. _[RFC3986]: http://tools.ietf.org/html/rfc3986
+.. _[RFC7230]: http://tools.ietf.org/html/rfc7230
