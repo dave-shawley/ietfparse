@@ -1,4 +1,3 @@
-import random
 import unittest
 
 from ietfparse import algorithms
@@ -70,3 +69,45 @@ class WhenReplacingThePortPortion(unittest.TestCase):
         self.assertEqual(
             algorithms.rewrite_url('http://example.com:443', port=None),
             'http://example.com')
+
+
+class WhenReplacingThePathPortion(unittest.TestCase):
+
+    def test_path_is_replaced(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://example.com/path', path='new-path'),
+            'http://example.com/new-path')
+
+    def test_path_equal_none_removes_path(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://example.com/path', path=None),
+            'http://example.com/')
+
+    def test_path_is_percent_encoded(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://example.com/path', path='new path'),
+            'http://example.com/new%20path')
+
+    def test_path_containing_slashes_is_not_encoded(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://example.com/path', path='new/path'),
+            'http://example.com/new/path')
+
+    def test_unicode_replace_characters_are_encoded_in_utf8(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://example.com/path',
+                                   path=u'\u2115ew/\u2119ath').lower(),
+            'http://example.com/%e2%84%95ew/%e2%84%99ath',
+        )
+
+    def test_empty_path_replaced_properly(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://example.com?q=value', path='foo'),
+            'http://example.com/foo?q=value')
+
+    def test_path_with_question_mark_percent_encoded(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://example.com?q=value',
+                                   path='?').lower(),
+            'http://example.com/%3f?q=value',
+        )

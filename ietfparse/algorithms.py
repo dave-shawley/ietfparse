@@ -127,6 +127,9 @@ def rewrite_url(input_url, **kwargs):
     :keyword str host: if specified, this keyword sets the host
         portion of the network location.  A value of :data:`None`
         will remove the network location portion of the URL.
+    :keyword str path: if specified, this keyword sets the path
+        portion of the URL.  A value of :data:`None` will remove
+        the path from the URL.
     :keyword int port: if specified, this keyword sets the port
         portion of the network location.  A value of :data:`None`
         will remove the port from the URL.
@@ -156,8 +159,16 @@ def rewrite_url(input_url, **kwargs):
             if port < 0:
                 raise ValueError('port is required to be non-negative')
 
+    if 'path' in kwargs:
+        path = kwargs['path']
+        if path is None:
+            path = '/'
+        else:
+            path = parse.quote(path)
+
     if host is None or host == '':
         netloc = None
     else:
         netloc = '{0}:{1}'.format(host, port) if port is not None else host
+
     return parse.urlunsplit((scheme, netloc, path, query, fragment))
