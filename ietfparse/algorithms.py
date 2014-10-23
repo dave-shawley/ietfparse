@@ -9,6 +9,7 @@ This module implements some of the more interesting algorithms
 described in IETF RFCs.
 
 """
+from __future__ import unicode_literals
 from operator import attrgetter
 
 from . compat import parse
@@ -133,6 +134,7 @@ def rewrite_url(input_url, **kwargs):
     :keyword int port: if specified, this keyword sets the port
         portion of the network location.  A value of :data:`None`
         will remove the port from the URL.
+
     :keyword bool enable_long_host: if this keyword is specified
         and it is :data:`True`, then the host name length restriction
         from :rfc:`3986#section-3.2.2` is relaxed.
@@ -143,14 +145,20 @@ def rewrite_url(input_url, **kwargs):
 
     """
     scheme, netloc, path, query, fragment = parse.urlsplit(input_url)
-    host, port = parse.splitnport(netloc, defport=None)
+    ident, host_n_port = parse.splituser(netloc)
 
+    host, port = parse.splitnport(host_n_port, defport=None)
     if 'host' in kwargs:
         host = kwargs['host']
         if host is not None:
-            host = parse.quote(host.encode('utf-8'))
-            if len(host) > 255 and not kwargs.get('enable_long_host', False):
-                raise ValueError('host too long')
+            enable_long_host = kwargs.get('enable_long_host', False)
+            try:
+                host = '.'.join(segment.encode('idna').decode()
+                                for segment in host.split('.'))
+                if len(host) > 255 and not enable_long_host:
+                    raise ValueError('host too long')
+            except UnicodeError as exc:
+                raise ValueError('host is invalid - {0}'.format(exc))
 
     if 'port' in kwargs:
         port = kwargs['port']
@@ -164,11 +172,15 @@ def rewrite_url(input_url, **kwargs):
         if path is None:
             path = '/'
         else:
-            path = parse.quote(path)
+            path = parse.quote(path.encode('utf-8'))
 
     if host is None or host == '':
-        netloc = None
+        host_n_port = None
+    elif port is None:
+        host_n_port = host
     else:
-        netloc = '{0}:{1}'.format(host, port) if port is not None else host
+        host_n_port = '{0}:{1}'.format(host, port)
+
+    netloc = '{0}@{1}'.format(ident, host_n_port) if ident else host_n_port
 
     return parse.urlunsplit((scheme, netloc, path, query, fragment))

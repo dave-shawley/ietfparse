@@ -1,4 +1,4 @@
-.. py:currentmodule:: ietfparse.headers
+.. py:currentmodule:: ietfparse.algorithms
 
 URL Processing
 ==============
@@ -10,6 +10,11 @@ doing something like:
 
 >>> url_pattern = 'http://example.com/api/movie/{movie_id}/actors'
 >>> response = requests.get(url_pattern.format(movie_id=ident))
+
+or even *(the horror)*:
+
+>>> url = 'http://{0}/{1}?{2}'.format(host, path, query)
+>>> response = requests.get(url)
 
 If you are a little more careful, you could be URL encoding the argument
 to prevent *URL injection attacks*.  This isn't a horrible pattern for
@@ -47,11 +52,16 @@ Templates which happens to handle our case quite well. :func:`rewrite_url`
 is closer to the :func:`~urllib.parse.urlsplit` and
 :func:`~urllib.parse.urlunsplit` case with a nicer interface.
 
+If you are a little more forward looking, then you probably have heard of
+*International Domain Names* (:rfc:`5980`).  The :func:`rewrite_url` function
+will correctly encode names using the :mod:`codecs.idna`.
+
 Relevant Specifications
 -----------------------
 
 - `[RFC1034]`_ *"Domain Names - concepts and facilities"*, esp. Section 3.5
 - `[RFC3986]`_ *"Uniform Resource Identifiers: Generic Syntax"*
+- `[RFC5890]`_ *"Internationalized Domain Names for Applications (IDNA)"*
 - `[RFC7230]`_ *"Hypertext Transfer Protocol (HTTP/1.1): Message
   Syntax and Routing"*
 
@@ -80,4 +90,5 @@ are omitted - see section 3.2.3 of :rfc:`3986#section-3.2.3`.
 .. _Glory of REST: http://martinfowler.com/articles/richardsonMaturityModel.html
 .. _[RFC1034]: http://tools.ietf.org/html/rfc1034
 .. _[RFC3986]: http://tools.ietf.org/html/rfc3986
+.. _[RFC5890]: https://tools.ietf.org/html/rfc5890
 .. _[RFC7230]: http://tools.ietf.org/html/rfc7230

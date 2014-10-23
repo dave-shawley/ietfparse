@@ -20,28 +20,52 @@ class WhenReplacingTheHostPortion(unittest.TestCase):
             algorithms.rewrite_url('http://example.com:80/docs', host=None),
             'http:///docs')
 
-    def test_host_is_percent_encoded(self):
+    def test_host_is_idn_encoded(self):
         self.assertEqual(
             algorithms.rewrite_url('http://example.com',
                                    host=u'dollars-and-\u00a2s.com').lower(),
-            'http://dollars-and-%c2%a2s.com'
+            'http://xn--dollars-and-s-7na.com'
         )
 
-    def test_host_longer_than_255_characters_is_rejected(self):
+    def test_label_longer_than_63_characters_is_rejected(self):
+        # encoded form would be 'xn--' + ('a' * 56) + '-nub' which
+        # is 64 characters long
         with self.assertRaises(ValueError):
             algorithms.rewrite_url('http://example.com',
-                                   host=u'\u00a2{0}'.format('a' * 250))
+                                   host=u'\u00a2{0}'.format('a' * 56))
 
     def test_port_is_retained(self):
         self.assertEqual(algorithms.rewrite_url('http://example.com:8080',
                                                 host='other.com'),
                          'http://other.com:8080')
 
+    def test_long_hosts_are_rejected(self):
+        long_host_name = '{0}.{1}.{2}.{3}.com'.format(
+            'a' * 63, 'b' * 63, 'c' * 63, 'd' * 63)
+        with self.assertRaises(ValueError):
+            algorithms.rewrite_url('http://example.com', host=long_host_name)
+
     def test_long_host_names_can_be_enabled(self):
+        long_host_name = '{0}.{1}.{2}.{3}.com'.format(
+            'a' * 63, 'b' * 63, 'c' * 63, 'd' * 63)
         self.assertEqual(
             algorithms.rewrite_url('http://example.com',
-                                   host='a' * 512, enable_long_host=True),
-            'http://{0}'.format('a' * 512)
+                                   host=long_host_name,
+                                   enable_long_host=True),
+            'http://{0}'.format(long_host_name)
+        )
+
+    def test_long_labels_are_always_rejected(self):
+        with self.assertRaises(ValueError):
+            algorithms.rewrite_url('http://example.com',
+                                   host='{0}.com'.format('a' * 64),
+                                   enable_long_host=True)
+
+    def test_that_user_portion_is_not_idna_encoded(self):
+        self.assertEqual(
+            algorithms.rewrite_url(u'http://user:pass@example.com',
+                                   host=u'h\u00F8st'),
+            'http://user:pass@xn--hst-0na',
         )
 
 
