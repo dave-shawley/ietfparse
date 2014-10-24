@@ -48,13 +48,24 @@ something like the following instead?
 
 And, **yes**, the :func:`encode_url_template` is doing a bit more than
 calling :meth:`str.format`.  It implements the full gamut of :rfc:`6570` URL
-Templates which happens to handle our case quite well. :func:`rewrite_url`
-is closer to the :func:`~urllib.parse.urlsplit` and
-:func:`~urllib.parse.urlunsplit` case with a nicer interface.
+Templates which happens to handle our case quite well.
 
-If you are a little more forward looking, then you probably have heard of
-*International Domain Names* (:rfc:`5980`).  The :func:`rewrite_url` function
-will correctly encode names using the :mod:`codecs.idna`.
+:func:`rewrite_url` is closer to the :func:`~urllib.parse.urlsplit` and
+:func:`~urllib.parse.urlunsplit` case with a nicer interface and a bit of
+additional functionality as well.  For example, if you are a little more
+forward looking, then you probably have heard of *International Domain Names*
+(:rfc:`5980`).  The :func:`rewrite_url` function will correctly encode names
+using the :mod:`codecs.idna`.  It also implements the same query encoding
+tricks that :func:`~urllib.parse.urlencode` does.
+
+>>> from ietfparse import algorithms
+>>> algorithms.rewrite_url('http://example.com', query={'b': 12, 'a': 'c'})
+'http://example.com?a=c&b=12'
+>>> algorithms.rewrite_url('http://example.com', query=[('b', 12), ('a', 'c')])
+'http://example.com?b=12&a=c'
+
+There is a lot going on in those two examples.  See the documentation for
+:func:`rewrite_url` for all of the details.
 
 Relevant Specifications
 -----------------------

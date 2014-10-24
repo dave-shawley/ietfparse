@@ -135,3 +135,46 @@ class WhenReplacingThePathPortion(unittest.TestCase):
                                    path='?').lower(),
             'http://example.com/%3f?q=value',
         )
+
+
+class WhenReplacingTheQueryPortion(unittest.TestCase):
+
+    def test_query_string_is_replaced(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://host/path?foo=bar', query='1=2'),
+            'http://host/path?1=2',
+        )
+
+    def test_query_string_is_not_encoded(self):
+        self.assertEqual(
+            algorithms.rewrite_url(
+                'http://host/path',
+                query='redirect=http://example.com&q=foo? bar'),
+            'http://host/path?redirect=http://example.com&q=foo? bar',
+        )
+
+    def test_query_of_none_removes_query(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://host/path?foo=bar', query=None),
+            'http://host/path',
+        )
+
+    def test_mapping_query_is_encoded_with_ampersands(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://host?foo=bar',
+                                   query={'first': 1, 'last': 2}),
+            'http://host?first=1&last=2'
+        )
+
+    def test_list_query_is_encoded_with_ampersands(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://host?foo=bar',
+                                   query=[('superior', 1), ('inferior', 2)]),
+            'http://host?superior=1&inferior=2'
+        )
+
+    def test_that_nonascii_is_percent_encoded_as_utf8(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://host', query={'len': u'23\xB5'}),
+            'http://host?len=23%C2%B5',
+        )

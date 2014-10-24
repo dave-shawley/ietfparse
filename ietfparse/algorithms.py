@@ -134,6 +134,9 @@ def rewrite_url(input_url, **kwargs):
     :keyword int port: if specified, this keyword sets the port
         portion of the network location.  A value of :data:`None`
         will remove the port from the URL.
+    :keyword query: if specified, this keyword sets the query portion
+        of the URL.  See the comments for a description of this
+        parameter.
 
     :keyword bool enable_long_host: if this keyword is specified
         and it is :data:`True`, then the host name length restriction
@@ -143,11 +146,31 @@ def rewrite_url(input_url, **kwargs):
     :raises ValueError: when a keyword parameter is given an invalid
         value
 
+    The handling of the `query` parameter requires some additional
+    explanation.  You can specify a query value in three different
+    ways - as a *mapping*, as a *sequence* of pairs, or as a *string*.
+    This flexibility makes it possible to meet the wide range of
+    finicky use cases.
+
+    *If the query parameter is a mapping*, then the key + value pairs
+    are *sorted by the key* before they are encoded.  Use this method
+    whenever possible.
+
+    *If the query parameter is a sequence of pairs*, then each pair
+    is encoded *in the given order*.  Use this method if you require
+    that parameter order is controlled.
+
+    *If the query parameter is a string*, then it is *used as-is*.
+    This form SHOULD BE AVOIDED since it can easily result in broken
+    URLs since *no URL escaping is performed*.  This is the obvious
+    pass through case that is almost always present.
+
     """
     scheme, netloc, path, query, fragment = parse.urlsplit(input_url)
     ident, host_n_port = parse.splituser(netloc)
 
     host, port = parse.splitnport(host_n_port, defport=None)
+
     if 'host' in kwargs:
         host = kwargs['host']
         if host is not None:
@@ -182,5 +205,28 @@ def rewrite_url(input_url, **kwargs):
         host_n_port = '{0}:{1}'.format(host, port)
 
     netloc = '{0}@{1}'.format(ident, host_n_port) if ident else host_n_port
+
+    if 'query' in kwargs:
+        new_query = kwargs['query']
+        if new_query is None:
+            query = None
+        else:
+            params = []
+            try:
+                for param in sorted(new_query.keys()):
+                    params.append((param, new_query[param]))
+            except AttributeError:  # arg is None or not a dict
+                pass
+
+            if not params:  # maybe a sequence of tuples?
+                try:
+                    params = [(param, value) for param, value in new_query]
+                except ValueError:  # guess not...
+                    pass
+
+            if params:
+                query = parse.urlencode(params)
+            else:
+                query = new_query
 
     return parse.urlunsplit((scheme, netloc, path, query, fragment))
