@@ -1,6 +1,7 @@
 import unittest
 
 from ietfparse import algorithms
+from ietfparse.compat import parse
 
 
 class WhenReplacingTheHostPortion(unittest.TestCase):
@@ -20,7 +21,7 @@ class WhenReplacingTheHostPortion(unittest.TestCase):
             algorithms.rewrite_url('http://example.com:80/docs', host=None),
             'http:///docs')
 
-    def test_host_is_idn_encoded(self):
+    def test_host_is_idn_encoded_when_appropriate(self):
         self.assertEqual(
             algorithms.rewrite_url('http://example.com',
                                    host=u'dollars-and-\u00a2s.com').lower(),
@@ -66,6 +67,13 @@ class WhenReplacingTheHostPortion(unittest.TestCase):
             algorithms.rewrite_url(u'http://user:pass@example.com',
                                    host=u'h\u00F8st'),
             'http://user:pass@xn--hst-0na',
+        )
+
+    def test_that_non_idna_schemes_are_percent_encoded(self):
+        self.assertEqual(
+            algorithms.rewrite_url('blah://example.com',
+                                   host=u'dollars-and-\u00a2s.com'),
+            'blah://dollars-and-%C2%A2s.com'
         )
 
 
@@ -178,3 +186,79 @@ class WhenReplacingTheQueryPortion(unittest.TestCase):
             algorithms.rewrite_url('http://host', query={'len': u'23\xB5'}),
             'http://host?len=23%C2%B5',
         )
+
+
+class WhenComparingUrls(unittest.TestCase):
+
+    def assertExampleSet(self, *examples):
+        for left in examples:
+            for right in examples:
+                self.assertTrue(
+                    algorithms.urls_equal(left, right),
+                    '{0} should equal {1}'.format(left, right))
+
+    def test_that_implementation_matches_rfc7230_examples(self):
+        self.assertExampleSet(
+            'http://example.com:80/~smith/home.html',
+            'http://EXAMPLE.com/%7Esmith/home.html',
+            'http://EXAMPLE.com:/%7esmith/home.html',
+        )
+
+    def test_that_percent_encoded_hosts_match(self):
+        self.assertTrue(
+            algorithms.urls_equal('http://host', 'http://%48%6F%53%74'))
+
+    def test_that_schemes_are_case_insensitive(self):
+        self.assertTrue(algorithms.urls_equal('http://host', 'HTTP://host'))
+
+    def test_that_implementation_matches_rfc2141_examples(self):
+        self.assertExampleSet(
+            'URN:foo:a123,456',
+            'urn:foo:a123,456',
+            'urn:FOO:a123,456',
+        )
+        self.assertExampleSet(
+            'urn:foo:a123%2C456',
+            'URN:FOO:a123%2c456',
+        )
+
+
+class WhenCanonicalizingAURL(unittest.TestCase):
+
+    def assertUrlCanonicalizedAs(self, input_url, canonicalized_url):
+        self.assertEqual(algorithms.canonicalize_url(input_url),
+                         canonicalized_url)
+
+    def test_that_scheme_is_lowercased(self):
+        self.assertUrlCanonicalizedAs('HTTP://.', 'http://./')
+
+    def test_that_userinfo_is_percent_encoded(self):
+        self.assertUrlCanonicalizedAs(
+            'http://user::@host', 'http://user:%3A@host/')
+
+    def test_that_host_is_lowercased(self):
+        self.assertUrlCanonicalizedAs('http://EXAMPLE', 'http://example/')
+
+    def test_that_default_port_is_stripped(self):
+        self.assertUrlCanonicalizedAs('ftp://host:21/foo', 'ftp://host/foo')
+
+    def test_that_host_is_percent_encoded(self):
+        self.assertUrlCanonicalizedAs(u'blah://\u00a7', 'blah://%C2%A7')
+
+    def test_that_url_encoding_is_upper_cased(self):
+        self.assertUrlCanonicalizedAs('http://%c2%a7', 'http://%C2%A7/')
+
+    def test_that_path_is_normalize(self):
+        self.assertUrlCanonicalizedAs(
+            'http://host:123/head/skipped/./../tail/./',
+            'http://host:123/head/tail/'
+        )
+
+    def test_that_empty_path_is_normalized(self):
+        self.assertUrlCanonicalizedAs('http://host', 'http://host/')
+
+    # def test_simple_non_hierarchical_url(self):
+    #     self.assertUrlCanonicalizedAs(
+    #         u'URN:name:Oddbj\u00F8rg:R\u00e5d:Reenskaug:wife',
+    #         'urn:name:Oddbj%3C%B8rg:R%C3%A5d:Reenskaug:wife',
+    #     )

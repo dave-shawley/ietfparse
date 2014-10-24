@@ -8,12 +8,20 @@ Implementations of algorithms from various specifications.
 This module implements some of the more interesting algorithms
 described in IETF RFCs.
 
+.. data:: IDNA_SCHEMES
+
+   A collection of schemes that use IDN encoding for its host.
+
 """
 from __future__ import unicode_literals
 from operator import attrgetter
 
 from . compat import parse
 from . import errors
+
+
+IDNA_SCHEMES = [
+    'http', 'https', 'ftp', 'afp', 'sftp', 'smb']
 
 
 def _content_type_matches(candidate, pattern):
@@ -146,6 +154,11 @@ def rewrite_url(input_url, **kwargs):
     :raises ValueError: when a keyword parameter is given an invalid
         value
 
+    If the `host` parameter is specified and not :data:`None`, then
+    it will be processed as an Internationalized Domain Name (IDN)
+    if the scheme appears in :data:`IDNA_SCHEMES`.  Otherwise, it
+    will be encoded as UTF-8 and percent encoded.
+
     The handling of the `query` parameter requires some additional
     explanation.  You can specify a query value in three different
     ways - as a *mapping*, as a *sequence* of pairs, or as a *string*.
@@ -175,13 +188,16 @@ def rewrite_url(input_url, **kwargs):
         host = kwargs['host']
         if host is not None:
             enable_long_host = kwargs.get('enable_long_host', False)
-            try:
-                host = '.'.join(segment.encode('idna').decode()
-                                for segment in host.split('.'))
-                if len(host) > 255 and not enable_long_host:
-                    raise ValueError('host too long')
-            except UnicodeError as exc:
-                raise ValueError('host is invalid - {0}'.format(exc))
+            if scheme.lower() in IDNA_SCHEMES:
+                try:
+                    host = '.'.join(segment.encode('idna').decode()
+                                    for segment in host.split('.'))
+                except UnicodeError as exc:
+                    raise ValueError('host is invalid - {0}'.format(exc))
+            else:
+                host = parse.quote(host.encode('utf-8'))
+            if len(host) > 255 and not enable_long_host:
+                raise ValueError('host too long')
 
     if 'port' in kwargs:
         port = kwargs['port']
