@@ -188,6 +188,72 @@ class WhenReplacingTheQueryPortion(unittest.TestCase):
         )
 
 
+class WhenReplacingUserPortion(unittest.TestCase):
+
+    def test_that_user_is_replaced(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://user1@host', user='user2'),
+            'http://user2@host',
+        )
+
+    def test_that_user_does_not_replace_password(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://user:pass@host', user='user2'),
+            'http://user2:pass@host',
+        )
+
+    def test_that_setting_user_to_none_removes_user(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://user@host', user=None),
+            'http://host',
+        )
+
+    def test_that_setting_user_to_none_remove_password(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://user:pass@host', user=None),
+            'http://host',
+        )
+
+    def test_that_user_is_percent_encoded(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://host', user=u'\u00BDuser'),
+            'http://%C2%BDuser@host',
+        )
+
+    def test_that_quoted_password_is_retained(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://user:%E2%88%85@host', user='me'),
+            'http://me:%E2%88%85@host',
+        )
+
+
+class WhenReplacingThePasswordPortion(unittest.TestCase):
+
+    def test_that_password_is_replaced(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://user:pass@host', password='PASS'),
+            'http://user:PASS@host',
+        )
+
+    def test_that_setting_password_to_none_removes_password(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://user:pass@host', password=None),
+            'http://user@host',
+        )
+
+    def test_that_password_is_percent_encoded(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://user@host', password=u'\u2205'),
+            'http://user:%E2%88%85@host',
+        )
+
+    def test_that_quoted_user_is_retained(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://%C2%BD:pass@host', password=None),
+            'http://%C2%BD@host',
+        )
+
+
 class WhenComparingUrls(unittest.TestCase):
 
     def assertExampleSet(self, *examples):

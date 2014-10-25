@@ -5,9 +5,15 @@ This module exports standard library functionality so that it
 matches :mod:`urllib.parse` from the Python 3 standard library.
 
 """
+import codecs
+
 __all__ = (
     'quote',
     'splitnport',
+    'splitpasswd',
+    'splituser',
+    'unquote',
+    'unquote_to_bytes',
     'urlencode',
     'urlsplit',
     'urlunsplit',
@@ -16,9 +22,22 @@ __all__ = (
 try:
     from urllib.parse import (
         quote, splitnport, urlencode, urlsplit, urlunsplit)
+    from urllib.parse import (
+        splitpasswd,
+        splituser,
+        unquote,
+        unquote_to_bytes,
+    )
 except ImportError:
     from urllib import quote, splitnport, urlencode as _urlencode
+    from urllib import (
+        splitpasswd,
+        splituser,
+        quote,
+        unquote,
+    )
     from urlparse import urlsplit, urlunsplit
+    unquote_to_bytes = unquote
 
     # urlencode did not encode its parameters in Python 2.x so we
     # need to implement that ourselves for compatibility.

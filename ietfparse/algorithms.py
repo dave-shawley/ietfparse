@@ -145,6 +145,12 @@ def rewrite_url(input_url, **kwargs):
     :keyword query: if specified, this keyword sets the query portion
         of the URL.  See the comments for a description of this
         parameter.
+    :keyword str user: if specified, this keyword sets the user
+        portion of the URL.  A value of :data:`None` will remove
+        the user and password portions.
+    :keyword str password: if specified, this keyword sets the
+        password portion of the URL.  A value of :data:`None` will
+        remove the password from the URL.
 
     :keyword bool enable_long_host: if this keyword is specified
         and it is :data:`True`, then the host name length restriction
@@ -182,8 +188,24 @@ def rewrite_url(input_url, **kwargs):
     scheme, netloc, path, query, fragment = parse.urlsplit(input_url)
     ident, host_n_port = parse.splituser(netloc)
 
-    host, port = parse.splitnport(host_n_port, defport=None)
+    user, password = parse.splitpasswd(ident) if ident else (None, None)
+    if 'user' in kwargs:
+        user = kwargs['user']
+    elif user is not None:
+        user = parse.unquote_to_bytes(user).decode('utf-8')
+    if 'password' in kwargs:
+        password = kwargs['password']
+    elif password is not None:
+        password = parse.unquote_to_bytes(password).decode('utf-8')
 
+    ident = None
+    if user is not None:
+        user = parse.quote(user.encode('utf-8'))
+        if password:
+            password = parse.quote(password.encode('utf-8'))
+        ident = '{0}:{1}'.format(user, password) if password else user
+
+    host, port = parse.splitnport(host_n_port, defport=None)
     if 'host' in kwargs:
         host = kwargs['host']
         if host is not None:
@@ -206,19 +228,19 @@ def rewrite_url(input_url, **kwargs):
             if port < 0:
                 raise ValueError('port is required to be non-negative')
 
-    if 'path' in kwargs:
-        path = kwargs['path']
-        if path is None:
-            path = '/'
-        else:
-            path = parse.quote(path.encode('utf-8'))
-
     if host is None or host == '':
         host_n_port = None
     elif port is None:
         host_n_port = host
     else:
         host_n_port = '{0}:{1}'.format(host, port)
+
+    if 'path' in kwargs:
+        path = kwargs['path']
+        if path is None:
+            path = '/'
+        else:
+            path = parse.quote(path.encode('utf-8'))
 
     netloc = '{0}@{1}'.format(ident, host_n_port) if ident else host_n_port
 
