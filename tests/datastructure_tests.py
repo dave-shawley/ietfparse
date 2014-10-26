@@ -94,10 +94,8 @@ class WhenComparingContentTypesForOrdering(unittest.TestCase):
 
     def test_type_with_fewer_parameters_is_lesser(self):
         self.assertLess(
-            ContentType('application', 'text',
-                                parameters={'1': 1}),
-            ContentType('application', 'text',
-                                parameters={'1': 1, '2': 2}))
+            ContentType('application', 'text', parameters={'1': 1}),
+            ContentType('application', 'text', parameters={'1': 1, '2': 2}))
 
     def test_otherwise_equal_types_ordered_by_primary(self):
         self.assertLess(

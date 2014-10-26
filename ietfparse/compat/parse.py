@@ -21,20 +21,24 @@ __all__ = (
 
 try:
     from urllib.parse import (
-        quote, splitnport, urlencode, urlsplit, urlunsplit)
-    from urllib.parse import (
+        quote,
+        splitnport,
         splitpasswd,
         splituser,
         unquote,
         unquote_to_bytes,
+        urlencode,
+        urlsplit,
+        urlunsplit,
     )
 except ImportError:
-    from urllib import quote, splitnport, urlencode as _urlencode
     from urllib import (
+        quote,
+        splitnport,
         splitpasswd,
         splituser,
-        quote,
         unquote,
+        urlencode as _urlencode,
     )
     from urlparse import urlsplit, urlunsplit
     unquote_to_bytes = unquote
@@ -63,7 +67,7 @@ except ImportError:
             query = quoted
         except UnicodeError:
             raise
-        except (TypeError, ValueError) as exc:  # pragma no cover
+        except (TypeError, ValueError):  # pragma no cover
             # doesn't look like a sequence of tuples, maybe a dict?
             try:
                 quoted = {}
