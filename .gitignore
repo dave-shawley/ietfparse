@@ -1,6 +1,7 @@
 build/
 dist/
-env/
+env*/
+htmlcov/
 __pycache__/
 
 .coverage
