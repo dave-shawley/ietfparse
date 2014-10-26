@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import unittest
 
 from ietfparse import algorithms
@@ -23,7 +25,7 @@ class WhenReplacingTheHostPortion(unittest.TestCase):
     def test_host_is_idn_encoded_when_appropriate(self):
         self.assertEqual(
             algorithms.rewrite_url('http://example.com',
-                                   host=u'dollars-and-\u00a2s.com'),
+                                   host='dollars-and-\u00a2s.com'),
             'http://xn--dollars-and-s-7na.com'
         )
 
@@ -32,7 +34,7 @@ class WhenReplacingTheHostPortion(unittest.TestCase):
         # is 64 characters long
         with self.assertRaises(ValueError):
             algorithms.rewrite_url('http://example.com',
-                                   host=u'\u00a2{0}'.format('a' * 56))
+                                   host='\u00a2{0}'.format('a' * 56))
 
     def test_port_is_retained(self):
         self.assertEqual(algorithms.rewrite_url('http://example.com:8080',
@@ -63,22 +65,22 @@ class WhenReplacingTheHostPortion(unittest.TestCase):
 
     def test_that_user_portion_is_not_idna_encoded(self):
         self.assertEqual(
-            algorithms.rewrite_url(u'http://user:pass@example.com',
-                                   host=u'h\u00F8st'),
+            algorithms.rewrite_url('http://user:pass@example.com',
+                                   host='h\u00F8st'),
             'http://user:pass@xn--hst-0na',
         )
 
     def test_that_non_idna_schemes_are_percent_encoded(self):
         self.assertEqual(
             algorithms.rewrite_url('blah://example.com',
-                                   host=u'dollars-and-\u00a2s.com'),
+                                   host='dollars-and-\u00a2s.com'),
             'blah://dollars-and-%C2%A2s.com',
         )
 
     def test_that_idna_encoding_can_be_required(self):
         self.assertEqual(
             algorithms.rewrite_url('blah://example.com',
-                                   host=u'dollars-and-\u00a2s.com',
+                                   host='dollars-and-\u00a2s.com',
                                    encode_with_idna=True),
             'blah://xn--dollars-and-s-7na.com',
         )
@@ -86,7 +88,7 @@ class WhenReplacingTheHostPortion(unittest.TestCase):
     def test_that_idna_encoding_can_be_prohibited(self):
         self.assertEqual(
             algorithms.rewrite_url('http://example.com',
-                                   host=u'dollars-and-\u00a2s.com',
+                                   host='dollars-and-\u00a2s.com',
                                    encode_with_idna=False),
             'http://dollars-and-%C2%A2s.com',
         )
@@ -150,7 +152,7 @@ class WhenReplacingThePathPortion(unittest.TestCase):
     def test_unicode_replace_characters_are_encoded_in_utf8(self):
         self.assertEqual(
             algorithms.rewrite_url('http://example.com/path',
-                                   path=u'\u2115ew/\u2119ath').lower(),
+                                   path='\u2115ew/\u2119ath').lower(),
             'http://example.com/%e2%84%95ew/%e2%84%99ath',
         )
 
@@ -205,7 +207,7 @@ class WhenReplacingTheQueryPortion(unittest.TestCase):
 
     def test_that_nonascii_is_percent_encoded_as_utf8(self):
         self.assertEqual(
-            algorithms.rewrite_url('http://host', query={'len': u'23\xB5'}),
+            algorithms.rewrite_url('http://host', query={'len': '23\xB5'}),
             'http://host?len=23%C2%B5',
         )
 
@@ -238,7 +240,7 @@ class WhenReplacingUserPortion(unittest.TestCase):
 
     def test_that_user_is_percent_encoded(self):
         self.assertEqual(
-            algorithms.rewrite_url('http://host', user=u'\u00BDuser'),
+            algorithms.rewrite_url('http://host', user='\u00BDuser'),
             'http://%C2%BDuser@host',
         )
 
@@ -265,7 +267,7 @@ class WhenReplacingThePasswordPortion(unittest.TestCase):
 
     def test_that_password_is_percent_encoded(self):
         self.assertEqual(
-            algorithms.rewrite_url('http://user@host', password=u'\u2205'),
+            algorithms.rewrite_url('http://user@host', password='\u2205'),
             'http://user:%E2%88%85@host',
         )
 
@@ -298,23 +300,23 @@ class WhenReplacingTheScheme(unittest.TestCase):
     def test_that_changing_scheme_and_host_honors_idna_logic(self):
         self.assertEqual(
             algorithms.rewrite_url('http://xn--dollars-and-s-7na.com',
-                                   scheme='blah', host=u'just-\u20ac-now'),
+                                   scheme='blah', host='just-\u20ac-now'),
             'blah://just-%E2%82%AC-now',
         )
         self.assertEqual(
             algorithms.rewrite_url('blah://dollars-and-\u00a2s.com',
-                                   scheme='http', host=u'just-\u20ac-now'),
+                                   scheme='http', host='just-\u20ac-now'),
             'http://xn--just--now-ki1e',
         )
         self.assertEqual(
             algorithms.rewrite_url('http://xn--dollars-and-s-7na.com',
-                                   scheme='blah', host=u'just-\u20ac-now',
+                                   scheme='blah', host='just-\u20ac-now',
                                    encode_with_idna=True),
             'blah://xn--just--now-ki1e',
         )
         self.assertEqual(
             algorithms.rewrite_url('blah://dollars-and-\u00a2s.com',
-                                   scheme='http', host=u'just-\u20ac-now',
+                                   scheme='http', host='just-\u20ac-now',
                                    encode_with_idna=False),
             'http://just-%E2%82%AC-now',
         )
