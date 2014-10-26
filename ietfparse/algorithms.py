@@ -133,9 +133,13 @@ def rewrite_url(input_url, **kwargs):
     Create a new URL from `input_url` with modifications applied.
 
     :param str input_url: the URL to modify
+
     :keyword str host: if specified, this keyword sets the host
         portion of the network location.  A value of :data:`None`
         will remove the network location portion of the URL.
+    :keyword str password: if specified, this keyword sets the
+        password portion of the URL.  A value of :data:`None` will
+        remove the password from the URL.
     :keyword str path: if specified, this keyword sets the path
         portion of the URL.  A value of :data:`None` will remove
         the path from the URL.
@@ -145,12 +149,13 @@ def rewrite_url(input_url, **kwargs):
     :keyword query: if specified, this keyword sets the query portion
         of the URL.  See the comments for a description of this
         parameter.
+    :keyword str scheme: if specified, this keyword sets the scheme
+        portion of the URL.  A value of :data:`None` will remove
+        the scheme.  Note that this will make the URL relative and
+        may have unintended consequences.
     :keyword str user: if specified, this keyword sets the user
         portion of the URL.  A value of :data:`None` will remove
         the user and password portions.
-    :keyword str password: if specified, this keyword sets the
-        password portion of the URL.  A value of :data:`None` will
-        remove the password from the URL.
 
     :keyword bool enable_long_host: if this keyword is specified
         and it is :data:`True`, then the host name length restriction
@@ -192,6 +197,10 @@ def rewrite_url(input_url, **kwargs):
 
     """
     scheme, netloc, path, query, fragment = parse.urlsplit(input_url)
+
+    if 'scheme' in kwargs:
+        scheme = kwargs['scheme']
+
     ident, host_n_port = parse.splituser(netloc)
 
     user, password = parse.splitpasswd(ident) if ident else (None, None)

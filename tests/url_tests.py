@@ -274,3 +274,47 @@ class WhenReplacingThePasswordPortion(unittest.TestCase):
             algorithms.rewrite_url('http://%C2%BD:pass@host', password=None),
             'http://%C2%BD@host',
         )
+
+
+class WhenReplacingTheScheme(unittest.TestCase):
+
+    def test_that_scheme_is_replaced(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://host', scheme='https'),
+            'https://host',
+        )
+
+    def test_that_setting_scheme_to_none_removes_it(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://host', scheme=None), '//host')
+
+    def test_that_clearing_scheme_on_idn_url_does_not_change_host(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://xn--dollars-and-s-7na.com',
+                                   scheme=None),
+            '//xn--dollars-and-s-7na.com',
+        )
+
+    def test_that_changing_scheme_and_host_honors_idna_logic(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://xn--dollars-and-s-7na.com',
+                                   scheme='blah', host=u'just-\u20ac-now'),
+            'blah://just-%E2%82%AC-now',
+        )
+        self.assertEqual(
+            algorithms.rewrite_url('blah://dollars-and-\u00a2s.com',
+                                   scheme='http', host=u'just-\u20ac-now'),
+            'http://xn--just--now-ki1e',
+        )
+        self.assertEqual(
+            algorithms.rewrite_url('http://xn--dollars-and-s-7na.com',
+                                   scheme='blah', host=u'just-\u20ac-now',
+                                   encode_with_idna=True),
+            'blah://xn--just--now-ki1e',
+        )
+        self.assertEqual(
+            algorithms.rewrite_url('blah://dollars-and-\u00a2s.com',
+                                   scheme='http', host=u'just-\u20ac-now',
+                                   encode_with_idna=False),
+            'http://just-%E2%82%AC-now',
+        )
