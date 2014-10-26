@@ -155,6 +155,12 @@ def rewrite_url(input_url, **kwargs):
     :keyword bool enable_long_host: if this keyword is specified
         and it is :data:`True`, then the host name length restriction
         from :rfc:`3986#section-3.2.2` is relaxed.
+    :keyword bool encode_with_idna: if this keyword is specified
+        and it is :data:`True`, then the ``host`` parameter will be
+        encoded using IDN.  If this value is provided as :data:`False`,
+        then the percent-encoding scheme is used instead.  If this
+        parameter is omitted or included with a different value, then
+        the ``host`` parameter is processed using :data:`IDNA_SCHEMES`.
 
     :return: the modified URL
     :raises ValueError: when a keyword parameter is given an invalid
@@ -209,8 +215,14 @@ def rewrite_url(input_url, **kwargs):
     if 'host' in kwargs:
         host = kwargs['host']
         if host is not None:
+            idna_flag = kwargs.get('encode_with_idna', None)
             enable_long_host = kwargs.get('enable_long_host', False)
-            if scheme.lower() in IDNA_SCHEMES:
+
+            enable_idna = (
+                (scheme.lower() in IDNA_SCHEMES or idna_flag is True)
+                and idna_flag is not False
+            )
+            if enable_idna:
                 try:
                     host = '.'.join(segment.encode('idna').decode()
                                     for segment in host.split('.'))

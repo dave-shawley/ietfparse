@@ -98,6 +98,43 @@ This library only limits the ``port`` to a non-negative integer.  The other
 *SHOULD* that is not implemented is the suggestion that default port numbers
 are omitted - see section 3.2.3 of :rfc:`3986#section-3.2.3`.
 
+Influencing URL Processing
+--------------------------
+URLs are finicky things with a wealth of specifications that sometimes seem
+to contradict each other.  Whenever a grey area was encountered, this library
+tried to make the result controllable from the outside.  For example,
+section 3.2.2 of :rfc:`3986#section-3.2.2` contains the following paragraph
+when describing the host portion of the URL.
+
+    The reg-name syntax allows percent-encoded octets in order to
+    represent non-ASCII registered names in a uniform way that is
+    independent of the underlying name resolution technology.  Non-ASCII
+    characters must first be encoded according to UTF-8 [STD63], and then
+    each octet of the corresponding UTF-8 sequence must be percent-
+    encoded to be represented as URI characters.  URI producing
+    applications must not use percent-encoding in host unless it is used
+    to represent a UTF-8 character sequence.  When a non-ASCII registered
+    name represents an internationalized domain name intended for
+    resolution via the DNS, the name must be transformed to the IDNA
+    encoding [RFC3490] prior to name lookup.  URI producers should
+    provide these registered names in the IDNA encoding, rather than a
+    percent-encoding, if they wish to maximize interoperability with
+    legacy URI resolvers.
+
+When :func:`rewrite_url` is called with a ``host`` parameter, it needs to
+decide how to encode the string that it is given for inclusion into the URL.
+In other words, it needs to decide whether the *name represents an
+internationalized domain name intended for resolution via the DNS* or not.
+There are two ways to control decisions like this.  The recommended way is
+to pass a parameter that explicitly states what you want - the
+``encode_with_dna`` keyword to :func:`rewrite_url` is one such case.  A
+configuration-based alternative is usually offered as well.  The latter
+should be used if you have a special case that is application specific.
+For example, the :data:`ietfparse.algorithms.IDNA_SCHEMES` variable is a
+collection that the library uses to know which schemes *ALWAYS* apply
+IDNA rules to host names.  You can modify this collection as needed to
+meet your application requirements.
+
 .. _Glory of REST: http://martinfowler.com/articles/richardsonMaturityModel.html
 .. _[RFC1034]: http://tools.ietf.org/html/rfc1034
 .. _[RFC3986]: http://tools.ietf.org/html/rfc3986

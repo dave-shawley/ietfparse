@@ -24,7 +24,7 @@ class WhenReplacingTheHostPortion(unittest.TestCase):
     def test_host_is_idn_encoded_when_appropriate(self):
         self.assertEqual(
             algorithms.rewrite_url('http://example.com',
-                                   host=u'dollars-and-\u00a2s.com').lower(),
+                                   host=u'dollars-and-\u00a2s.com'),
             'http://xn--dollars-and-s-7na.com'
         )
 
@@ -73,7 +73,30 @@ class WhenReplacingTheHostPortion(unittest.TestCase):
         self.assertEqual(
             algorithms.rewrite_url('blah://example.com',
                                    host=u'dollars-and-\u00a2s.com'),
-            'blah://dollars-and-%C2%A2s.com'
+            'blah://dollars-and-%C2%A2s.com',
+        )
+
+    def test_that_idna_encoding_can_be_required(self):
+        self.assertEqual(
+            algorithms.rewrite_url('blah://example.com',
+                                   host=u'dollars-and-\u00a2s.com',
+                                   encode_with_idna=True),
+            'blah://xn--dollars-and-s-7na.com',
+        )
+
+    def test_that_idna_encoding_can_be_prohibited(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://example.com',
+                                   host=u'dollars-and-\u00a2s.com',
+                                   encode_with_idna=False),
+            'http://dollars-and-%C2%A2s.com',
+        )
+
+    def test_that_ipv6_literals_are_not_encoded(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://foo.com',
+                                   host='[2600:807:320:202:8800::c77]'),
+            'http://[2600:807:320:202:8800::c77]',
         )
 
 
