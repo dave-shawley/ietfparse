@@ -41,7 +41,17 @@ except ImportError:
         urlencode as _urlencode,
     )
     from urlparse import urlsplit, urlunsplit
-    unquote_to_bytes = unquote
+
+    # unquote_to_bytes is extremely useful when you need to cleanly
+    # unquote a percent-encoded UTF-8 sequence into a unicode string
+    # in either Python 2.x or 3.x with unicode_literals enabled.
+    # The only good way that I could find to do this in Python 2.x
+    # is to take advantage of the "raw_unicode_escape" codec.
+    #
+    # The return value of this function is the percent decoded raw
+    # byte string - NOT A UNICODE STRING
+    def unquote_to_bytes(s):
+        return unquote(s).encode('raw_unicode_escape')
 
     # urlencode did not encode its parameters in Python 2.x so we
     # need to implement that ourselves for compatibility.
