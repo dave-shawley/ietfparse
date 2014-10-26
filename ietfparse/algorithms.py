@@ -203,35 +203,18 @@ def rewrite_url(input_url, **kwargs):
         password = kwargs['password']
     elif password is not None:
         password = parse.unquote_to_bytes(password).decode('utf-8')
-
-    ident = None
-    if user is not None:
-        user = parse.quote(user.encode('utf-8'))
-        if password:
-            password = parse.quote(password.encode('utf-8'))
-        ident = '{0}:{1}'.format(user, password) if password else user
+    ident = _create_url_identifier(user, password)
 
     host, port = parse.splitnport(host_n_port, defport=None)
     if 'host' in kwargs:
         host = kwargs['host']
         if host is not None:
-            idna_flag = kwargs.get('encode_with_idna', None)
-            enable_long_host = kwargs.get('enable_long_host', False)
-
-            enable_idna = (
-                (scheme.lower() in IDNA_SCHEMES or idna_flag is True)
-                and idna_flag is not False
+            host = _normalize_host(
+                host,
+                enable_long_host=kwargs.get('enable_long_host', False),
+                encode_with_idna=kwargs.get('encode_with_idna', None),
+                scheme=scheme,
             )
-            if enable_idna:
-                try:
-                    host = '.'.join(segment.encode('idna').decode()
-                                    for segment in host.split('.'))
-                except UnicodeError as exc:
-                    raise ValueError('host is invalid - {0}'.format(exc))
-            else:
-                host = parse.quote(host.encode('utf-8'))
-            if len(host) > 255 and not enable_long_host:
-                raise ValueError('host too long')
 
     if 'port' in kwargs:
         port = kwargs['port']
@@ -280,3 +263,63 @@ def rewrite_url(input_url, **kwargs):
                 query = new_query
 
     return parse.urlunsplit((scheme, netloc, path, query, fragment))
+
+
+def _create_url_identifier(user, password):
+    """
+    Generate the user+password portion of a URL.
+
+    :param str user: the user name or :data:`None`
+    :param str password: the password or :data:`None`
+
+    """
+    if user is not None:
+        user = parse.quote(user.encode('utf-8'))
+        if password:
+            password = parse.quote(password.encode('utf-8'))
+            return '{0}:{1}'.format(user, password)
+        return user
+    return None
+
+
+def _normalize_host(host, enable_long_host=False, encode_with_idna=None,
+                    scheme=None):
+    """
+    Normalize a host for a URL.
+
+    :param str host: the host name to normalize
+
+    :keyword bool enable_long_host: if this keyword is specified
+        and it is :data:`True`, then the host name length restriction
+        from :rfc:`3986#section-3.2.2` is relaxed.
+    :keyword bool encode_with_idna: if this keyword is specified
+        and it is :data:`True`, then the ``host`` parameter will be
+        encoded using IDN.  If this value is provided as :data:`False`,
+        then the percent-encoding scheme is used instead.  If this
+        parameter is omitted or included with a different value, then
+        the ``host`` parameter is processed using :data:`IDNA_SCHEMES`.
+    :keyword str scheme: if this keyword is specified, then it is
+        used to determine whether to apply IDN rules or not.  This
+        parameter is ignored if `encode_with_idna` is not :data:`None`.
+
+    :return: the normalized and encoded string ready for inclusion
+        into a URL
+
+    """
+    if encode_with_idna is not None:
+        enable_idna = encode_with_idna
+    else:
+        enable_idna = scheme.lower() in IDNA_SCHEMES if scheme else False
+    if enable_idna:
+        try:
+            host = '.'.join(segment.encode('idna').decode()
+                            for segment in host.split('.'))
+        except UnicodeError as exc:
+            raise ValueError('host is invalid - {0}'.format(exc))
+    else:
+        host = parse.quote(host.encode('utf-8'))
+
+    if len(host) > 255 and not enable_long_host:
+        raise ValueError('host too long')
+
+    return host
