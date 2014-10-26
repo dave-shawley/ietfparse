@@ -1,7 +1,7 @@
 Changelog
 ---------
 
-* Next Release
+* 1.1.0 (26-Oct-2014)
 
   - Added ``algorithms.rewrite_url``
 
