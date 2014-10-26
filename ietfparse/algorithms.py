@@ -23,6 +23,22 @@ from . import errors
 IDNA_SCHEMES = [
     'http', 'https', 'ftp', 'afp', 'sftp', 'smb']
 
+# these are in addition to the "always safe" set
+_rfc3986_unreserved = b'~'
+_rfc3986_sub_delims = b"!$&'()*+,;="
+
+# see RFC-3986, section 3.2.1
+USERINFO_SAFE_CHARS = _rfc3986_sub_delims + _rfc3986_unreserved + b':'
+
+# see RFC-3986, section 3.2.2
+HOST_SAFE_CHARS = _rfc3986_sub_delims + _rfc3986_unreserved
+
+# see RFC-3986, section 3.3
+PATH_SAFE_CHARS = _rfc3986_sub_delims + _rfc3986_unreserved + b':/@'
+
+# see RFC-3986, section 3.5
+FRAGMENT_SAFE_CHARS = b'?/'
+
 
 def _content_type_matches(candidate, pattern):
     """Is ``candidate`` an exact match or sub-type of ``pattern``?"""
@@ -134,6 +150,9 @@ def rewrite_url(input_url, **kwargs):
 
     :param str input_url: the URL to modify
 
+    :keyword str fragment: if specified, this keyword sets the
+        fragment portion of the URL.  A value of :data:`None`
+        will remove the fragment portion of the URL.
     :keyword str host: if specified, this keyword sets the host
         portion of the network location.  A value of :data:`None`
         will remove the network location portion of the URL.
@@ -244,7 +263,7 @@ def rewrite_url(input_url, **kwargs):
         if path is None:
             path = '/'
         else:
-            path = parse.quote(path.encode('utf-8'))
+            path = parse.quote(path.encode('utf-8'), safe=PATH_SAFE_CHARS)
 
     netloc = '{0}@{1}'.format(ident, host_n_port) if ident else host_n_port
 
@@ -271,6 +290,19 @@ def rewrite_url(input_url, **kwargs):
             else:
                 query = new_query
 
+    if 'fragment' in kwargs:
+        fragment = kwargs['fragment']
+        if fragment is not None:
+            fragment = parse.quote(fragment.encode('utf-8'),
+                                   safe=FRAGMENT_SAFE_CHARS)
+
+    # The following is necessary to get around some interesting special
+    # case code in urllib.parse._coerce_args in Python 3.4.  Setting
+    # scheme to None causes urlunsplit to assume that all non-``None``
+    # parameters with be byte strings....
+    if scheme is None:
+        scheme = ''
+
     return parse.urlunsplit((scheme, netloc, path, query, fragment))
 
 
@@ -283,9 +315,10 @@ def _create_url_identifier(user, password):
 
     """
     if user is not None:
-        user = parse.quote(user.encode('utf-8'))
+        user = parse.quote(user.encode('utf-8'), safe=USERINFO_SAFE_CHARS)
         if password:
-            password = parse.quote(password.encode('utf-8'))
+            password = parse.quote(password.encode('utf-8'),
+                                   safe=USERINFO_SAFE_CHARS)
             return '{0}:{1}'.format(user, password)
         return user
     return None
@@ -326,7 +359,7 @@ def _normalize_host(host, enable_long_host=False, encode_with_idna=None,
         except UnicodeError as exc:
             raise ValueError('host is invalid - {0}'.format(exc))
     else:
-        host = parse.quote(host.encode('utf-8'))
+        host = parse.quote(host.encode('utf-8'), safe=HOST_SAFE_CHARS)
 
     if len(host) > 255 and not enable_long_host:
         raise ValueError('host too long')

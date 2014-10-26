@@ -100,6 +100,12 @@ class WhenReplacingTheHostPortion(unittest.TestCase):
             'http://[2600:807:320:202:8800::c77]',
         )
 
+    def test_that_non_idna_hosts_pass_through_allowed_characters(self):
+        self.assertEqual(
+            algorithms.rewrite_url('blah://path', host="!($&')*+~,;=)"),
+            "blah://!($&')*+~,;=)",
+        )
+
 
 class WhenReplacingThePortPortion(unittest.TestCase):
 
@@ -250,6 +256,12 @@ class WhenReplacingUserPortion(unittest.TestCase):
             'http://me:%E2%88%85@host',
         )
 
+    def test_that_acceptable_characters_are_not_percent_encoded(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://foo', user="~!&$'()+*,=:;"),
+            "http://~!&$'()+*,=:;@foo",
+        )
+
 
 class WhenReplacingThePasswordPortion(unittest.TestCase):
 
@@ -275,6 +287,12 @@ class WhenReplacingThePasswordPortion(unittest.TestCase):
         self.assertEqual(
             algorithms.rewrite_url('http://%C2%BD:pass@host', password=None),
             'http://%C2%BD@host',
+        )
+
+    def test_that_acceptable_characters_are_not_percent_encoded(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://foo@foo', password="~!&$'()+*,=:;"),
+            "http://foo:~!&$'()+*,=:;@foo",
         )
 
 
@@ -319,4 +337,25 @@ class WhenReplacingTheScheme(unittest.TestCase):
                                    scheme='http', host='just-\u20ac-now',
                                    encode_with_idna=False),
             'http://just-%E2%82%AC-now',
+        )
+
+
+class WhenReplacingTheFragment(unittest.TestCase):
+
+    def test_that_fragment_is_replaced(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://foo#fragment', fragment='boom'),
+            'http://foo#boom',
+        )
+
+    def test_that_setting_fragment_to_none_removes_it(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://foo#fragment', fragment=None),
+            'http://foo',
+        )
+
+    def test_that_fragment_is_percent_encoded(self):
+        self.assertEqual(
+            algorithms.rewrite_url('http://foo', fragment='/\u2620?'),
+            'http://foo#/%E2%98%A0?',
         )
