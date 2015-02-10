@@ -7,7 +7,6 @@ import sys
 import setuptools
 
 from ietfparse import __version__
-import setupext
 
 
 def read_requirements_file(name):
@@ -62,5 +61,4 @@ setuptools.setup(
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Text Processing',
     ],
-    cmdclass={'clean': setupext.Janitor},
 )
