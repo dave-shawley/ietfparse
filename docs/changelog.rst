@@ -1,6 +1,11 @@
 Changelog
 ---------
 
+* 1.1.1 (10-Feb-2015)
+
+  - Removed ``setupext`` module since it was causing problems with
+    source distributions.
+
 * 1.1.0 (26-Oct-2014)
 
   - Added ``algorithms.rewrite_url``
