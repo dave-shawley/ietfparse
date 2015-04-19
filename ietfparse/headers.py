@@ -136,17 +136,47 @@ def parse_link_header(header_value):
                 raise ValueError('Malformed link header', buf)
 
     for target, param_list in parse_links(sanitized):
-        # RFC5988, sec. 5.3 - the first "rel" is used if multiple
-        # are present
-        found_rel = False
+        # a few validations from RFC5988
+        # - sec. 5.3:
+        #   - the first "rel" is used when multiple are present
+        # - sec. 5.4:
+        #   - there MUST NOT be more than one media parameter
+        #   - the first "title" is used when multiple are present
+        #   - if both title and title* are present, then processors
+        #     SHOULD use the title* parameter
+        #   - there MUST NOT be more than one type parameter
         parsed_params = []
+        title_value, title_star_value = None, None
+        found_rel, found_media, found_type = False, False, False
         for name, value in parse_parameter_list(param_list):
             if name == 'rel':
-                if not found_rel:
-                    parsed_params.append((name, value))
-                    found_rel = True
-            else:
-                parsed_params.append((name, value))
+                if found_rel:
+                    continue
+                found_rel = True
+            if name == 'media':
+                if found_media:
+                    raise ValueError('More than one media parameter present')
+                found_media = True
+            if name == 'type':
+                if found_type:
+                    raise ValueError('More than one type parameter present')
+                found_type = True
+            if name == 'title':
+                if title_value is None:
+                    title_value = value
+                continue
+            if name == 'title*':
+                if title_star_value is None:
+                    title_star_value = value
+                continue
+            parsed_params.append((name, value))
+
+        if title_star_value is not None:
+            parsed_params.append(('title*', title_star_value))
+            if title_value is not None:
+                parsed_params.append(('title', title_star_value))
+        elif title_value is not None:
+            parsed_params.append(('title', title_value))
 
         links.append(datastructures.LinkHeader(target=target,
                                                parameters=parsed_params))

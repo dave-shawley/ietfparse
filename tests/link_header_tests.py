@@ -57,6 +57,11 @@ class UglyParsingTests(unittest.TestCase):
             '<http://example/com>; rel="quoted, with comma", <1>')
         self.assertEqual(parsed[0].parameters, [('rel', 'quoted, with comma')])
 
+    def test_that_title_star_overrides_title_parameter(self):
+        parsed = headers.parse_link_header('<>; title=title; title*=title*')
+        self.assertEqual(parsed[0].parameters,
+                         [('title*', 'title*'), ('title', 'title*')])
+
 
 class WhenParsingMalformedLinkHeader(unittest.TestCase):
 
@@ -74,3 +79,25 @@ class WhenParsingMalformedLinkHeader(unittest.TestCase):
         parsed = headers.parse_link_header('<>; rel=first; rel=ignored')
         self.assertIn(('rel', 'first'), parsed[0].parameters)
         self.assertNotIn(('rel', 'ignored'), parsed[0].parameters)
+
+    def test_that_multiple_media_parameters_are_rejected(self):
+        with self.assertRaises(ValueError):
+            headers.parse_link_header('<first-link>; media=1; media=2')
+
+    def test_that_first_title_parameter_is_used(self):
+        # semantically malformed but handled appropriately
+        # see RFC5988 sec. 5.4
+        parsed = headers.parse_link_header('<>; title=first; title=ignored')
+        self.assertIn(('title', 'first'), parsed[0].parameters)
+        self.assertNotIn(('title', 'ignored'), parsed[0].parameters)
+
+    def test_that_first_title_star_parameter_is_used(self):
+        # semantically malformed but handled appropriately
+        # see RFC5988 sec. 5.4
+        parsed = headers.parse_link_header('<>; title*=first; title*=ignored')
+        self.assertIn(('title*', 'first'), parsed[0].parameters)
+        self.assertNotIn(('title*', 'ignored'), parsed[0].parameters)
+
+    def test_that_multiple_type_parameters_are_rejected(self):
+        with self.assertRaises(ValueError):
+            headers.parse_link_header('<>; type=1; type=2')
