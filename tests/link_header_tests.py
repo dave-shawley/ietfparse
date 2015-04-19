@@ -52,6 +52,11 @@ class UglyParsingTests(unittest.TestCase):
         parsed = headers.parse_link_header('<http://host/matrix;param/>')
         self.assertEqual(parsed[0].target, 'http://host/matrix;param/')
 
+    def test_that_quoted_parameters_can_contain_commas(self):
+        parsed = headers.parse_link_header(
+            '<http://example/com>; rel="quoted, with comma", <1>')
+        self.assertEqual(parsed[0].parameters, [('rel', 'quoted, with comma')])
+
 
 class WhenParsingMalformedLinkHeader(unittest.TestCase):
 

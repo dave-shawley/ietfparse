@@ -112,11 +112,21 @@ def parse_link_header(header_value):
     links = []
 
     def parse_links(buf):
+        # Find quoted parts, these are allowed to contain commas
+        # however, it is much easier to parse if they do not so
+        # replace them with \000.  Since the NUL byte is not allowed
+        # to be there, we can replace it with a comma later on.
+        quoted = re.findall('"([^"]*)"', buf)
+        for segment in quoted:
+            left, match, right = buf.partition(segment)
+            buf = ''.join([left, match.replace(',', '\000'), right])
+
         while buf:
             matched = re.match('<(?P<link>[^>]*)>\s*(?P<params>.*)', buf)
             if matched:
                 groups = matched.groupdict()
                 params, _, buf = groups['params'].partition(',')
+                params = params.replace('\000', ',')  # undo comma hackery
                 if params and not params.startswith(';'):
                     raise ValueError('Param list missing opening semicolon ')
                 yield (groups['link'].strip(),
