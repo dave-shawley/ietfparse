@@ -9,7 +9,6 @@ useful outside of a particular piece of functionality, it
 is fully fleshed out and ends up here.
 
 """
-import collections
 import functools
 
 
@@ -76,4 +75,29 @@ class ContentType(object):
         return self.content_type < other.content_type
 
 
-LinkHeader = collections.namedtuple('LinkHeader', 'target parameters')
+class LinkHeader(object):
+
+    """
+    Represents a single link within a ``Link`` header.
+
+    .. attribute:: target
+
+       The target URL of the link.  This may be a relative URL so
+       the caller may have to make the link absolute by resolving
+       it against a base URL as described in :rfc:`3986#section-5`.
+
+    .. attribute:: parameters
+
+       Possibly empty sequence of name and value pairs.  Parameters
+       are represented as a sequence since a single parameter may
+       occur more than once.
+
+    The :mailheader:`Link` header is specified by :rfc:`5988`.  It
+    is one of the methods used to represent HyperMedia links between
+    HTTP resources.
+
+    """
+
+    def __init__(self, target, parameters=None):
+        self.target = target
+        self.parameters = parameters or []
