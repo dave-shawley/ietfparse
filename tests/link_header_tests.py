@@ -2,7 +2,7 @@ import unittest
 
 from fluenttest import test_case
 
-from ietfparse import headers
+from ietfparse import errors, headers
 
 
 class WhenParsingSimpleLinkHeader(test_case.TestCase, unittest.TestCase):
@@ -66,11 +66,11 @@ class UglyParsingTests(unittest.TestCase):
 class WhenParsingMalformedLinkHeader(unittest.TestCase):
 
     def test_that_value_error_when_url_brackets_are_missing(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(errors.MalformedLinkValue):
             headers.parse_link_header('http://foo.com; rel=wrong')
 
     def test_that_first_semicolon_is_required(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(errors.MalformedLinkValue):
             headers.parse_link_header('<http://foo.com> rel="still wrong"')
 
     def test_that_first_rel_parameter_is_used(self):
@@ -81,7 +81,7 @@ class WhenParsingMalformedLinkHeader(unittest.TestCase):
         self.assertNotIn(('rel', 'ignored'), parsed[0].parameters)
 
     def test_that_multiple_media_parameters_are_rejected(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(errors.MalformedLinkValue):
             headers.parse_link_header('<first-link>; media=1; media=2')
 
     def test_that_first_title_parameter_is_used(self):
@@ -99,5 +99,5 @@ class WhenParsingMalformedLinkHeader(unittest.TestCase):
         self.assertNotIn(('title*', 'ignored'), parsed[0].parameters)
 
     def test_that_multiple_type_parameters_are_rejected(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(errors.MalformedLinkValue):
             headers.parse_link_header('<>; type=1; type=2')

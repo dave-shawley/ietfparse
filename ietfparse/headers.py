@@ -12,7 +12,7 @@ mentioned.
 import functools
 import re
 
-from . import datastructures
+from . import datastructures, errors
 
 
 _COMMENT_RE = re.compile(r'\(.*\)')
@@ -106,6 +106,8 @@ def parse_link_header(header_value):
     :param str header_value: the header value to parse
     :return: a sequence of :class:`~ietfparse.datastructures.LinkHeader`
         instances
+    :raises ietfparse.errors.MalformedLinkValue:
+        if the specified `header_value` cannot be parsed
 
     """
     sanitized = _remove_comments(header_value)
@@ -128,12 +130,13 @@ def parse_link_header(header_value):
                 params, _, buf = groups['params'].partition(',')
                 params = params.replace('\000', ',')  # undo comma hackery
                 if params and not params.startswith(';'):
-                    raise ValueError('Param list missing opening semicolon ')
+                    raise errors.MalformedLinkValue(
+                        'Param list missing opening semicolon ')
                 yield (groups['link'].strip(),
                        [p.strip() for p in params[1:].split(';') if p])
                 buf = buf.strip()
             else:
-                raise ValueError('Malformed link header', buf)
+                raise errors.MalformedLinkValue('Malformed link header', buf)
 
     for target, param_list in parse_links(sanitized):
         # a few validations from RFC5988
@@ -155,11 +158,13 @@ def parse_link_header(header_value):
                 found_rel = True
             if name == 'media':
                 if found_media:
-                    raise ValueError('More than one media parameter present')
+                    raise errors.MalformedLinkValue(
+                        'More than one media parameter present')
                 found_media = True
             if name == 'type':
                 if found_type:
-                    raise ValueError('More than one type parameter present')
+                    raise errors.MalformedLinkValue(
+                        'More than one type parameter present')
                 found_type = True
             if name == 'title':
                 if title_value is None:
