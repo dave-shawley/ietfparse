@@ -9,6 +9,7 @@ useful outside of a particular piece of functionality, it
 is fully fleshed out and ends up here.
 
 """
+import collections
 import functools
 
 
@@ -73,3 +74,6 @@ class ContentType(object):
         if self.content_type == other.content_type:
             return self.content_subtype < other.content_subtype
         return self.content_type < other.content_type
+
+
+LinkHeader = collections.namedtuple('LinkHeader', 'target parameters')

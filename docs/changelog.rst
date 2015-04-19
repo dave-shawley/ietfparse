@@ -1,6 +1,12 @@
 Changelog
 ---------
 
+* Next Release
+
+  - Added support for :rfc:`5988` ``Link`` headers.
+    This consists of ``headers.parse_link_header`` and
+    ``datastructures.LinkHeader``
+
 * 1.1.1 (10-Feb-2015)
 
   - Removed ``setupext`` module since it was causing problems with

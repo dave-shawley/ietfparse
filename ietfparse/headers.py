@@ -9,7 +9,6 @@ of the module.  They are not designed for direct usage unless otherwise
 mentioned.
 
 """
-
 import functools
 import re
 
@@ -24,6 +23,24 @@ def _remove_comments(value):
     return _COMMENT_RE.sub('', value)
 
 
+def parse_parameter_list(parameter_list, normalized_parameter_values=True):
+    """
+    Parse a named parameter list in the "common" format.
+
+    :param parameter_list:
+    :param bool normalized_parameter_values:
+    :return: a sequence containing the name to value pairs
+
+    """
+    parameters = []
+    for param in parameter_list:
+        name, value = param.strip().split('=')
+        if normalized_parameter_values:
+            value = value.lower()
+        parameters.append((name, value.strip('"').strip()))
+    return parameters
+
+
 def parse_content_type(content_type, normalize_parameter_values=True):
     """Parse a content type like header.
 
@@ -36,15 +53,10 @@ def parse_content_type(content_type, normalize_parameter_values=True):
     """
     parts = _remove_comments(content_type).split(';')
     content_type, content_subtype = parts.pop(0).split('/')
-    parameters = {}
-    for type_parameter in parts:
-        name, value = type_parameter.split('=')
-        if normalize_parameter_values:
-            value = value.lower()
-        parameters[name.strip()] = value.strip('"').strip()
+    parameters = parse_parameter_list(parts, normalize_parameter_values)
 
     return datastructures.ContentType(content_type, content_subtype,
-                                      parameters)
+                                      dict(parameters))
 
 
 def parse_http_accept_header(header_value):
@@ -85,3 +97,47 @@ def parse_http_accept_header(header_value):
         return 1
 
     return sorted(headers, key=functools.cmp_to_key(ordering))
+
+
+def parse_link_header(header_value):
+    """
+    Parse a HTTP Link header.
+
+    :param str header_value: the header value to parse
+    :return: a sequence of :class:`~ietfparse.datastructures.LinkHeader`
+        instances
+
+    """
+    sanitized = _remove_comments(header_value)
+    links = []
+
+    def parse_links(buf):
+        while buf:
+            matched = re.match('<(?P<link>[^>]*)>\s*(?P<params>.*)', buf)
+            if matched:
+                groups = matched.groupdict()
+                params, _, buf = groups['params'].partition(',')
+                if params and not params.startswith(';'):
+                    raise ValueError('Param list missing opening semicolon ')
+                yield (groups['link'].strip(),
+                       [p.strip() for p in params[1:].split(';') if p])
+                buf = buf.strip()
+            else:
+                raise ValueError('Malformed link header', buf)
+
+    for target, param_list in parse_links(sanitized):
+        # RFC5988, sec. 5.3 - the first "rel" is used if multiple
+        # are present
+        found_rel = False
+        parsed_params = []
+        for name, value in parse_parameter_list(param_list):
+            if name == 'rel':
+                if not found_rel:
+                    parsed_params.append((name, value))
+                    found_rel = True
+            else:
+                parsed_params.append((name, value))
+
+        links.append(datastructures.LinkHeader(target=target,
+                                               parameters=parsed_params))
+    return links
