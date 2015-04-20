@@ -1,7 +1,7 @@
 ietfparse
 =========
 
-|Version| |Downloads| |Status| |License|
+|Version| |Downloads| |Status| |Coverage| |License|
 
 Wait... Why? What??
 -------------------
@@ -63,5 +63,7 @@ Ok... Where?
    :target: https://pypi.python.org/pypi/ietfparse
 .. |Status| image:: https://travis-ci.org/dave-shawley/ietfparse.svg
    :target: https://travis-ci.org/dave-shawley/ietfparse
+.. |Coverage| image:: https://coveralls.io/repos/dave-shawley/ietfparse/badge.svg
+   :target: https://coveralls.io/r/dave-shawley/ietfparse
 .. |License| image:: https://pypip.in/license/ietfparse/badge.svg
    :target: https://ietfparse.readthedocs.org/
