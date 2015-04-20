@@ -31,7 +31,7 @@ try:
         urlsplit,
         urlunsplit,
     )
-except ImportError:
+except ImportError:  # pragma: no cover, coverage with tox
     from urllib import (
         quote,
         splitnport,

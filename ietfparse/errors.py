@@ -16,3 +16,8 @@ class RootException(Exception):
 class NoMatch(RootException):
     """No match was found when selecting a content type."""
     pass
+
+
+class MalformedLinkValue(RootException):
+    """Value specified is not a valid link header."""
+    pass

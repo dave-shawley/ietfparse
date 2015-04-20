@@ -9,11 +9,10 @@ of the module.  They are not designed for direct usage unless otherwise
 mentioned.
 
 """
-
 import functools
 import re
 
-from . import datastructures
+from . import datastructures, errors, _helpers
 
 
 _COMMENT_RE = re.compile(r'\(.*\)')
@@ -22,6 +21,24 @@ _COMMENT_RE = re.compile(r'\(.*\)')
 def _remove_comments(value):
     """:rtype: str"""  # makes PyCharm happy
     return _COMMENT_RE.sub('', value)
+
+
+def parse_parameter_list(parameter_list, normalized_parameter_values=True):
+    """
+    Parse a named parameter list in the "common" format.
+
+    :param parameter_list:
+    :param bool normalized_parameter_values:
+    :return: a sequence containing the name to value pairs
+
+    """
+    parameters = []
+    for param in parameter_list:
+        name, value = param.strip().split('=')
+        if normalized_parameter_values:
+            value = value.lower()
+        parameters.append((name, value.strip('"').strip()))
+    return parameters
 
 
 def parse_content_type(content_type, normalize_parameter_values=True):
@@ -36,15 +53,10 @@ def parse_content_type(content_type, normalize_parameter_values=True):
     """
     parts = _remove_comments(content_type).split(';')
     content_type, content_subtype = parts.pop(0).split('/')
-    parameters = {}
-    for type_parameter in parts:
-        name, value = type_parameter.split('=')
-        if normalize_parameter_values:
-            value = value.lower()
-        parameters[name.strip()] = value.strip('"').strip()
+    parameters = parse_parameter_list(parts, normalize_parameter_values)
 
     return datastructures.ContentType(content_type, content_subtype,
-                                      parameters)
+                                      dict(parameters))
 
 
 def parse_http_accept_header(header_value):
@@ -85,3 +97,60 @@ def parse_http_accept_header(header_value):
         return 1
 
     return sorted(headers, key=functools.cmp_to_key(ordering))
+
+
+def parse_link_header(header_value, strict=True):
+    """
+    Parse a HTTP Link header.
+
+    :param str header_value: the header value to parse
+    :param bool strict: set this to ``False`` to disable semantic
+        checking.  Syntactical errors will still raise an exception.
+        Use this if you want to receive all parameters.
+    :return: a sequence of :class:`~ietfparse.datastructures.LinkHeader`
+        instances
+    :raises ietfparse.errors.MalformedLinkValue:
+        if the specified `header_value` cannot be parsed
+
+    """
+    sanitized = _remove_comments(header_value)
+    links = []
+
+    def parse_links(buf):
+        # Find quoted parts, these are allowed to contain commas
+        # however, it is much easier to parse if they do not so
+        # replace them with \000.  Since the NUL byte is not allowed
+        # to be there, we can replace it with a comma later on.
+        # A similar trick is performed on semicolons with \001.
+        quoted = re.findall('"([^"]*)"', buf)
+        for segment in quoted:
+            left, match, right = buf.partition(segment)
+            match = match.replace(',', '\000')
+            match = match.replace(';', '\001')
+            buf = ''.join([left, match, right])
+
+        while buf:
+            matched = re.match('<(?P<link>[^>]*)>\s*(?P<params>.*)', buf)
+            if matched:
+                groups = matched.groupdict()
+                params, _, buf = groups['params'].partition(',')
+                params = params.replace('\000', ',')  # undo comma hackery
+                if params and not params.startswith(';'):
+                    raise errors.MalformedLinkValue(
+                        'Param list missing opening semicolon ')
+
+                yield (groups['link'].strip(),
+                       [p.replace('\001', ';').strip()
+                        for p in params[1:].split(';') if p])
+                buf = buf.strip()
+            else:
+                raise errors.MalformedLinkValue('Malformed link header', buf)
+
+    for target, param_list in parse_links(sanitized):
+        parser = _helpers.ParameterParser(strict=strict)
+        for name, value in parse_parameter_list(param_list):
+            parser.add_value(name, value)
+
+        links.append(datastructures.LinkHeader(target=target,
+                                               parameters=parser.values))
+    return links

@@ -52,3 +52,30 @@ to quality and specificity, selecting a matching content type is not as
 easy as traversing the list in order.  The full algorithm for selecting the
 most appropriate content type is described in :rfc:`7231` and is fully
 implemented by :func:`~ietfparse.algorithms.select_content_type`.
+
+Link
+----
+:func:`parse_link_header` parses an HTTP :mailheader:`Link` header as
+described in :rfc:`5988` into a sequence of
+:class:`ietfparse.datastructures.LinkHeader` instances.
+
+>>> from ietfparse import headers
+>>> parsed = headers.parse_link_header(
+...     '<http://example.com/TheBook/chapter2>; rel="previous"; '
+...     'title="previous chapter"')
+>>> parsed[0].target
+'http://example.com/TheBook/chapter2'
+>>> parsed[0].parameters
+[('rel', 'previous'), ('title', 'previous chapter')]
+
+Notice that the parameter values are returned as a list of name and value
+tuples.  This is by design and required by the RFC to support the
+``hreflang`` parameter as specified:
+
+   The "hreflang" parameter, when present, is a hint indicating what the
+   language of the result of dereferencing the link should be.  Note
+   that this is only a hint; for example, it does not override the
+   Content-Language header of a HTTP response obtained by actually
+   following the link.  Multiple "hreflang" parameters on a single link-
+   value indicate that multiple languages are available from the
+   indicated resource.
