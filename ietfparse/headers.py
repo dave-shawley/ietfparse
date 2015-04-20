@@ -121,10 +121,13 @@ def parse_link_header(header_value, strict=True):
         # however, it is much easier to parse if they do not so
         # replace them with \000.  Since the NUL byte is not allowed
         # to be there, we can replace it with a comma later on.
+        # A similar trick is performed on semicolons with \001.
         quoted = re.findall('"([^"]*)"', buf)
         for segment in quoted:
             left, match, right = buf.partition(segment)
-            buf = ''.join([left, match.replace(',', '\000'), right])
+            match = match.replace(',', '\000')
+            match = match.replace(';', '\001')
+            buf = ''.join([left, match, right])
 
         while buf:
             matched = re.match('<(?P<link>[^>]*)>\s*(?P<params>.*)', buf)
@@ -135,8 +138,10 @@ def parse_link_header(header_value, strict=True):
                 if params and not params.startswith(';'):
                     raise errors.MalformedLinkValue(
                         'Param list missing opening semicolon ')
+
                 yield (groups['link'].strip(),
-                       [p.strip() for p in params[1:].split(';') if p])
+                       [p.replace('\001', ';').strip()
+                        for p in params[1:].split(';') if p])
                 buf = buf.strip()
             else:
                 raise errors.MalformedLinkValue('Malformed link header', buf)

@@ -57,6 +57,12 @@ class UglyParsingTests(unittest.TestCase):
             '<http://example/com>; rel="quoted, with comma", <1>')
         self.assertEqual(parsed[0].parameters, [('rel', 'quoted, with comma')])
 
+    def test_that_quoted_parameters_can_contain_semicolons(self):
+        parsed = headers.parse_link_header(
+            '<http://example/com>; rel="quoted; with semicolon", <1>')
+        self.assertEqual(parsed[0].parameters,
+                         [('rel', 'quoted; with semicolon')])
+
     def test_that_title_star_overrides_title_parameter(self):
         parsed = headers.parse_link_header('<>; title=title; title*=title*')
         self.assertEqual(parsed[0].parameters,
