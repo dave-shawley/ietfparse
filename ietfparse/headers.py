@@ -12,7 +12,7 @@ mentioned.
 import functools
 import re
 
-from . import datastructures, errors
+from . import datastructures, errors, _helpers
 
 
 _COMMENT_RE = re.compile(r'\(.*\)')
@@ -99,11 +99,14 @@ def parse_http_accept_header(header_value):
     return sorted(headers, key=functools.cmp_to_key(ordering))
 
 
-def parse_link_header(header_value):
+def parse_link_header(header_value, strict=True):
     """
     Parse a HTTP Link header.
 
     :param str header_value: the header value to parse
+    :param bool strict: set this to ``False`` to disable semantic
+        checking.  Syntactical errors will still raise an exception.
+        Use this if you want to receive all parameters.
     :return: a sequence of :class:`~ietfparse.datastructures.LinkHeader`
         instances
     :raises ietfparse.errors.MalformedLinkValue:
@@ -139,50 +142,10 @@ def parse_link_header(header_value):
                 raise errors.MalformedLinkValue('Malformed link header', buf)
 
     for target, param_list in parse_links(sanitized):
-        # a few validations from RFC5988
-        # - sec. 5.3:
-        #   - the first "rel" is used when multiple are present
-        # - sec. 5.4:
-        #   - there MUST NOT be more than one media parameter
-        #   - the first "title" is used when multiple are present
-        #   - if both title and title* are present, then processors
-        #     SHOULD use the title* parameter
-        #   - there MUST NOT be more than one type parameter
-        parsed_params = []
-        title_value, title_star_value = None, None
-        found_rel, found_media, found_type = False, False, False
+        parser = _helpers.ParameterParser(strict=strict)
         for name, value in parse_parameter_list(param_list):
-            if name == 'rel':
-                if found_rel:
-                    continue
-                found_rel = True
-            if name == 'media':
-                if found_media:
-                    raise errors.MalformedLinkValue(
-                        'More than one media parameter present')
-                found_media = True
-            if name == 'type':
-                if found_type:
-                    raise errors.MalformedLinkValue(
-                        'More than one type parameter present')
-                found_type = True
-            if name == 'title':
-                if title_value is None:
-                    title_value = value
-                continue
-            if name == 'title*':
-                if title_star_value is None:
-                    title_star_value = value
-                continue
-            parsed_params.append((name, value))
-
-        if title_star_value is not None:
-            parsed_params.append(('title*', title_star_value))
-            if title_value is not None:
-                parsed_params.append(('title', title_star_value))
-        elif title_value is not None:
-            parsed_params.append(('title', title_value))
+            parser.add_value(name, value)
 
         links.append(datastructures.LinkHeader(target=target,
-                                               parameters=parsed_params))
+                                               parameters=parser.values))
     return links

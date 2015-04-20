@@ -101,3 +101,12 @@ class WhenParsingMalformedLinkHeader(unittest.TestCase):
     def test_that_multiple_type_parameters_are_rejected(self):
         with self.assertRaises(errors.MalformedLinkValue):
             headers.parse_link_header('<>; type=1; type=2')
+
+    def test_that_semantic_tests_can_be_turned_off(self):
+        parsed = headers.parse_link_header(
+            '<multiple-titles>;title=one;title=two;title*=three;title*=four, '
+            '<multiple-rels>; rel=first; rel=second,'
+            '<multiple-medias>; media=one; media=two',
+            strict=False,
+        )
+        self.assertEqual(len(parsed), 3)
