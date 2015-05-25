@@ -1,6 +1,6 @@
 import unittest
 
-from ietfparse import algorithms, errors, headers
+from ietfparse import algorithms, datastructures, errors, headers
 
 
 class ContentNegotiationTestCase(unittest.TestCase):
@@ -109,3 +109,19 @@ class WhenUsingRfc7231Examples(ContentNegotiationTestCase):
             'text/html;level=3', 'text/html;level=3',
             matching_pattern='text/html',
         )
+
+
+class WhenSelectingWithRawContentTypes(unittest.TestCase):
+
+    def test_that_raw_content_type_has_highest_quality(self):
+        selected, matched = algorithms.select_content_type(
+            [
+                datastructures.ContentType('type', 'preferred')
+            ],
+            [
+                datastructures.ContentType('type', 'acceptable'),
+                datastructures.ContentType('type', 'almost-perfect'),
+                datastructures.ContentType('type', 'preferred'),
+            ],
+        )
+        self.assertEqual(selected.content_subtype, 'preferred')
