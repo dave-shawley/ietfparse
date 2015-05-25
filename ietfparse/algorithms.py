@@ -126,12 +126,15 @@ def select_content_type(requested, available):
                     else:
                         self.parameter_distance += 1
 
+    def extract_quality(obj):
+        return getattr(obj, 'quality', 1.0)
+
     matches = []
-    for pattern in sorted(requested, key=attrgetter('quality'), reverse=True):
+    for pattern in sorted(requested, key=extract_quality, reverse=True):
         for candidate in sorted(available):
             if _content_type_matches(candidate, pattern):
                 if candidate == pattern:  # exact match!!!
-                    if pattern.quality == 0.0:
+                    if extract_quality(pattern) == 0.0:
                         raise errors.NoMatch  # quality of 0 means NO
                     return candidate, pattern
                 matches.append(Match(candidate, pattern))
