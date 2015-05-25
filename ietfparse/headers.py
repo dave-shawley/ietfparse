@@ -3,6 +3,9 @@ Functions for parsing headers.
 
 - :func:`.parse_content_type`: parse a ``Content-Type`` value
 - :func:`.parse_http_accept_header`: parse an ``Accept`` style header
+- :func:`.parse_link_header`: parse a :rfc:`5988` ``Link`` header
+- :func:`.parse_list_header`: parse a comma-separated list that is
+  present in so many headers
 
 This module also defines classes that might be of some use outside
 of the module.  They are not designed for direct usage unless otherwise
@@ -16,6 +19,7 @@ from . import datastructures, errors, _helpers
 
 
 _COMMENT_RE = re.compile(r'\(.*\)')
+_QUOTED_SEGMENT_RE = re.compile('"([^"]*)"')
 
 
 def _remove_comments(value):
@@ -83,7 +87,7 @@ def parse_http_accept_header(header_value):
 
     """
     headers = [parse_content_type(header)
-               for header in header_value.split(',')]
+               for header in parse_list_header(header_value)]
     for header in headers:
         header.quality = float(header.parameters.pop('q', 1.0))
 
@@ -154,3 +158,19 @@ def parse_link_header(header_value, strict=True):
         links.append(datastructures.LinkHeader(target=target,
                                                parameters=parser.values))
     return links
+
+
+def parse_list_header(value):
+    """
+    Parse a comma-separated list header.
+
+    :param str value: header value to split into elements
+    :return: list of header elements as strings
+
+    """
+    segments = _QUOTED_SEGMENT_RE.findall(value)
+    for segment in segments:
+        left, match, right = value.partition(segment)
+        value = ''.join([left, match.replace(',', '\000'), right])
+    return [x.strip().strip('"').replace('\000', ',')
+            for x in value.split(',')]

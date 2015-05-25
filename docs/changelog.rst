@@ -1,6 +1,11 @@
 Changelog
 ---------
 
+* Next Release
+
+  - Added ``headers.parse_list_header`` which parses generic comma-
+    separated list headers with support for quoted parts.
+
 * 1.2.1 (25-May-2015)
 
   - ``select_content_type`` claims to work with ``ContentType``
