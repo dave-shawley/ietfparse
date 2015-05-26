@@ -7,5 +7,6 @@
    header-parsing
    header-processing
    reference
+   rfcs
    contributing
    changelog
