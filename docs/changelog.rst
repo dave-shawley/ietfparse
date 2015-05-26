@@ -5,6 +5,8 @@ Changelog
 
   - Added ``headers.parse_list_header`` which parses generic comma-
     separated list headers with support for quoted parts.
+  - Added ``headers.parse_accept_charset`` which parses an HTTP
+    ``Accept-Charset`` header into a sorted list.
 
 * 1.2.1 (25-May-2015)
 

@@ -2,10 +2,11 @@
 Functions for parsing headers.
 
 - :func:`.parse_content_type`: parse a ``Content-Type`` value
-- :func:`.parse_http_accept_header`: parse an ``Accept`` style header
+- :func:`.parse_http_accept_header`: parse an ``Accept`` header
 - :func:`.parse_link_header`: parse a :rfc:`5988` ``Link`` header
 - :func:`.parse_list_header`: parse a comma-separated list that is
   present in so many headers
+- :func:`.parse_accept_charset`: parse a ``Accept-Charset`` header
 
 This module also defines classes that might be of some use outside
 of the module.  They are not designed for direct usage unless otherwise
@@ -38,10 +39,12 @@ def parse_parameter_list(parameter_list, normalized_parameter_values=True):
     """
     parameters = []
     for param in parameter_list:
-        name, value = param.strip().split('=')
-        if normalized_parameter_values:
-            value = value.lower()
-        parameters.append((name, value.strip('"').strip()))
+        param = param.strip()
+        if param:
+            name, value = param.split('=')
+            if normalized_parameter_values:
+                value = value.lower()
+            parameters.append((name, value.strip('"').strip()))
     return parameters
 
 
@@ -174,3 +177,46 @@ def parse_list_header(value):
         value = ''.join([left, match.replace(',', '\000'), right])
     return [x.strip().strip('"').replace('\000', ',')
             for x in value.split(',')]
+
+
+def parse_accept_charset(header_value):
+    """
+    Parse the ``Accept-Charset`` header into a sorted list.
+
+    :param str header_value: header value to parse
+
+    :return: list of character sets sorted from highest to lowest
+        priority
+
+    The `Accept-Charset`_ header is a list of character set names with
+    optional *quality* values.  The quality value indicates the strength
+    of the preference where 1.0 is a strong preference and less than 0.001
+    is outright rejection by the client.
+
+    .. note::
+
+       Character sets that are rejected by setting the quality value
+       to less than 0.001.  If a wildcard is included in the header,
+       then it will appear **BEFORE** values that are rejected.
+
+    .. _Accept-Charset: https://tools.ietf.org/html/rfc7231#section-5.3.3
+
+    """
+    found_wildcard = False
+    values, rejected_values = [], []
+    for raw_str in parse_list_header(header_value):
+        charset, _, parameter_str = raw_str.replace(' ', '').partition(';')
+        if charset == '*':
+            found_wildcard = True
+            continue
+        params = dict(parse_parameter_list(parameter_str.split(';')))
+        quality = float(params.pop('q', '1.0'))
+        if quality < 0.001:
+            rejected_values.append(charset)
+        else:
+            values.append((quality, charset))
+    parsed = [value[1] for value in reversed(sorted(values))]
+    if found_wildcard:
+        parsed.append('*')
+    parsed.extend(rejected_values)
+    return parsed
