@@ -1,7 +1,7 @@
 ietfparse
 =========
 
-|Version| |Downloads| |Status| |Coverage| |License|
+|Version| |ReadTheDocs| |Travis| |Coverage| |CodeClimate|
 
 Wait... Why? What??
 -------------------
@@ -57,13 +57,13 @@ Ok... Where?
 | Issues        | https://github.com/dave-shawley/ietfparse       |
 +---------------+-------------------------------------------------+
 
-.. |Version| image:: https://pypip.in/version/ietfparse/badge.svg
-   :target: https://pypi.python.org/pypi/ietfparse
-.. |Downloads| image:: https://pypip.in/d/ietfparse/badge.svg
-   :target: https://pypi.python.org/pypi/ietfparse
-.. |Status| image:: https://travis-ci.org/dave-shawley/ietfparse.svg
-   :target: https://travis-ci.org/dave-shawley/ietfparse
+.. |CodeClimate| image:: https://codeclimate.com/github/dave-shawley/ietfparse/badges/gpa.svg
+   :target: https://codeclimate.com/github/dave-shawley/ietfparse/
 .. |Coverage| image:: https://coveralls.io/repos/dave-shawley/ietfparse/badge.svg
    :target: https://coveralls.io/r/dave-shawley/ietfparse
-.. |License| image:: https://pypip.in/license/ietfparse/badge.svg
+.. |ReadTheDocs| image:: https://readthedocs.org/projects/ietfparse/badge/
    :target: https://ietfparse.readthedocs.org/
+.. |Travis| image:: https://travis-ci.org/dave-shawley/ietfparse.svg
+   :target: https://travis-ci.org/dave-shawley/ietfparse
+.. |Version| image:: https://badge.fury.io/py/ietfparse.svg
+   :target: http://badge.fury.io/py/ietfparse

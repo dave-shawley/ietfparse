@@ -79,3 +79,32 @@ tuples.  This is by design and required by the RFC to support the
    following the link.  Multiple "hreflang" parameters on a single link-
    value indicate that multiple languages are available from the
    indicated resource.
+
+Accept-Charset
+--------------
+:func:`parse_accept_charset` parses the HTTP :mailheader:`Accept-Charset`
+header into a sorted sequence of character set identifiers.  Character set
+identifiers are simple tokens with an optional quality value that is the
+strength of the preference from most preferred (1.0) to rejection (0.0).
+After the header is parsed and sorted, the quality values are removed and
+the token list is returned.
+
+>>> from ietfparse import headers
+>>> charsets = headers.parse_accept_charset('latin1;q=0.5, utf-8;q=1.0, '
+...                                         'us-ascii;q=0.1, ebcdic;q=0.0')
+['utf-8', 'latin1', 'us-ascii', 'ebcdic']
+
+The wildcard character set if present, will be sorted towards the end of the
+list.  If both a wildcard and rejected values are present, then the wildcard
+will occur *before* the rejected values.
+
+>>> from ietfparse import headers
+>>> charsets = headers.parse_accept_charset('acceptable, rejected;q=0, *')
+['acceptable', '*', 'rejected']
+
+.. note::
+
+   The only attribute that is allowed to be specified per the RFC is the
+   quality value.  If additional parameters are included, they are not
+   included in the response from this function.  More specifically, the
+   returned list contains only the character set strings.

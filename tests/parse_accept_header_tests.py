@@ -50,3 +50,35 @@ class WhenParsingHttpAcceptHeaderWithoutQualities(
 
     def test_that_least_specific_wildcard_is_least_preferred(self):
         self.assertEqual(self.parsed[3], datastructures.ContentType('*', '*'))
+
+
+class WhenParsingAcceptCharsetHeader(unittest.TestCase):
+
+    def test_that_simple_wildcard_parses(self):
+        self.assertEqual(headers.parse_accept_charset('*'), ['*'])
+
+    def test_that_response_sorted_by_quality(self):
+        self.assertEqual(
+            headers.parse_accept_charset('us-ascii;q=0.1, latin1;q=0.5,'
+                                         'utf-8; q=1.0'),
+            ['utf-8', 'latin1', 'us-ascii'],
+        )
+
+    def test_that_unspecified_quality_is_treated_as_highest(self):
+        self.assertEqual(
+            headers.parse_accept_charset('us-ascii;q=0.1,utf-8,latin1;q=0.8'),
+            ['utf-8', 'latin1', 'us-ascii'],
+        )
+
+    def test_that_wildcard_sorts_before_rejected_character_sets(self):
+        self.assertEqual(
+            headers.parse_accept_charset('latin1;q=0.5, utf-8;q=1.0,'
+                                         'us-ascii;q=0.1, ebcdic;q=0, *'),
+            ['utf-8', 'latin1', 'us-ascii', '*', 'ebcdic'],
+        )
+
+    def test_that_quality_below_0_001_is_rejected(self):
+        self.assertEqual(
+            headers.parse_accept_charset('acceptable, rejected;q=0.0009, *'),
+            ['acceptable', '*', 'rejected'],
+        )
