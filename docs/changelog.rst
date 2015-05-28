@@ -3,7 +3,7 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
-* Next Release
+* `1.2.2`_ (27-May-2015)
 
   - Added :func:`headers.parse_list_header` which parses generic comma-
     separated list headers with support for quoted parts.
@@ -49,3 +49,4 @@ Changelog
 .. _1.1.1: https://github.com/dave-shawley/ietfparse/compare/1.1.0...1.1.1
 .. _1.2.0: https://github.com/dave-shawley/ietfparse/compare/1.1.1...1.2.0
 .. _1.2.1: https://github.com/dave-shawley/ietfparse/compare/1.2.0...1.2.1
+.. _1.2.2: https://github.com/dave-shawley/ietfparse/compare/1.2.1...1.2.2
