@@ -3,6 +3,21 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
+* `1.3.0`_ (11-Aug-2016)
+
+  - Added :func:`headers.parse_cache_control` which parses HTTP `Cache-Control`_
+    header values into a dictionary.
+  - Renamed :func:`headers.parse_http_accept_header` to :func:`headers.parse_accept`,
+    adding a wrapper function that raises a deprecation function when invoking
+    :func:`headers.parse_http_accept_header`.
+  - Renamed :func:`headers.parse_link_header` to :func:`headers.parse_link`,
+    adding a wrapper function that raises a deprecation function when invoking
+    :func:`headers.parse_link_header`.
+  - Renamed :func:`headers.parse_list_header` to :func:`headers.parse_list`,
+    adding a wrapper function that raises a deprecation function when invoking
+    :func:`headers.parse_list_header`.
+
+
 * `1.2.2`_ (27-May-2015)
 
   - Added :func:`headers.parse_list_header` which parses generic comma-
@@ -44,9 +59,11 @@ Changelog
       - :func:`headers.parse_http_accept_header`
 
 .. _Accept-Charset: https://tools.ietf.org/html/rfc7231#section-5.3.3
+.. _Cache-Control: https://tools.ietf.org/html/rfc7231#section-5.2
 
 .. _1.1.0: https://github.com/dave-shawley/ietfparse/compare/1.0.0...1.1.0
 .. _1.1.1: https://github.com/dave-shawley/ietfparse/compare/1.1.0...1.1.1
 .. _1.2.0: https://github.com/dave-shawley/ietfparse/compare/1.1.1...1.2.0
 .. _1.2.1: https://github.com/dave-shawley/ietfparse/compare/1.2.0...1.2.1
 .. _1.2.2: https://github.com/dave-shawley/ietfparse/compare/1.2.1...1.2.2
+.. _1.3.0: https://github.com/dave-shawley/ietfparse/compare/1.2.2...1.3.0

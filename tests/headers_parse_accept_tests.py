@@ -11,7 +11,7 @@ class WhenParsingSimpleHttpAcceptHeader(test_case.TestCase, unittest.TestCase):
 
     @classmethod
     def act(cls):
-        cls.parsed = headers.parse_http_accept_header(
+        cls.parsed = headers.parse_accept(
             'audio/*;q=0.2, audio/basic')
 
     def test_that_both_items_are_returned(self):
@@ -32,7 +32,7 @@ class WhenParsingHttpAcceptHeaderWithoutQualities(
 
     @classmethod
     def act(cls):
-        cls.parsed = headers.parse_http_accept_header(
+        cls.parsed = headers.parse_accept(
             'text/*, text/plain, text/plain;format=flowed, */*')
 
     def test_that_most_specific_value_is_first(self):
