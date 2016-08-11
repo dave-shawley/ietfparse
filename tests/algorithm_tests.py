@@ -21,7 +21,7 @@ class WhenUsingProactiveContentNegotiation(ContentNegotiationTestCase):
     @classmethod
     def setUpClass(cls):
         super(WhenUsingProactiveContentNegotiation, cls).setUpClass()
-        cls.requested.extend(headers.parse_http_accept_header(
+        cls.requested.extend(headers.parse_accept(
             'application/vnd.example.com+json;version=2, '
             'application/vnd.example.com+json;version=1;q=0.9, '
             'application/json;q=0.7, '
@@ -78,7 +78,7 @@ class WhenUsingRfc7231Examples(ContentNegotiationTestCase):
     @classmethod
     def setUpClass(cls):
         super(WhenUsingRfc7231Examples, cls).setUpClass()
-        cls.requested.extend(headers.parse_http_accept_header(
+        cls.requested.extend(headers.parse_accept(
             'text/*;q=0.3, text/html;q=0.7, text/html;level=1, '
             'text/html;level=2;q=0.4, */*;q=0.5'
         ))

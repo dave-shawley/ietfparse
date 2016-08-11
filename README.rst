@@ -24,7 +24,7 @@ Here's a sample of the code that this library lets you write::
     from ietfparse import algorithms, headers
 
     def negotiate_versioned_representation(request, handler, data_dict):
-        requested = headers.parse_http_accept_header(request.headers['Accept'])
+        requested = headers.parse_accept(request.headers['Accept'])
         selected = algorithms.select_content_type(requested, [
             headers.parse_content_type('application/example+json; v=1'),
             headers.parse_content_type('application/example+json; v=2'),
