@@ -5,7 +5,7 @@ Header Parsing
 
 Accept
 ------
-:func:`parse_accept` parses the HTTP :httpheader:`Accept` header
+:func:`parse_accept` parses the HTTP :http:header:`Accept` header
 into a sorted list of :class:`ietfparse.datastructures.ContentType` instances.
 The list is sorted according to the specified quality values. Elements with
 the same quality value are ordered with the *most-specific* value first.  The
@@ -27,7 +27,7 @@ implemented by :func:`~ietfparse.algorithms.select_content_type`.
 
 Accept-Charset
 --------------
-:func:`parse_accept_charset` parses the HTTP :httpheader:`Accept-Charset`
+:func:`parse_accept_charset` parses the HTTP :http:header:`Accept-Charset`
 header into a sorted sequence of character set identifiers.  Character set
 identifiers are simple tokens with an optional quality value that is the
 strength of the preference from most preferred (1.0) to rejection (0.0).
@@ -56,7 +56,7 @@ will occur *before* the rejected values.
 
 Accept-Encoding
 ---------------
-:func:`parse_accept_encoding` parses the HTTP :httpheader:`Accept-Encoding`
+:func:`parse_accept_encoding` parses the HTTP :http:header:`Accept-Encoding`
 header into a sorted sequence of encodings.  Encodings are simple tokens
 with an optional quality value that is the strength of the preference from
 most preferred (1.0) to rejection (0.0). After the header is parsed and sorted,
@@ -83,7 +83,7 @@ will occur *before* the rejected values.
 
 Accept-Language
 ---------------
-:func:`parse_accept_language` parses the HTTP :httpheader:`Accept-Language`
+:func:`parse_accept_language` parses the HTTP :http:header:`Accept-Language`
 header into a sorted sequence of languages.  Languages are simple tokens
 with an optional quality value that is the strength of the preference from
 most preferred (1.0) to rejection (0.0). After the header is parsed and sorted,
@@ -122,7 +122,7 @@ in the dictionary with a value of ``True`` if set.
 
 Content-Type
 ------------
-:func:`parse_content_type` parses a MIME or HTTP :mailheader:`Content-Type`
+:func:`parse_content_type` parses a MIME or HTTP :http:header:`Content-Type`
 header into an object that exposes the structured data.
 
 >>> from ietfparse import headers
@@ -150,7 +150,7 @@ normalized as well.
 
 Link
 ----
-:func:`parse_link` parses an HTTP :mailheader:`Link` header as
+:func:`parse_link` parses an HTTP :http:header:`Link` header as
 described in :rfc:`5988` into a sequence of
 :class:`ietfparse.datastructures.LinkHeader` instances.
 
