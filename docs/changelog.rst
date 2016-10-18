@@ -3,6 +3,13 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
+* `1.4.0`_ (15-Oct-2016)
+
+  - Added :func:`headers.parse_accept_encoding` which parses HTTP `Accept-Encoding`_
+    header values into a list.
+  - Added :func:`headers.parse_accept_language` which parses HTTP `Accept-Language`_
+    header values into a list.
+
 * `1.3.0`_ (11-Aug-2016)
 
   - Added :func:`headers.parse_cache_control` which parses HTTP `Cache-Control`_
@@ -59,6 +66,8 @@ Changelog
       - :func:`headers.parse_http_accept_header`
 
 .. _Accept-Charset: https://tools.ietf.org/html/rfc7231#section-5.3.3
+.. _Accept-Encoding: https://tools.ietf.org/html/rfc7231#section-5.3.4
+.. _Accept-Language: https://tools.ietf.org/html/rfc7231#section-5.3.5
 .. _Cache-Control: https://tools.ietf.org/html/rfc7231#section-5.2
 
 .. _1.1.0: https://github.com/dave-shawley/ietfparse/compare/1.0.0...1.1.0
@@ -67,3 +76,4 @@ Changelog
 .. _1.2.1: https://github.com/dave-shawley/ietfparse/compare/1.2.0...1.2.1
 .. _1.2.2: https://github.com/dave-shawley/ietfparse/compare/1.2.1...1.2.2
 .. _1.3.0: https://github.com/dave-shawley/ietfparse/compare/1.2.2...1.3.0
+.. _1.4.0: https://github.com/dave-shawley/ietfparse/compare/1.3.0...1.4.0

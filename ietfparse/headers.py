@@ -98,24 +98,57 @@ def parse_accept_charset(header_value):
     .. _Accept-Charset: https://tools.ietf.org/html/rfc7231#section-5.3.3
 
     """
-    found_wildcard = False
-    values, rejected_values = [], []
-    for raw_str in parse_list(header_value):
-        charset, _, parameter_str = raw_str.replace(' ', '').partition(';')
-        if charset == '*':
-            found_wildcard = True
-            continue
-        params = dict(_parse_parameter_list(parameter_str.split(';')))
-        quality = float(params.pop('q', '1.0'))
-        if quality < 0.001:
-            rejected_values.append(charset)
-        else:
-            values.append((quality, charset))
-    parsed = [value[1] for value in reversed(sorted(values))]
-    if found_wildcard:
-        parsed.append('*')
-    parsed.extend(rejected_values)
-    return parsed
+    return _parse_qualified_list(header_value)
+
+
+def parse_accept_encoding(header_value):
+    """
+    Parse the ``Accept-Encoding`` header into a sorted list.
+
+    :param str header_value: header value to parse
+
+    :return: list of encodings sorted from highest to lowest priority
+
+    The `Accept-Encoding`_ header is a list of encodings with
+    optional *quality* values.  The quality value indicates the strength
+    of the preference where 1.0 is a strong preference and less than 0.001
+    is outright rejection by the client.
+
+    .. note::
+
+       Encodings that are rejected by setting the quality value
+       to less than 0.001.  If a wildcard is included in the header,
+       then it will appear **BEFORE** values that are rejected.
+
+    .. _Accept-Encoding: https://tools.ietf.org/html/rfc7231#section-5.3.4
+
+    """
+    return _parse_qualified_list(header_value)
+
+
+def parse_accept_language(header_value):
+    """
+    Parse the ``Accept-Language`` header into a sorted list.
+
+    :param str header_value: header value to parse
+
+    :return: list of languages sorted from highest to lowest priority
+
+    The `Accept-Language`_ header is a list of languages with
+    optional *quality* values.  The quality value indicates the strength
+    of the preference where 1.0 is a strong preference and less than 0.001
+    is outright rejection by the client.
+
+    .. note::
+
+       Languages that are rejected by setting the quality value
+       to less than 0.001.  If a wildcard is included in the header,
+       then it will appear **BEFORE** values that are rejected.
+
+    .. _Accept-Language: https://tools.ietf.org/html/rfc7231#section-5.3.5
+
+    """
+    return _parse_qualified_list(header_value)
 
 
 def parse_cache_control(header_value):
@@ -268,6 +301,36 @@ def _parse_parameter_list(parameter_list, normalized_parameter_values=True):
                 value = value.lower()
             parameters.append((name, value.strip('"').strip()))
     return parameters
+
+
+def _parse_qualified_list(value):
+    """
+    Parse a header value, returning a sorted list of values based upon
+    the quality rules specified in https://tools.ietf.org/html/rfc7231 for
+    the Accept-* headers.
+
+    :param str value: The value to parse into a list
+    :rtype: list
+
+    """
+    found_wildcard = False
+    values, rejected_values = [], []
+    for raw_str in parse_list(value):
+        charset, _, parameter_str = raw_str.replace(' ', '').partition(';')
+        if charset == '*':
+            found_wildcard = True
+            continue
+        params = dict(_parse_parameter_list(parameter_str.split(';')))
+        quality = float(params.pop('q', '1.0'))
+        if quality < 0.001:
+            rejected_values.append(charset)
+        else:
+            values.append((quality, charset))
+    parsed = [value[1] for value in reversed(sorted(values))]
+    if found_wildcard:
+        parsed.append('*')
+    parsed.extend(rejected_values)
+    return parsed
 
 
 def _remove_comments(value):
