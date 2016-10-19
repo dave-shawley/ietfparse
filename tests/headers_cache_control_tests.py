@@ -11,7 +11,7 @@ class WhenParsingCacheControl(test_case.TestCase, unittest.TestCase):
     def act(cls):
         cls.parsed = headers.parse_cache_control(
             'public, must-revalidate, max-age=100, min-fresh=20, '
-            'community="UCI"')
+            'community="UCI", x-token=" foo bar "')
 
     def test_that_public_is_parsed(self):
         print(self.parsed)
@@ -31,3 +31,6 @@ class WhenParsingCacheControl(test_case.TestCase, unittest.TestCase):
 
     def test_that_community_is_set(self):
         self.assertEqual(self.parsed.get('community'), 'UCI')
+
+    def test_that_extension_parameter_is_parsed(self):
+        self.assertEqual(self.parsed.get('x-token'), ' foo bar ')
