@@ -173,10 +173,11 @@ def parse_cache_control(header_value):
         if sep != '=':
             directives[name] = None
         elif sep and value:
+            value = _dequote(value.strip())
             try:
-                directives[name] = int(value.strip('"').strip())
+                directives[name] = int(value)
             except ValueError:
-                directives[name] = value.strip('"').strip()
+                directives[name] = value
         # NB ``name='' is never valid and is ignored!
 
     # convert parameterless boolean directives
@@ -279,7 +280,7 @@ def parse_list(value):
     for segment in segments:
         left, match, right = value.partition(segment)
         value = ''.join([left, match.replace(',', '\000'), right])
-    return [x.strip().strip('"').replace('\000', ',')
+    return [_dequote(x.strip()).replace('\000', ',')
             for x in value.split(',')]
 
 
@@ -299,7 +300,7 @@ def _parse_parameter_list(parameter_list, normalized_parameter_values=True):
             name, value = param.split('=')
             if normalized_parameter_values:
                 value = value.lower()
-            parameters.append((name, value.strip('"').strip()))
+            parameters.append((name, _dequote(value.strip())))
     return parameters
 
 
@@ -336,6 +337,29 @@ def _parse_qualified_list(value):
 def _remove_comments(value):
     """:rtype: str"""  # makes PyCharm happy
     return _COMMENT_RE.sub('', value)
+
+
+def _dequote(value):
+    """
+    Remove from value if the entire string is quoted.
+
+    :param str value: value to dequote
+
+    :return: a new :class:`str` with leading and trailing quotes
+        removed or `value` if not fully quoted
+
+    >>> _dequote('"value"')
+    'value'
+    >>> _dequote('not="quoted"')
+    'not="quoted"'
+
+    >>> _dequote('" with spaces "')
+    ' with spaces '
+
+    """
+    if value[0] == '"' and value[-1] == '"':
+        return value[1:-1]
+    return value
 
 
 # Backwards Compatibility Functions

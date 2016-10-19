@@ -3,8 +3,10 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
-* `1.4.0`_ (15-Oct-2016)
+* `1.4.0`_ (18-Oct-2016)
 
+  - Fixed parsing of lists like ``max-age=5, x-foo="prune"``.  The previous
+    versions incorrectly produced ``['max-age=5', 'x-foo="prune']``.
   - Added :func:`headers.parse_accept_encoding` which parses HTTP `Accept-Encoding`_
     header values into a list.
   - Added :func:`headers.parse_accept_language` which parses HTTP `Accept-Language`_

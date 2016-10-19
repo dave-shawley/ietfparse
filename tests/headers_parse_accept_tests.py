@@ -150,3 +150,18 @@ class WhenParsingAcceptLanguageHeader(unittest.TestCase):
             headers.parse_accept_language('aa, bb;q=0.0009, *'),
             ['aa', '*', 'bb']
         )
+
+
+class WhenParsingAcceptHeaderWithExtensions(unittest.TestCase):
+
+    def test_that_extension_tokens_are_parsed(self):
+        self.assertEqual(
+            headers.parse_accept('application/json;charset="utf-8"'),
+            [datastructures.ContentType('application', 'json',
+                                        {'charset': 'utf-8'})])
+
+    def test_that_extension_tokens_with_spaces_are_parsed(self):
+        self.assertEqual(
+            headers.parse_accept('application/json;x-foo=" something else"'),
+            [datastructures.ContentType('application', 'json',
+                                        {'x-foo': ' something else'})])

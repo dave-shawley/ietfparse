@@ -90,7 +90,7 @@ most preferred (1.0) to rejection (0.0). After the header is parsed and sorted,
 the quality values are removed and the token list is returned.
 
 >>> from ietfparse import headers
->>> headers.parse_accept_language('da, en;q=0.7, en-gb;q=0.8')
+>>> headers.parse_accept_language('de, en;q=0.7, en-gb;q=0.8')
 ['de', 'en-gb', 'en']
 
 The wildcard character set if present, will be sorted towards the end of the

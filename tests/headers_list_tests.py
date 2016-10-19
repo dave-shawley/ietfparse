@@ -18,3 +18,7 @@ class WhenParsingListHeader(unittest.TestCase):
         self.assertEqual(
             headers.parse_list('first, "comma ->,<- here", last'),
             ['first', 'comma ->,<- here', 'last'])
+
+    def test_that_quoted_parameters_are_not_disturbed(self):
+        self.assertEqual(headers.parse_list('max-age=5, x-foo="prune"'),
+                         ['max-age=5', 'x-foo="prune"'])
