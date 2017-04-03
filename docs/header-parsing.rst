@@ -2,6 +2,18 @@
 
 Header Parsing
 ==============
+Parsing IETF headers is a difficult science at best.  They come in a wide
+variety of syntaxes each with their own peculiarities.  The functions in
+this module expect that the incoming header data is formatted appropriately.
+If it is not, then a data-related exception will be raised.  Any of the
+following exceptions can be raised from **any** of the header parsing
+functions: :exc:`AttributeError`, :exc:`IndexError`, :exc:`TypeError`, and
+:exc:`ValueError`.
+
+This approach is an intentional design decision on the part of the author.
+Instead of inventing another list of *garbage-in -> garbage-out* exception
+types, I chose to simply let the underlying exception propagate.  This means
+that you should always guard against at least this set of exceptions.
 
 Accept
 ------
