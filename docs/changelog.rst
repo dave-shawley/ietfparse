@@ -3,6 +3,10 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
+* `1.4.1`_ (03-Apr-2017)
+
+  - Add some documentation about exceptions raised during header parsing.
+
 * `1.4.0`_ (18-Oct-2016)
 
   - Fixed parsing of lists like ``max-age=5, x-foo="prune"``.  The previous
