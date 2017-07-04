@@ -174,6 +174,8 @@ described in :rfc:`5988` into a sequence of
 'http://example.com/TheBook/chapter2'
 >>> parsed[0].parameters
 [('rel', 'previous'), ('title', 'previous chapter')]
+>>> str(parsed[0])
+'<http://example.com/TheBook/chapter2>; rel="previous"; title="previous chapter"'
 
 Notice that the parameter values are returned as a list of name and value
 tuples.  This is by design and required by the RFC to support the
@@ -186,3 +188,6 @@ tuples.  This is by design and required by the RFC to support the
    following the link.  Multiple "hreflang" parameters on a single link-
    value indicate that multiple languages are available from the
    indicated resource.
+
+Also note that you can cast a :class:`ietfparse.datastructures.LinkHeader`
+instance to a string to get a correctly formatted representation of it.

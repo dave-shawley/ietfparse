@@ -101,3 +101,17 @@ class LinkHeader(object):
     def __init__(self, target, parameters=None):
         self.target = target
         self.parameters = parameters or []
+
+    def __str__(self):
+        formatted = '<{0}>'.format(self.target)
+        if self.parameters:
+            params = ['{0}="{1}"'.format(*pair)
+                      for pair in self.parameters if pair[0] != 'rel']
+            params = '; '.join(sorted(params))
+            rel = ['{0}="{1}"'.format(*pair)
+                   for pair in self.parameters if pair[0] == 'rel']
+            if rel:
+                formatted += '; ' + rel[0]
+            if params:
+                formatted += '; ' + params
+        return formatted
