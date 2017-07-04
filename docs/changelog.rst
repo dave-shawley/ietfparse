@@ -3,6 +3,10 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
+* `Next Release`_
+
+  - Add formatting of HTTP `Link`_ header using ``str(header)``.
+
 * `1.4.1`_ (03-Apr-2017)
 
   - Add some documentation about exceptions raised during header parsing.
@@ -75,6 +79,7 @@ Changelog
 .. _Accept-Encoding: https://tools.ietf.org/html/rfc7231#section-5.3.4
 .. _Accept-Language: https://tools.ietf.org/html/rfc7231#section-5.3.5
 .. _Cache-Control: https://tools.ietf.org/html/rfc7231#section-5.2
+.. _Link: https://tools.ietf.org/html/rfc5988
 
 .. _1.1.0: https://github.com/dave-shawley/ietfparse/compare/1.0.0...1.1.0
 .. _1.1.1: https://github.com/dave-shawley/ietfparse/compare/1.1.0...1.1.1
@@ -84,3 +89,4 @@ Changelog
 .. _1.3.0: https://github.com/dave-shawley/ietfparse/compare/1.2.2...1.3.0
 .. _1.4.0: https://github.com/dave-shawley/ietfparse/compare/1.3.0...1.4.0
 .. _1.4.1: https://github.com/dave-shawley/ietfparse/compare/1.4.0...1.4.1
+.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.4.1...head

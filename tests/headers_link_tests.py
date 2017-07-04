@@ -116,3 +116,26 @@ class WhenParsingMalformedLinkHeader(unittest.TestCase):
             strict=False,
         )
         self.assertEqual(len(parsed), 3)
+
+
+class WhenFormattingLinkHeader(unittest.TestCase):
+
+    def test_that_parameters_are_sorted_after_rel(self):
+        parsed = headers.parse_link('<http://example.com>; title="foo";'
+                                    ' rel="next"; hreflang="en"')
+        self.assertEqual(str(parsed[0]),
+                         '<http://example.com>; rel="next"; hreflang="en";'
+                         ' title="foo"')
+
+    def test_that_rel_is_not_required(self):
+        parsed = headers.parse_link('<>')
+        self.assertEqual(str(parsed[0]), '<>')
+
+    def test_that_only_first_rel_is_used(self):
+        parsed = headers.parse_link('<>; rel=used; rel=first; rel=one')
+        self.assertEqual(str(parsed[0]), '<>; rel="used"')
+
+    def test_that_parameters_are_sorted_without_rel(self):
+        parsed = headers.parse_link('<>; title=foo; hreflang="en"')
+        self.assertEqual(str(parsed[0]),
+                         '<>; hreflang="en"; title="foo"')
