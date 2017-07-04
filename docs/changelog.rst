@@ -3,7 +3,7 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
-* `Next Release`_
+* `1.4.2`_ (04-Jul-2017)
 
   - Add formatting of HTTP `Link`_ header using ``str(header)``.
 
@@ -89,4 +89,5 @@ Changelog
 .. _1.3.0: https://github.com/dave-shawley/ietfparse/compare/1.2.2...1.3.0
 .. _1.4.0: https://github.com/dave-shawley/ietfparse/compare/1.3.0...1.4.0
 .. _1.4.1: https://github.com/dave-shawley/ietfparse/compare/1.4.0...1.4.1
-.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.4.1...head
+.. _1.4.2: https://github.com/dave-shawley/ietfparse/compare/1.4.1...1.4.2
+.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.4.2...head
