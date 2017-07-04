@@ -83,3 +83,4 @@ Changelog
 .. _1.2.2: https://github.com/dave-shawley/ietfparse/compare/1.2.1...1.2.2
 .. _1.3.0: https://github.com/dave-shawley/ietfparse/compare/1.2.2...1.3.0
 .. _1.4.0: https://github.com/dave-shawley/ietfparse/compare/1.3.0...1.4.0
+.. _1.4.1: https://github.com/dave-shawley/ietfparse/compare/1.4.0...1.4.1
