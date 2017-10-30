@@ -1,15 +1,14 @@
 import unittest
 
-from fluenttest import test_case
-
 from ietfparse.datastructures import ContentType
 
 
-class WhenCreatingContentType(test_case.TestCase, unittest.TestCase):
-    @classmethod
-    def act(cls):
-        cls.value = ContentType(
-            'ContentType', ' SubType ', parameters={'Key': 'Value'})
+class WhenCreatingContentType(unittest.TestCase):
+
+    def setUp(self):
+        super(WhenCreatingContentType, self).setUp()
+        self.value = ContentType('ContentType', ' SubType ',
+                                 parameters={'Key': 'Value'})
 
     def should_normalize_primary_type(self):
         self.assertEqual(self.value.content_type, 'contenttype')
@@ -21,23 +20,18 @@ class WhenCreatingContentType(test_case.TestCase, unittest.TestCase):
         self.assertEqual(self.value.parameters['key'], 'Value')
 
 
-class WhenConvertingSimpleContentTypeToStr(
-        test_case.TestCase, unittest.TestCase):
-
-    @classmethod
-    def act(cls):
-        cls.returned = str(ContentType('primary', 'subtype'))
+class WhenConvertingSimpleContentTypeToStr(unittest.TestCase):
 
     def test_only_contains_type_information(self):
-        self.assertEqual(self.returned, 'primary/subtype')
+        self.assertEqual(str(ContentType('primary', 'subtype')),
+                         'primary/subtype')
 
 
-class WhenConvertingContentTypeWithParametersToStr(
-        test_case.TestCase, unittest.TestCase):
+class WhenConvertingContentTypeWithParametersToStr(unittest.TestCase):
 
-    @classmethod
-    def act(cls):
-        cls.returned = str(ContentType(
+    def setUp(self):
+        super(WhenConvertingContentTypeWithParametersToStr, self).setUp()
+        self.returned = str(ContentType(
             'primary', 'subtype', {'one': '1', 'two': '2', 'three': 3}))
 
     def test_starts_with_primary_type(self):

@@ -1,15 +1,13 @@
 import unittest
 
-from fluenttest import test_case
-
 from ietfparse import headers
 
 
-class WhenParsingCacheControl(test_case.TestCase, unittest.TestCase):
+class WhenParsingCacheControl(unittest.TestCase):
 
-    @classmethod
-    def act(cls):
-        cls.parsed = headers.parse_cache_control(
+    def setUp(self):
+        super(WhenParsingCacheControl, self).setUp()
+        self.parsed = headers.parse_cache_control(
             'public, must-revalidate, max-age=100, min-fresh=20, '
             'community="UCI", x-token=" foo bar "')
 

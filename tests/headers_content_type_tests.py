@@ -1,15 +1,13 @@
 import unittest
 
-from fluenttest import test_case
-
 from ietfparse import datastructures, headers
 
 
-class WhenParsingSimpleContentType(test_case.TestCase, unittest.TestCase):
+class WhenParsingSimpleContentType(unittest.TestCase):
 
-    @classmethod
-    def act(cls):
-        cls.parsed = headers.parse_content_type(
+    def setUp(self):
+        super(WhenParsingSimpleContentType, self).setUp()
+        self.parsed = headers.parse_content_type(
             'text/plain', normalize_parameter_values=False)
 
     def test_that_type_is_parsed(self):
@@ -22,11 +20,11 @@ class WhenParsingSimpleContentType(test_case.TestCase, unittest.TestCase):
         self.assertEqual(self.parsed.parameters, {})
 
 
-class WhenParsingComplexContentType(test_case.TestCase, unittest.TestCase):
+class WhenParsingComplexContentType(unittest.TestCase):
 
-    @classmethod
-    def act(cls):
-        cls.parsed = headers.parse_content_type(
+    def setUp(self):
+        super(WhenParsingComplexContentType, self).setUp()
+        self.parsed = headers.parse_content_type(
             'message/HTTP; version=2.0 (someday); MsgType="Request"',
             normalize_parameter_values=False)
 

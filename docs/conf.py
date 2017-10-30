@@ -3,13 +3,13 @@
 
 import sphinx_rtd_theme
 
-from ietfparse import __version__, version_info
+import ietfparse
 
 
 project = 'ietfparse'
-copyright = '2014, Dave Shawley'
-version = __version__
-release = '.'.join(str(x) for x in version_info[:2])
+copyright = '2014-2017, Dave Shawley'
+version = ietfparse.version
+release = '.'.join(str(x) for x in ietfparse.version_info[:2])
 
 needs_sphinx = '1.0'
 extensions = [
