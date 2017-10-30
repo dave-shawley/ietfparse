@@ -52,7 +52,7 @@ Ok... Where?
 +---------------+-------------------------------------------------+
 | Download      | https://pypi.python.org/pypi/ietfparse          |
 +---------------+-------------------------------------------------+
-| Documentation | http://ietfparse.readthedocs.org/en/latest      |
+| Documentation | http://ietfparse.readthedocs.io/en/latest       |
 +---------------+-------------------------------------------------+
 | Issues        | https://github.com/dave-shawley/ietfparse       |
 +---------------+-------------------------------------------------+
@@ -61,7 +61,7 @@ Ok... Where?
    :target: https://codeclimate.com/github/dave-shawley/ietfparse/
 .. |Coverage| image:: https://coveralls.io/repos/dave-shawley/ietfparse/badge.svg
    :target: https://coveralls.io/r/dave-shawley/ietfparse
-.. |ReadTheDocs| image:: https://readthedocs.org/projects/ietfparse/badge/
+.. |ReadTheDocs| image:: https://readthedocs.org/projects/ietfparse/badge/?version=stable
    :target: https://ietfparse.readthedocs.org/
 .. |Travis| image:: https://travis-ci.org/dave-shawley/ietfparse.svg
    :target: https://travis-ci.org/dave-shawley/ietfparse
