@@ -1,14 +1,13 @@
 import unittest
 
-from fluenttest import test_case
-
 from ietfparse import errors, headers
 
 
-class WhenParsingSimpleLinkHeader(test_case.TestCase, unittest.TestCase):
-    @classmethod
-    def act(cls):
-        cls.parsed = headers.parse_link(
+class WhenParsingSimpleLinkHeader(unittest.TestCase):
+
+    def setUp(self):
+        super(WhenParsingSimpleLinkHeader, self).setUp()
+        self.parsed = headers.parse_link(
             '<http://example.com/TheBook/chapter2>; rel="previous"; '
             'title="previous chapter"')
 
@@ -26,10 +25,11 @@ class WhenParsingSimpleLinkHeader(test_case.TestCase, unittest.TestCase):
         self.assertIn(('title', 'previous chapter'), self.parsed[0].parameters)
 
 
-class MultipleLinkParsingTests(test_case.TestCase, unittest.TestCase):
-    @classmethod
-    def act(cls):
-        cls.parsed = headers.parse_link(
+class MultipleLinkParsingTests(unittest.TestCase):
+
+    def setUp(self):
+        super(MultipleLinkParsingTests, self).setUp()
+        self.parsed = headers.parse_link(
             '<http://example.com/first>; rel=first;another=value,'
             '<http://example.com/second>',
         )
