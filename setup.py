@@ -6,7 +6,7 @@ import sys
 
 import setuptools
 
-from ietfparse import __version__
+from ietfparse import version
 
 
 def read_requirements_file(name):
@@ -37,7 +37,7 @@ with codecs.open('README.rst', 'rb', encoding='utf-8') as file_obj:
 
 setuptools.setup(
     name='ietfparse',
-    version=__version__,
+    version=version,
     author='Dave Shawley',
     author_email='daveshawley@gmail.com',
     url='http://github.com/dave-shawley/ietfparse',
@@ -56,7 +56,7 @@ setuptools.setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Text Processing',
