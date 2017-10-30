@@ -7,7 +7,7 @@ from ietfparse import __version__, version_info
 
 
 project = 'ietfparse'
-copyright = '2014, Dave Shawley'
+copyright = '2014-2017, Dave Shawley'
 version = __version__
 release = '.'.join(str(x) for x in version_info[:2])
 
