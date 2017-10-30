@@ -3,8 +3,8 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
-`Next Release`_
----------------
+`1.4.3`_ (30-Oct-2017)
+----------------------
 - Change parsing of qualified lists to retain the initial ordering whenever
   possible.  The algorithm prefers explicit highest quality (1.0) preferences
   over inferred highest quality preferences.  It also retains the initial
@@ -99,4 +99,5 @@ Changelog
 .. _1.4.0: https://github.com/dave-shawley/ietfparse/compare/1.3.0...1.4.0
 .. _1.4.1: https://github.com/dave-shawley/ietfparse/compare/1.4.0...1.4.1
 .. _1.4.2: https://github.com/dave-shawley/ietfparse/compare/1.4.1...1.4.2
-.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.4.2...head
+.. _1.4.3: https://github.com/dave-shawley/ietfparse/compare/1.4.2...1.4.3
+.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.4.3...head
