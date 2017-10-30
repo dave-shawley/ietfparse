@@ -3,6 +3,15 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
+* `Next Release`_
+
+  - Change parsing of qualified lists to retain the initial ordering whenever
+    possible.  The algorithm prefers explicit highest quality (1.0) preferences
+    over inferred highest quality preferences.  It also retains the initial
+    ordering in the presence of multiple highest quality matches.  This affects
+    :func:`headers.parse_accept_charset`, :func:`headers.parse_accept_encoding`,
+    and :func:`headers.parse_accept_language`.
+
 * `1.4.2`_ (04-Jul-2017)
 
   - Add formatting of HTTP `Link`_ header using ``str(header)``.

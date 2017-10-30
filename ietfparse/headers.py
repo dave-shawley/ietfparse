@@ -316,18 +316,24 @@ def _parse_qualified_list(value):
     """
     found_wildcard = False
     values, rejected_values = [], []
-    for raw_str in parse_list(value):
+    parsed = parse_list(value)
+    default = float(len(parsed) + 1)
+    highest = default + 1.0
+    for raw_str in parsed:
         charset, _, parameter_str = raw_str.replace(' ', '').partition(';')
         if charset == '*':
             found_wildcard = True
             continue
         params = dict(_parse_parameter_list(parameter_str.split(';')))
-        quality = float(params.pop('q', '1.0'))
+        quality = float(params.pop('q', default))
         if quality < 0.001:
             rejected_values.append(charset)
+        elif quality == 1.0:
+            values.append((highest + default, charset))
         else:
             values.append((quality, charset))
-    parsed = [value[1] for value in reversed(sorted(values))]
+        default -= 1.0
+    parsed = [value[1] for value in sorted(values, reverse=True)]
     if found_wildcard:
         parsed.append('*')
     parsed.extend(rejected_values)

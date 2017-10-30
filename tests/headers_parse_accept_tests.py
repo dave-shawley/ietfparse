@@ -151,6 +151,27 @@ class WhenParsingAcceptLanguageHeader(unittest.TestCase):
             ['aa', '*', 'bb']
         )
 
+    def test_that_order_is_retained_without_quality(self):
+        self.assertEqual(
+            headers.parse_accept_language('de-Latn-DE,de-Latf-DE,'
+                                          'de-Latn-DE-1996'),
+            ['de-Latn-DE', 'de-Latf-DE', 'de-Latn-DE-1996'],
+        )
+
+    def test_that_explicit_highest_quality_is_first(self):
+        self.assertEqual(
+            headers.parse_accept_language('de-Latn-DE,de-Latf-DE,'
+                                          'de-Latn-DE-1996;q=1.0'),
+            ['de-Latn-DE-1996', 'de-Latn-DE', 'de-Latf-DE'],
+        )
+
+    def test_that_order_is_retained_for_explicit_highest_quality(self):
+        self.assertEqual(
+            headers.parse_accept_language('de-Latn-DE,de-Latf-DE;q=1.0,'
+                                          'de-Latn-DE-1996;q=1.0'),
+            ['de-Latf-DE', 'de-Latn-DE-1996', 'de-Latn-DE'],
+        )
+
 
 class WhenParsingAcceptHeaderWithExtensions(unittest.TestCase):
 
