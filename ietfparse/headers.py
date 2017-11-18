@@ -15,10 +15,12 @@ mentioned.
 
 """
 import functools
+import decimal
 import re
 import warnings
 
 from . import datastructures, errors, _helpers
+
 
 _CACHE_CONTROL_BOOL_DIRECTIVES = \
     ('must-revalidate', 'no-cache', 'no-store', 'no-transform',
@@ -50,10 +52,17 @@ def parse_accept(header_value):
     .. _Accept: http://tools.ietf.org/html/rfc7231#section-5.3.2
 
     """
+    next_explicit_q = decimal.ExtendedContext.next_plus(decimal.Decimal('5.0'))
     headers = [parse_content_type(header)
                for header in parse_list(header_value)]
     for header in headers:
-        header.quality = float(header.parameters.pop('q', 1.0))
+        q = header.parameters.pop('q', None)
+        if q is None:
+            q = '1.0'
+        elif float(q) == 1.0:
+            q = float(next_explicit_q)
+            next_explicit_q = next_explicit_q.next_minus()
+        header.quality = float(q)
 
     def ordering(left, right):
         """

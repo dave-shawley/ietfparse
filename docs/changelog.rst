@@ -3,6 +3,11 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
+`Next Release`_
+---------------
+- Change :func:`headers.parse_accept` to also prefer explicit highest
+  quality preferences over inferred highest quality preferences.
+
 `1.4.3`_ (30-Oct-2017)
 ----------------------
 - Change parsing of qualified lists to retain the initial ordering whenever
