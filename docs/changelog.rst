@@ -5,6 +5,7 @@ Changelog
 
 `Next Release`_
 ---------------
+- Officially drop support for Python 2.6 and 3.3.
 - Change :func:`headers.parse_accept` to also prefer explicit highest
   quality preferences over inferred highest quality preferences.
 
