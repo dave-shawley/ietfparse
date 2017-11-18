@@ -5,7 +5,7 @@ import unittest
 from ietfparse import algorithms
 
 
-class WhenReplacingTheHostPortion(unittest.TestCase):
+class RewriteUrlHostTests(unittest.TestCase):
 
     def test_host_name_is_replaced(self):
         self.assertEqual(algorithms.rewrite_url('http://example.com/docs',
@@ -107,7 +107,7 @@ class WhenReplacingTheHostPortion(unittest.TestCase):
         )
 
 
-class WhenReplacingThePortPortion(unittest.TestCase):
+class RewriteUrlPortTests(unittest.TestCase):
 
     def test_port_is_replaced(self):
         self.assertEqual(
@@ -133,7 +133,7 @@ class WhenReplacingThePortPortion(unittest.TestCase):
             'http://example.com')
 
 
-class WhenReplacingThePathPortion(unittest.TestCase):
+class RewriteUrlPathTests(unittest.TestCase):
 
     def test_path_is_replaced(self):
         self.assertEqual(
@@ -175,7 +175,7 @@ class WhenReplacingThePathPortion(unittest.TestCase):
         )
 
 
-class WhenReplacingTheQueryPortion(unittest.TestCase):
+class RewriteUrlQueryTests(unittest.TestCase):
 
     def test_query_string_is_replaced(self):
         self.assertEqual(
@@ -218,7 +218,7 @@ class WhenReplacingTheQueryPortion(unittest.TestCase):
         )
 
 
-class WhenReplacingUserPortion(unittest.TestCase):
+class RewriteUrlUserTests(unittest.TestCase):
 
     def test_that_user_is_replaced(self):
         self.assertEqual(
@@ -263,7 +263,7 @@ class WhenReplacingUserPortion(unittest.TestCase):
         )
 
 
-class WhenReplacingThePasswordPortion(unittest.TestCase):
+class RewriteUrlPasswordTests(unittest.TestCase):
 
     def test_that_password_is_replaced(self):
         self.assertEqual(
@@ -296,7 +296,7 @@ class WhenReplacingThePasswordPortion(unittest.TestCase):
         )
 
 
-class WhenReplacingTheScheme(unittest.TestCase):
+class RewriteUrlSchemeTests(unittest.TestCase):
 
     def test_that_scheme_is_replaced(self):
         self.assertEqual(
@@ -340,7 +340,7 @@ class WhenReplacingTheScheme(unittest.TestCase):
         )
 
 
-class WhenReplacingTheFragment(unittest.TestCase):
+class RewriteUrlFragmentTests(unittest.TestCase):
 
     def test_that_fragment_is_replaced(self):
         self.assertEqual(

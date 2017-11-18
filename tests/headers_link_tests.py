@@ -3,50 +3,30 @@ import unittest
 from ietfparse import errors, headers
 
 
-class WhenParsingSimpleLinkHeader(unittest.TestCase):
+class LinkHeaderParsingTests(unittest.TestCase):
 
-    def setUp(self):
-        super(WhenParsingSimpleLinkHeader, self).setUp()
-        self.parsed = headers.parse_link(
+    def test_parsing_single_link(self):
+        parsed = headers.parse_link(
             '<http://example.com/TheBook/chapter2>; rel="previous"; '
             'title="previous chapter"')
 
-    def test_that_single_header_is_returned(self):
-        self.assertEqual(len(self.parsed), 1)
-
-    def test_that_target_iri_is_returned(self):
-        self.assertEqual(self.parsed[0].target,
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(parsed[0].target,
                          'http://example.com/TheBook/chapter2')
+        self.assertIn(('rel', 'previous'), parsed[0].parameters)
+        self.assertIn(('title', 'previous chapter'), parsed[0].parameters)
 
-    def test_that_rel_parameter_is_returned(self):
-        self.assertIn(('rel', 'previous'), self.parsed[0].parameters)
-
-    def test_that_title_parameter_is_returned(self):
-        self.assertIn(('title', 'previous chapter'), self.parsed[0].parameters)
-
-
-class MultipleLinkParsingTests(unittest.TestCase):
-
-    def setUp(self):
-        super(MultipleLinkParsingTests, self).setUp()
-        self.parsed = headers.parse_link(
+    def test_parsing_multiple_link_headers(self):
+        parsed = headers.parse_link(
             '<http://example.com/first>; rel=first;another=value,'
             '<http://example.com/second>',
         )
-
-    def test_that_both_links_are_returned(self):
-        self.assertEqual(self.parsed[0].target, 'http://example.com/first')
-        self.assertEqual(self.parsed[1].target, 'http://example.com/second')
-
-    def test_that_parameters_are_returned_when_present(self):
-        self.assertEqual(self.parsed[0].parameters,
+        self.assertEqual(parsed[0].target, 'http://example.com/first')
+        self.assertEqual(parsed[0].parameters,
                          [('rel', 'first'), ('another', 'value')])
 
-    def test_that_empty_parameters_are_returned_when_appropriate(self):
-        self.assertEqual(self.parsed[1].parameters, [])
-
-
-class UglyParsingTests(unittest.TestCase):
+        self.assertEqual(parsed[1].target, 'http://example.com/second')
+        self.assertEqual(parsed[1].parameters, [])
 
     def test_that_quoted_uris_can_contain_semicolons(self):
         parsed = headers.parse_link('<http://host/matrix;param/>')
@@ -69,7 +49,7 @@ class UglyParsingTests(unittest.TestCase):
                          [('title*', 'title*'), ('title', 'title*')])
 
 
-class WhenParsingMalformedLinkHeader(unittest.TestCase):
+class MalformedLinkHeaderTests(unittest.TestCase):
 
     def test_that_value_error_when_url_brackets_are_missing(self):
         with self.assertRaises(errors.MalformedLinkValue):
@@ -118,7 +98,7 @@ class WhenParsingMalformedLinkHeader(unittest.TestCase):
         self.assertEqual(len(parsed), 3)
 
 
-class WhenFormattingLinkHeader(unittest.TestCase):
+class LinkHeaderFormattingTests(unittest.TestCase):
 
     def test_that_parameters_are_sorted_after_rel(self):
         parsed = headers.parse_link('<http://example.com>; title="foo";'

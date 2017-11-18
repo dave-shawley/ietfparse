@@ -3,7 +3,7 @@ import unittest
 from ietfparse import headers
 
 
-class WhenParsingListHeader(unittest.TestCase):
+class ListHeaderParsingTests(unittest.TestCase):
 
     def test_that_elements_are_whitespace_normalized(self):
         self.assertEqual(
