@@ -3,8 +3,8 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
-`Next Release`_
----------------
+`1.5.0`_ (24-Dec-2017)
+----------------------
 - Officially drop support for Python 2.6 and 3.3.
 - Change :func:`headers.parse_accept` to also prefer explicit highest
   quality preferences over inferred highest quality preferences.
@@ -114,4 +114,5 @@ Changelog
 .. _1.4.1: https://github.com/dave-shawley/ietfparse/compare/1.4.0...1.4.1
 .. _1.4.2: https://github.com/dave-shawley/ietfparse/compare/1.4.1...1.4.2
 .. _1.4.3: https://github.com/dave-shawley/ietfparse/compare/1.4.2...1.4.3
-.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.4.3...head
+.. _1.5.0: https://github.com/dave-shawley/ietfparse/compare/1.4.3...1.5.0
+.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.5.0...head
