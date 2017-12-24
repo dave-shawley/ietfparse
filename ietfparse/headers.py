@@ -297,11 +297,14 @@ def parse_list(value):
 
 def _parse_parameter_list(parameter_list,
                           normalized_parameter_values=_DEF_PARAM_VALUE,
+                          normalize_parameter_names=False,
                           normalize_parameter_values=True):
     """
     Parse a named parameter list in the "common" format.
 
     :param parameter_list: sequence of string values to parse
+    :keyword bool normalize_parameter_names: if specified and *truthy*
+        then parameter names will be case-folded to lower case
     :keyword bool normalize_parameter_values: if omitted or specified
         as *truthy*, then parameter values are case-folded to lower case
     :keyword bool normalized_parameter_values: alternate way to spell
@@ -325,7 +328,9 @@ def _parse_parameter_list(parameter_list,
         param = param.strip()
         if param:
             name, value = param.split('=')
-            if normalized_parameter_values:
+            if normalize_parameter_names:
+                name = name.lower()
+            if normalize_parameter_values:
                 value = value.lower()
             parameters.append((name, _dequote(value.strip())))
     return parameters
