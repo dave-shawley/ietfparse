@@ -1,6 +1,9 @@
 """
 Implementations of algorithms from various specifications.
 
+- :func:`.remove_url_auth`: removes and returns the auth portion
+  of a URL.  This is particularly handy for processing URLs from
+  configuration files or environment variables.
 - :func:`.rewrite_url`: modify a portion of a URL.
 - :func:`.select_content_type`: select the best match between a
   HTTP ``Accept`` header and a list of available ``Content-Type`` s
@@ -15,6 +18,7 @@ described in IETF RFCs.
 """
 from __future__ import unicode_literals
 from operator import attrgetter
+import collections
 
 from . compat import parse
 from . import errors
@@ -38,6 +42,19 @@ PATH_SAFE_CHARS = _rfc3986_sub_delims + _rfc3986_unreserved + b':/@'
 
 # see RFC-3986, section 3.5
 FRAGMENT_SAFE_CHARS = b'?/'
+
+
+class RemoveUrlAuthResult(collections.namedtuple('RemoveUrlAuthResult',
+                                                 ['auth', 'url'])):
+    __slots__ = ()
+
+    @property
+    def username(self):
+        return self.auth[0]
+
+    @property
+    def password(self):
+        return self.auth[1]
 
 
 def _content_type_matches(candidate, pattern):
@@ -307,6 +324,43 @@ def rewrite_url(input_url, **kwargs):
         scheme = ''
 
     return parse.urlunsplit((scheme, netloc, path, query, fragment))
+
+
+def remove_url_auth(url):
+    """
+    Removes the user & password and returns them along with a new url.
+
+    :param str url: the URL to sanitize
+    :return: a :class:`tuple` containing the authorization portion and
+        the sanitized URL.  The authorization is a simple user & password
+        :class:`tuple`.
+
+    >>> auth, sanitized = remove_url_auth('http://foo:bar@example.com')
+    >>> auth
+    ('foo', 'bar')
+    >>> sanitized
+    'http://example.com'
+
+    The return value from this function is simple named tuple with the
+    following fields:
+
+    - *auth* the username and password as a tuple
+    - *username* the username portion of the URL or :data:`None`
+    - *password* the password portion of the URL or :data:`None`
+    - *url* the sanitized URL
+
+    >>> result = remove_url_auth('http://me:secret@example.com')
+    >>> result.username
+    'me'
+    >>> result.password
+    'secret'
+    >>> result.url
+    'http://example.com'
+
+    """
+    parts = parse.urlsplit(url)
+    return RemoveUrlAuthResult(auth=(parts.username or None, parts.password),
+                               url=rewrite_url(url, user=None, password=None))
 
 
 def _create_url_identifier(user, password):
