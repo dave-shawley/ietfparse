@@ -15,6 +15,7 @@ Changelog
   :func:`headers._parse_parameter_list` internal function.
 - Add support for parsing :rfc:`7239` ``Forwarded`` headers with
   :func:`headers.parse_forwarded`.
+- Add :func:`algorithms.remove_url_auth`
 
 `1.4.3`_ (30-Oct-2017)
 ----------------------
