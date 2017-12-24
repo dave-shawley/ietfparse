@@ -27,6 +27,7 @@ _CACHE_CONTROL_BOOL_DIRECTIVES = \
      'only-if-cached', 'public', 'private', 'proxy-revalidate')
 _COMMENT_RE = re.compile(r'\(.*\)')
 _QUOTED_SEGMENT_RE = re.compile(r'"([^"]*)"')
+_DEF_PARAM_VALUE = object()
 
 
 def parse_accept(header_value):
@@ -209,7 +210,8 @@ def parse_content_type(content_type, normalize_parameter_values=True):
     """
     parts = _remove_comments(content_type).split(';')
     content_type, content_subtype = parts.pop(0).split('/')
-    parameters = _parse_parameter_list(parts, normalize_parameter_values)
+    parameters = _parse_parameter_list(
+        parts, normalize_parameter_values=normalize_parameter_values)
 
     return datastructures.ContentType(content_type, content_subtype,
                                       dict(parameters))
@@ -293,15 +295,31 @@ def parse_list(value):
             for x in value.split(',')]
 
 
-def _parse_parameter_list(parameter_list, normalized_parameter_values=True):
+def _parse_parameter_list(parameter_list,
+                          normalized_parameter_values=_DEF_PARAM_VALUE,
+                          normalize_parameter_values=True):
     """
     Parse a named parameter list in the "common" format.
 
-    :param parameter_list:
-    :param bool normalized_parameter_values:
+    :param parameter_list: sequence of string values to parse
+    :keyword bool normalize_parameter_values: if omitted or specified
+        as *truthy*, then parameter values are case-folded to lower case
+    :keyword bool normalized_parameter_values: alternate way to spell
+        ``normalize_parameter_values`` -- this one is deprecated
     :return: a sequence containing the name to value pairs
 
+    The parsed values are normalized according to the keyword parameters
+    and returned as :class:`tuple` of name to value pairs preserving the
+    ordering from `parameter_list`.  The values will have quotes removed
+    if they were present.
+
     """
+    if normalized_parameter_values is not _DEF_PARAM_VALUE:  # pragma: no cover
+        warnings.warn('normalized_parameter_values keyword to '
+                      '_parse_parameter_list is deprecated, use '
+                      'normalize_parameter_values instead',
+                      DeprecationWarning)
+        normalize_parameter_values = normalized_parameter_values
     parameters = []
     for param in parameter_list:
         param = param.strip()

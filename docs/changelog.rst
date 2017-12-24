@@ -8,6 +8,9 @@ Changelog
 - Officially drop support for Python 2.6 and 3.3.
 - Change :func:`headers.parse_accept` to also prefer explicit highest
   quality preferences over inferred highest quality preferences.
+- Rename the ``normalized_parameter_values`` keyword of
+  :func:`headers._parse_parameter_list`.  The current spelling is retained
+  with a deprecation warning.  This will be removed in 2.0.
 
 `1.4.3`_ (30-Oct-2017)
 ----------------------
