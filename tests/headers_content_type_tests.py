@@ -3,10 +3,10 @@ import unittest
 from ietfparse import datastructures, headers
 
 
-class WhenParsingSimpleContentType(unittest.TestCase):
+class SimpleContentTypeParsingTests(unittest.TestCase):
 
     def setUp(self):
-        super(WhenParsingSimpleContentType, self).setUp()
+        super(SimpleContentTypeParsingTests, self).setUp()
         self.parsed = headers.parse_content_type(
             'text/plain', normalize_parameter_values=False)
 
@@ -20,10 +20,10 @@ class WhenParsingSimpleContentType(unittest.TestCase):
         self.assertEqual(self.parsed.parameters, {})
 
 
-class WhenParsingComplexContentType(unittest.TestCase):
+class ParsingComplexContentTypeTests(unittest.TestCase):
 
     def setUp(self):
-        super(WhenParsingComplexContentType, self).setUp()
+        super(ParsingComplexContentTypeTests, self).setUp()
         self.parsed = headers.parse_content_type(
             'message/HTTP; version=2.0 (someday); MsgType="Request"',
             normalize_parameter_values=False)
@@ -41,7 +41,7 @@ class WhenParsingComplexContentType(unittest.TestCase):
         self.assertEqual(self.parsed.parameters['msgtype'], 'Request')
 
 
-class WhenParsingMediaTypeExamples(unittest.TestCase):
+class Rfc7231ExampleTests(unittest.TestCase):
     """Test cases from RFC7231, Section 3.1.1.1"""
 
     def setUp(self):

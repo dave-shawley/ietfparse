@@ -4,19 +4,16 @@ import warnings
 from ietfparse import headers
 
 
-class WhenUsingParseHTTPAcceptHeader(unittest.TestCase):
+class DeprecationTests(unittest.TestCase):
 
-    def test_deprecation_warning_is_raised(self):
+    def test_that_parse_http_accept_header_emits_deprecation_warning(self):
         warnings.simplefilter('always')
         with warnings.catch_warnings(record=True) as caught:
             headers.parse_http_accept_header('Accept: application/json')
             self.assertEqual(len(caught), 1)
             self.assertEqual(caught[-1].category, DeprecationWarning)
 
-
-class WhenUsingParseLinkHeader(unittest.TestCase):
-
-    def test_deprecation_warning_is_raised(self):
+    def test_that_parse_link_header_emits_deprecation_warning(self):
         warnings.simplefilter('always')
         with warnings.catch_warnings(record=True) as caught:
             headers.parse_link_header(
@@ -25,13 +22,9 @@ class WhenUsingParseLinkHeader(unittest.TestCase):
             self.assertEqual(len(caught), 1)
             self.assertEqual(caught[-1].category, DeprecationWarning)
 
-
-class WhenUsingParseListHeader(unittest.TestCase):
-
-    def test_deprecation_warning_is_raised(self):
+    def test_that_parse_list_header_emits_deprecation_warning(self):
         warnings.simplefilter('always')
         with warnings.catch_warnings(record=True) as caught:
             headers.parse_list_header('one, two,three    ,four,five')
             self.assertEqual(len(caught), 1)
             self.assertEqual(caught[-1].category, DeprecationWarning)
-

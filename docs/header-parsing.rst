@@ -160,6 +160,29 @@ Notice that the ``(someday)`` comment embedded in the ``version``
 parameter was discarded and the ``msgtype`` parameter name was
 normalized as well.
 
+Forwarded
+---------
+:func:`parse_forwarded` parses an HTTP :http:header:`Forwarded`  header as
+described in :rfc:`7239` into a sequence of :class:`dict` instances.
+
+>>> from ietfparse import headers
+>>> parsed = headers.parse_forwarded('For=93.184.216.34;proto=http;'
+...                                  'By="[2606:2800:220:1:248:1893:25c8:1946]";'
+...                                  'host=example.com')
+>>> len(parsed)
+1
+>>> parsed[0]['for']
+'93.184.216.34'
+>>> parsed[0]['proto']
+'http'
+>>> parsed[0]['by']
+'[2606:2800:220:1:248:1893:25c8:1946]'
+>>> parsed[0]['host']
+'example.com'
+
+The names of the parameters are case-folded to lower case per the
+recommendation in :rfc:`7239`.
+
 Link
 ----
 :func:`parse_link` parses an HTTP :http:header:`Link` header as

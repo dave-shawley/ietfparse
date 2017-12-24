@@ -1,10 +1,11 @@
 """
 Functions for parsing headers.
 
+- :func:`.parse_accept`: parse an ``Accept`` value
 - :func:`.parse_accept_charset`: parse a ``Accept-Charset`` value
 - :func:`.parse_cache_control`: parse a ``Cache-Control`` value
 - :func:`.parse_content_type`: parse a ``Content-Type`` value
-- :func:`.parse_accept`: parse an ``Accept`` value
+- :func:`.parse_forwarded`: parse a :rfc:`7239` ``Forwarded`` value
 - :func:`.parse_link`: parse a :rfc:`5988` ``Link`` value
 - :func:`.parse_list`: parse a comma-separated list that is
   present in so many headers
@@ -15,16 +16,19 @@ mentioned.
 
 """
 import functools
+import decimal
 import re
 import warnings
 
 from . import datastructures, errors, _helpers
+
 
 _CACHE_CONTROL_BOOL_DIRECTIVES = \
     ('must-revalidate', 'no-cache', 'no-store', 'no-transform',
      'only-if-cached', 'public', 'private', 'proxy-revalidate')
 _COMMENT_RE = re.compile(r'\(.*\)')
 _QUOTED_SEGMENT_RE = re.compile(r'"([^"]*)"')
+_DEF_PARAM_VALUE = object()
 
 
 def parse_accept(header_value):
@@ -50,10 +54,17 @@ def parse_accept(header_value):
     .. _Accept: http://tools.ietf.org/html/rfc7231#section-5.3.2
 
     """
+    next_explicit_q = decimal.ExtendedContext.next_plus(decimal.Decimal('5.0'))
     headers = [parse_content_type(header)
                for header in parse_list(header_value)]
     for header in headers:
-        header.quality = float(header.parameters.pop('q', 1.0))
+        q = header.parameters.pop('q', None)
+        if q is None:
+            q = '1.0'
+        elif float(q) == 1.0:
+            q = float(next_explicit_q)
+            next_explicit_q = next_explicit_q.next_minus()
+        header.quality = float(q)
 
     def ordering(left, right):
         """
@@ -200,10 +211,44 @@ def parse_content_type(content_type, normalize_parameter_values=True):
     """
     parts = _remove_comments(content_type).split(';')
     content_type, content_subtype = parts.pop(0).split('/')
-    parameters = _parse_parameter_list(parts, normalize_parameter_values)
+    parameters = _parse_parameter_list(
+        parts, normalize_parameter_values=normalize_parameter_values)
 
     return datastructures.ContentType(content_type, content_subtype,
                                       dict(parameters))
+
+
+def parse_forwarded(header_value, only_standard_parameters=False):
+    """
+    Parse RFC7239 Forwarded header.
+
+    :param str header_value: value to parse
+    :keyword bool only_standard_parameters: if this keyword is specified
+        and given a *truthy* value, then a non-standard parameter name
+        will result in :exc:`~ietfparse.errors.StrictHeaderParsingFailure`
+    :return: an ordered :class:`list` of :class:`dict` instances
+    :raises: :exc:`ietfparse.errors.StrictHeaderParsingFailure` is
+        raised if `only_standard_parameters` is enabled and a non-standard
+        parameter name is encountered
+
+    This function parses a :rfc:`7239` HTTP header into a :class:`list`
+    of :class:`dict` instances with each instance containing the param
+    values.  The list is ordered as received from left to right and the
+    parameter names are folded to lower case strings.
+
+    """
+    result = []
+    for entry in parse_list(header_value):
+        param_tuples = _parse_parameter_list(entry.split(';'),
+                                             normalize_parameter_names=True,
+                                             normalize_parameter_values=False)
+        if only_standard_parameters:
+            for name, _ in param_tuples:
+                if name not in ('for', 'proto', 'by', 'host'):
+                    raise errors.StrictHeaderParsingFailure('Forwarded',
+                                                            header_value)
+        result.append(dict(param_tuples))
+    return result
 
 
 def parse_link(header_value, strict=True):
@@ -284,21 +329,42 @@ def parse_list(value):
             for x in value.split(',')]
 
 
-def _parse_parameter_list(parameter_list, normalized_parameter_values=True):
+def _parse_parameter_list(parameter_list,
+                          normalized_parameter_values=_DEF_PARAM_VALUE,
+                          normalize_parameter_names=False,
+                          normalize_parameter_values=True):
     """
     Parse a named parameter list in the "common" format.
 
-    :param parameter_list:
-    :param bool normalized_parameter_values:
+    :param parameter_list: sequence of string values to parse
+    :keyword bool normalize_parameter_names: if specified and *truthy*
+        then parameter names will be case-folded to lower case
+    :keyword bool normalize_parameter_values: if omitted or specified
+        as *truthy*, then parameter values are case-folded to lower case
+    :keyword bool normalized_parameter_values: alternate way to spell
+        ``normalize_parameter_values`` -- this one is deprecated
     :return: a sequence containing the name to value pairs
 
+    The parsed values are normalized according to the keyword parameters
+    and returned as :class:`tuple` of name to value pairs preserving the
+    ordering from `parameter_list`.  The values will have quotes removed
+    if they were present.
+
     """
+    if normalized_parameter_values is not _DEF_PARAM_VALUE:  # pragma: no cover
+        warnings.warn('normalized_parameter_values keyword to '
+                      '_parse_parameter_list is deprecated, use '
+                      'normalize_parameter_values instead',
+                      DeprecationWarning)
+        normalize_parameter_values = normalized_parameter_values
     parameters = []
     for param in parameter_list:
         param = param.strip()
         if param:
             name, value = param.split('=')
-            if normalized_parameter_values:
+            if normalize_parameter_names:
+                name = name.lower()
+            if normalize_parameter_values:
                 value = value.lower()
             parameters.append((name, _dequote(value.strip())))
     return parameters

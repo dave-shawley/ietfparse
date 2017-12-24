@@ -1,6 +1,6 @@
 import unittest
 
-from ietfparse import algorithms, datastructures, errors, headers
+from ietfparse import algorithms, errors, headers
 
 
 class ContentNegotiationTestCase(unittest.TestCase):
@@ -11,16 +11,20 @@ class ContentNegotiationTestCase(unittest.TestCase):
             self.requested,
             [headers.parse_content_type(value) for value in supported],
         )
-        self.assertEqual(selected, headers.parse_content_type(expected))
+        self.assertEqual(
+            selected, headers.parse_content_type(expected),
+            '\nExpected to select "{!s}", actual selection was "{!s}"'.format(
+                expected, selected,
+            ))
         if 'matching_pattern' in kwargs:
             self.assertEqual(str(matched), kwargs['matching_pattern'])
 
 
-class WhenUsingProactiveContentNegotiation(ContentNegotiationTestCase):
+class ProactiveContentNegotiationTests(ContentNegotiationTestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(WhenUsingProactiveContentNegotiation, cls).setUpClass()
+        super(ProactiveContentNegotiationTests, cls).setUpClass()
         cls.requested.extend(headers.parse_accept(
             'application/vnd.example.com+json;version=2, '
             'application/vnd.example.com+json;version=1;q=0.9, '
@@ -73,11 +77,11 @@ class WhenUsingProactiveContentNegotiation(ContentNegotiationTestCase):
             )
 
 
-class WhenUsingRfc7231Examples(ContentNegotiationTestCase):
+class Rfc7231ExampleTests(ContentNegotiationTestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(WhenUsingRfc7231Examples, cls).setUpClass()
+        super(Rfc7231ExampleTests, cls).setUpClass()
         cls.requested.extend(headers.parse_accept(
             'text/*;q=0.3, text/html;q=0.7, text/html;level=1, '
             'text/html;level=2;q=0.4, */*;q=0.5'
@@ -111,17 +115,34 @@ class WhenUsingRfc7231Examples(ContentNegotiationTestCase):
         )
 
 
-class WhenSelectingWithRawContentTypes(unittest.TestCase):
+class PriorizationTests(unittest.TestCase):
 
-    def test_that_raw_content_type_has_highest_quality(self):
+    def test_that_explicit_priority_1_is_preferred(self):
         selected, matched = algorithms.select_content_type(
-            [
-                datastructures.ContentType('type', 'preferred')
-            ],
-            [
-                datastructures.ContentType('type', 'acceptable'),
-                datastructures.ContentType('type', 'almost-perfect'),
-                datastructures.ContentType('type', 'preferred'),
-            ],
+            headers.parse_accept(
+                'application/vnd.com.example+json, '
+                'application/vnd.com.example+json;version=1;q=1.0, '
+                'application/vnd.com.example+json;version=2'),
+            [headers.parse_content_type(value)
+             for value in ('application/vnd.com.example+json;version=1',
+                           'application/vnd.com.example+json;version=2',
+                           'application/vnd.com.example+json;version=3')],
         )
-        self.assertEqual(selected.content_subtype, 'preferred')
+        self.assertEqual(str(selected),
+                         'application/vnd.com.example+json; version=1')
+
+    def test_that_multiple_matches_result_in_any_appropriate_value(self):
+        # note that this also tests that duplicated values are acceptable
+        selected, matched = algorithms.select_content_type(
+            headers.parse_accept(
+                'application/vnd.com.example+json;version=1, '
+                'application/vnd.com.example+json;version=1, '
+                'application/vnd.com.example+json;version=1;q=0.9, '
+                'application/vnd.com.example+json;version=2;q=0.9'),
+            [headers.parse_content_type(value)
+             for value in ('application/vnd.com.example+json;version=1',
+                           'application/vnd.com.example+json;version=2',
+                           'application/vnd.com.example+json;version=3')],
+        )
+        self.assertEqual(str(selected),
+                         'application/vnd.com.example+json; version=1')

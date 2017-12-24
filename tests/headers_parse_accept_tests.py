@@ -3,10 +3,10 @@ import unittest
 from ietfparse import datastructures, headers
 
 
-class WhenParsingSimpleHttpAcceptHeader(unittest.TestCase):
+class ParseAcceptHeaderTests(unittest.TestCase):
 
     # First example from http://tools.ietf.org/html/rfc7231#section-5.3.2
-    
+
     def test_that_all_items_are_returned(self):
         parsed = headers.parse_accept('audio/*;q=0.2,audio/basic,'
                                       'audio/aiff;q=0')
@@ -23,9 +23,6 @@ class WhenParsingSimpleHttpAcceptHeader(unittest.TestCase):
                                       'audio/aiff;q=0')
         for value in parsed:
             self.assertNotIn('q', value.parameters)
-
-
-class WhenParsingHttpAcceptHeaderWithoutQualities(unittest.TestCase):
 
     # Final example in http://tools.ietf.org/html/rfc7231#section-5.3.2
 
@@ -53,8 +50,20 @@ class WhenParsingHttpAcceptHeaderWithoutQualities(unittest.TestCase):
                                       'text/plain;format=flowed, */*')
         self.assertEqual(parsed[3], datastructures.ContentType('*', '*'))
 
+    def test_that_extension_tokens_are_parsed(self):
+        self.assertEqual(
+            headers.parse_accept('application/json;charset="utf-8"'),
+            [datastructures.ContentType('application', 'json',
+                                        {'charset': 'utf-8'})])
 
-class WhenParsingAcceptCharsetHeader(unittest.TestCase):
+    def test_that_extension_tokens_with_spaces_are_parsed(self):
+        self.assertEqual(
+            headers.parse_accept('application/json;x-foo=" something else"'),
+            [datastructures.ContentType('application', 'json',
+                                        {'x-foo': ' something else'})])
+
+
+class ParseAcceptCharsetHeaderTests(unittest.TestCase):
 
     # Final example in http://tools.ietf.org/html/rfc7231#section-5.3.3
 
@@ -88,7 +97,7 @@ class WhenParsingAcceptCharsetHeader(unittest.TestCase):
         )
 
 
-class WhenParsingAcceptEncodingHeader(unittest.TestCase):
+class ParseAcceptEncodingTests(unittest.TestCase):
 
     # Final example in http://tools.ietf.org/html/rfc7231#section-5.3.4
 
@@ -121,7 +130,7 @@ class WhenParsingAcceptEncodingHeader(unittest.TestCase):
         )
 
 
-class WhenParsingAcceptLanguageHeader(unittest.TestCase):
+class ParseAcceptLanguageTests(unittest.TestCase):
 
     # Final example in http://tools.ietf.org/html/rfc7231#section-5.3.5
 
@@ -173,18 +182,3 @@ class WhenParsingAcceptLanguageHeader(unittest.TestCase):
                                           'de-Latn-DE-1996;q=1.0'),
             ['de-Latf-DE', 'de-Latn-DE-1996', 'de-Latn-DE'],
         )
-
-
-class WhenParsingAcceptHeaderWithExtensions(unittest.TestCase):
-
-    def test_that_extension_tokens_are_parsed(self):
-        self.assertEqual(
-            headers.parse_accept('application/json;charset="utf-8"'),
-            [datastructures.ContentType('application', 'json',
-                                        {'charset': 'utf-8'})])
-
-    def test_that_extension_tokens_with_spaces_are_parsed(self):
-        self.assertEqual(
-            headers.parse_accept('application/json;x-foo=" something else"'),
-            [datastructures.ContentType('application', 'json',
-                                        {'x-foo': ' something else'})])

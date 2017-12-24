@@ -1,8 +1,9 @@
 language: python
 python:
 - 2.7
-- 3.3
 - 3.4
+- 3.5
+- 3.6
 - pypy
 sudo: false
 install:
@@ -21,4 +22,4 @@ deploy:
     tags: true
     all_branches: true
     repo: dave-shawley/ietfparse
-    python: 3.4
+    python: 3.5

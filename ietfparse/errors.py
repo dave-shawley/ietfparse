@@ -21,3 +21,22 @@ class NoMatch(RootException):
 class MalformedLinkValue(RootException):
     """Value specified is not a valid link header."""
     pass
+
+
+class StrictHeaderParsingFailure(RootException, ValueError):
+    """
+    Non-standard header value detected.
+
+    This is raised when "strict" conformance is enabled for a
+    header parsing function and a header value fails due to one
+    of the "strict" rules.
+
+    See :func:`ietfparse.headers.parse_forwarded` for an example.
+
+    """
+
+    def __init__(self, header_name, header_value):
+        super(StrictHeaderParsingFailure, self).__init__(header_name,
+                                                         header_value)
+        self.header_name = header_name
+        self.header_value = header_value
