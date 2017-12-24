@@ -1,10 +1,11 @@
 """
 Functions for parsing headers.
 
+- :func:`.parse_accept`: parse an ``Accept`` value
 - :func:`.parse_accept_charset`: parse a ``Accept-Charset`` value
 - :func:`.parse_cache_control`: parse a ``Cache-Control`` value
 - :func:`.parse_content_type`: parse a ``Content-Type`` value
-- :func:`.parse_accept`: parse an ``Accept`` value
+- :func:`.parse_forwarded`: parse a :rfc:`7239` ``Forwarded`` value
 - :func:`.parse_link`: parse a :rfc:`5988` ``Link`` value
 - :func:`.parse_list`: parse a comma-separated list that is
   present in so many headers
@@ -215,6 +216,39 @@ def parse_content_type(content_type, normalize_parameter_values=True):
 
     return datastructures.ContentType(content_type, content_subtype,
                                       dict(parameters))
+
+
+def parse_forwarded(header_value, only_standard_parameters=False):
+    """
+    Parse RFC7239 Forwarded header.
+
+    :param str header_value: value to parse
+    :keyword bool only_standard_parameters: if this keyword is specified
+        and given a *truthy* value, then a non-standard parameter name
+        will result in :exc:`~ietfparse.errors.StrictHeaderParsingFailure`
+    :return: an ordered :class:`list` of :class:`dict` instances
+    :raises: :exc:`ietfparse.errors.StrictHeaderParsingFailure` is
+        raised if `only_standard_parameters` is enabled and a non-standard
+        parameter name is encountered
+
+    This function parses a :rfc:`7239` HTTP header into a :class:`list`
+    of :class:`dict` instances with each instance containing the param
+    values.  The list is ordered as received from left to right and the
+    parameter names are folded to lower case strings.
+
+    """
+    result = []
+    for entry in parse_list(header_value):
+        param_tuples = _parse_parameter_list(entry.split(';'),
+                                             normalize_parameter_names=True,
+                                             normalize_parameter_values=False)
+        if only_standard_parameters:
+            for name, _ in param_tuples:
+                if name not in ('for', 'proto', 'by', 'host'):
+                    raise errors.StrictHeaderParsingFailure('Forwarded',
+                                                            header_value)
+        result.append(dict(param_tuples))
+    return result
 
 
 def parse_link(header_value, strict=True):

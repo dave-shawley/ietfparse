@@ -41,6 +41,11 @@ Relevant RFCs
 - :func:`ietfparse.headers.parse_parameter_list` parses the ``key=value``
   portions common to many header values.
 
+`RFC-7239`_
+-----------
+- :func:`ietfparse.headers.parse_forwarded` parses a :http:header:`Forwarded`
+  HTTP header.
+
 
 .. _RFC-2045: https://tools.ietf.org/html/rfc2045
 .. _5.1: https://tools.ietf.org/html/rfc2045#section-5.1
@@ -56,3 +61,5 @@ Relevant RFCs
 .. _5.3: https://tools.ietf.org/html/rfc7231#section-5.3
 .. _5.3.2: https://tools.ietf.org/html/rfc7231#section-5.3.2
 .. _5.3.3: https://tools.ietf.org/html/rfc7231#section-5.3.3
+
+.. _RFC-2739: https://tools.ietf.org/html/rfc7239
