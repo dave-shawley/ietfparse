@@ -33,34 +33,49 @@ class ContentType(object):
 
     """
 
-    def __init__(self, content_type, content_subtype, parameters=None):
+    def __init__(self, content_type, content_subtype, parameters=None,
+                 content_suffix=None):
         self.content_type = content_type.strip().lower()
         self.content_subtype = content_subtype.strip().lower()
+        if content_suffix is not None:
+            self.content_suffix = content_suffix.strip().lower()
+        else:
+            self.content_suffix = None
         self.parameters = {}
         if parameters is not None:
             for name in parameters:
                 self.parameters[name.lower()] = parameters[name]
 
     def __str__(self):
+        if self.content_suffix:
+            content_suffix = '+{0}'.format(self.content_suffix)
+        else:
+            content_suffix = ''
         if self.parameters:
-            return '{0}/{1}; {2}'.format(
-                self.content_type, self.content_subtype,
+            return '{0}/{1}{2}; {3}'.format(
+                self.content_type, self.content_subtype, content_suffix,
                 '; '.join('{0}={1}'.format(name, self.parameters[name])
                           for name in sorted(self.parameters))
             )
         else:
-            return '{0}/{1}'.format(self.content_type, self.content_subtype)
+            return '{0}/{1}{2}'.format(
+                self.content_type, self.content_subtype, content_suffix)
 
     def __repr__(self):  # pragma: no cover
-        return '<{0}.{1} {2}/{3}, {4} parameters>'.format(
+        if self.content_suffix:
+            content_suffix = '+{0}'.format(self.content_suffix)
+        else:
+            content_suffix = ''
+        return '<{0}.{1} {2}/{3}{4}, {5} parameters>'.format(
             self.__class__.__module__, self.__class__.__name__,
-            self.content_type, self.content_subtype,
+            self.content_type, self.content_subtype, content_suffix,
             len(self.parameters),
         )
 
     def __eq__(self, other):
         return (self.content_type == other.content_type and
                 self.content_subtype == other.content_subtype and
+                self.content_suffix == other.content_suffix and
                 self.parameters == other.parameters)
 
     def __lt__(self, other):

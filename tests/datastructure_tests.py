@@ -8,13 +8,17 @@ class WhenCreatingContentType(unittest.TestCase):
     def setUp(self):
         super(WhenCreatingContentType, self).setUp()
         self.value = ContentType('ContentType', ' SubType ',
-                                 parameters={'Key': 'Value'})
+                                 parameters={'Key': 'Value'},
+                                 content_suffix='JSON')
 
     def should_normalize_primary_type(self):
         self.assertEqual(self.value.content_type, 'contenttype')
 
     def should_normalize_subtype(self):
         self.assertEqual(self.value.content_subtype, 'subtype')
+
+    def should_normalize_suffix(self):
+        self.assertEqual(self.value.content_suffix, 'json')
 
     def should_convert_parameters_to_lowercase(self):
         self.assertEqual(self.value.parameters['key'], 'Value')
@@ -59,13 +63,18 @@ class WhenComparingContentTypesForEquality(unittest.TestCase):
 
     def test_types_differing_by_case_are_equal(self):
         self.assertEqual(
-            ContentType('text', 'html', {'Level': '3.2'}),
-            ContentType('text', 'HTML', {'level': '3.2'}))
+            ContentType('text', 'html', {'Level': '3.2'}, 'JSON'),
+            ContentType('text', 'HTML', {'level': '3.2'}, 'json'))
 
     def test_types_with_differing_params_are_not_equal(self):
         self.assertNotEqual(
             ContentType('text', 'html', {'level': '1'}),
             ContentType('text', 'html', {'level': '2'}))
+
+    def test_types_with_differing_suffix_are_not_equal(self):
+        self.assertNotEqual(
+            ContentType('text', 'html', content_suffix='json'),
+            ContentType('text', 'html', content_suffix='xml'))
 
 
 class WhenComparingContentTypesForOrdering(unittest.TestCase):
