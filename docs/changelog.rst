@@ -3,6 +3,11 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
+`Next Release`_
+---------------
+- Add :rfc:`6839` content suffix support to :class:`datastructures.ContentType`
+  and :func:`headers.parse_content_type`
+
 `1.5.0`_ (24-Dec-2017)
 ----------------------
 - Officially drop support for Python 2.6 and 3.3.

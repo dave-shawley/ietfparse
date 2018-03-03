@@ -19,6 +19,7 @@ class ContentType(object):
 
     :param str content_type: the primary content type
     :param str content_subtype: the content sub-type
+    :param str content_suffix: optional content suffix
     :param dict parameters: optional dictionary of content type
         parameters
 
@@ -30,6 +31,16 @@ class ContentType(object):
     content type is ``text`` with a *subtype* of ``html``.  Content type
     headers can include *parameters* as ``name=value`` pairs separated
     by colons.
+
+    :rfc:`6839` added the ability to use a content type to identify the
+    semantic value of a representation with a content type and also identify
+    the document format as a content type suffix.  For example,
+    ``application/vnd.github.v3+json`` is used to identify documents that
+    match version 3 of the GitHub API that are represented as JSON documents.
+    The same entity encoded as msgpack would have the content type
+    ``application/vnd.github.v3+msgpack``.  In this case, the content type
+    identifies the information that is in the document and the suffix is used
+    to identify the content format.
 
     """
 
