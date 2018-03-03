@@ -26,6 +26,11 @@ Relevant RFCs
 - :func:`ietfparse.datastructures.LinkHeader` represents a :mailheader:`Link`
   HTTP header.
 
+`RFC-6839`_
+-----------
+- :func:`ietf.headers.parse_content_type` and
+  :class:`ietfparse.datastructures.ContentType` both support content suffixes.
+
 `RFC-7231`_
 -----------
 - :func:`ietfparse.algorithms.select_content_type` implements proactive
