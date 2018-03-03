@@ -211,11 +211,16 @@ def parse_content_type(content_type, normalize_parameter_values=True):
     """
     parts = _remove_comments(content_type).split(';')
     content_type, content_subtype = parts.pop(0).split('/')
+    if '+' in content_subtype:
+        content_subtype, content_suffix = content_subtype.split('+')
+    else:
+        content_suffix = None
     parameters = _parse_parameter_list(
         parts, normalize_parameter_values=normalize_parameter_values)
 
     return datastructures.ContentType(content_type, content_subtype,
-                                      dict(parameters))
+                                      dict(parameters),
+                                      content_suffix)
 
 
 def parse_forwarded(header_value, only_standard_parameters=False):

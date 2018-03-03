@@ -19,13 +19,16 @@ class SimpleContentTypeParsingTests(unittest.TestCase):
     def test_that_no_parameters_are_found(self):
         self.assertEqual(self.parsed.parameters, {})
 
+    def test_that_no_suffix_is_foudn(self):
+        self.assertEqual(self.parsed.content_suffix, None)
+
 
 class ParsingComplexContentTypeTests(unittest.TestCase):
 
     def setUp(self):
         super(ParsingComplexContentTypeTests, self).setUp()
         self.parsed = headers.parse_content_type(
-            'message/HTTP; version=2.0 (someday); MsgType="Request"',
+            'message/HTTP+JSON; version=2.0 (someday); MsgType="Request"',
             normalize_parameter_values=False)
 
     def test_that_type_is_parsed(self):
@@ -33,6 +36,9 @@ class ParsingComplexContentTypeTests(unittest.TestCase):
 
     def test_that_subtype_is_parsed(self):
         self.assertEqual(self.parsed.content_subtype, 'http')
+
+    def test_that_suffix_is_parsed(self):
+        self.assertEqual(self.parsed.content_suffix, 'json')
 
     def test_that_version_parameter_is_parsed(self):
         self.assertEqual(self.parsed.parameters['version'], '2.0')
