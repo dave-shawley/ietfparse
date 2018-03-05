@@ -1,0 +1,95 @@
+version: "2"
+
+jobs:
+  build:
+    working_directory: ~/ietfparse
+    docker:
+      - image: circleci/python:3
+    steps:
+      - run: |
+          mkdir -p tmp/
+          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./tmp/cc-test-reporter
+          chmod +x ./tmp/cc-test-reporter
+      - persist_to_workspace:
+          root: tmp
+          paths:
+            - cc-test-reporter
+    python-2-test:
+      working_directory: ~/ietfparse
+      docker:
+        - image: circleci/python:2
+      steps:
+        - checkout
+        - attach_workspace:
+            at: ~/ietfparse/tmp
+        - run: |
+            mkdir build
+            sudo pip install -r test-requirements.txt -r requirements.txt
+            nosetests --with-coverage --cover-xml --cover-xml-file coverage.xml
+            ./tmp/cc-test-reporter format-coverage -t coverage.py -o tmp/python2-coverage.json
+        - persist_to_workspace:
+            root: tmp
+            paths:
+              - python2-coverage.json
+    python-3-test:
+      working_directory: ~/ietfparse
+      docker:
+        - image: circleci/python:3
+      steps:
+        - checkout
+        - attach_workspace:
+            at: ~/ietfparse/tmp
+        - run: |
+            mkdir build
+            sudo pip install -r test-requirements.txt -r requirements.txt
+            nosetests --with-coverage --cover-xml --cover-xml-file coverage.xml
+            ./tmp/cc-test-reporter format-coverage -t coverage.py -o tmp/python3-coverage.json
+        - persist_to_workspace:
+            root: tmp
+            paths:
+              - python3-coverage.json
+    upload-coverage:
+      working_directory: ~/ietfparse
+      docker:
+        - image: circleci/python:3
+      steps:
+        - attach_workspace:
+            at: ~/ietfparse/tmp
+        - run: |
+            ./tmp/cc-test-reporter sum-coverage tmp/*-coverage.json -p 2 -o tmp/codeclimate-total.json
+            ./tmp/cc-test-reporter upload-coverage -i tmp/codeclimate-total.json
+    distribute-tag:
+      working_directory: ~/ietfparse
+      docker:
+        - image: circleci/python:3
+      steps:
+        - checkout
+        - run: |
+            sudo pip install --upgrade readme_renderer twine wheel
+            ./setup.py check -r -s
+            ./setup.py bdist_wheel sdist
+            twine upload --skip-existing dist/*
+            curl -XPOST -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/ietfparse/28564/
+
+workflow:
+  version: 2
+  build-workflow:
+    jobs:
+      - build
+      - python-2-test:
+          requires:
+            build
+      - python-3-test:
+          requires:
+            build
+      - upload-coverage:
+          requires:
+            - python-2-test
+            - python-3-test
+      - distribute-tag:
+          context: org-global
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
