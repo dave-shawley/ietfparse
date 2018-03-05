@@ -3,8 +3,8 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
-`Next Release`_
----------------
+`1.5.1`_ (04-Mar-2018)
+----------------------
 - Add :rfc:`6839` content suffix support to :class:`datastructures.ContentType`
   and :func:`headers.parse_content_type`
 
@@ -120,4 +120,5 @@ Changelog
 .. _1.4.2: https://github.com/dave-shawley/ietfparse/compare/1.4.1...1.4.2
 .. _1.4.3: https://github.com/dave-shawley/ietfparse/compare/1.4.2...1.4.3
 .. _1.5.0: https://github.com/dave-shawley/ietfparse/compare/1.4.3...1.5.0
-.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.5.0...head
+.. _1.5.1: https://github.com/dave-shawley/ietfparse/compare/1.5.0...1.5.1
+.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.5.1...head
