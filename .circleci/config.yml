@@ -71,7 +71,7 @@ jobs:
             twine upload --skip-existing dist/*
             curl -XPOST -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/ietfparse/28564/
 
-workflow:
+workflows:
   version: 2
   build-workflow:
     jobs:
