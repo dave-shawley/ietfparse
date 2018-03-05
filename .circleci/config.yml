@@ -83,10 +83,10 @@ workflows:
       - build
       - python-2-test:
           requires:
-            build
+            - build
       - python-3-test:
           requires:
-            build
+            - build
       - upload-coverage:
           requires:
             - python-2-test
