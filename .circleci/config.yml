@@ -27,7 +27,7 @@ jobs:
       - run: |
           mkdir build
           sudo pip install -r test-requirements.txt -r requirements.txt
-          nosetests --with-coverage --cover-xml --cover-xml-file coverage.xml --with-xunit --with-xunit-file nosetests.xml
+          nosetests --with-coverage --cover-xml --cover-xml-file coverage.xml --with-xunit --xunit-file nosetests.xml
           ./tmp/cc-test-reporter format-coverage -t coverage.py -o tmp/python2-coverage.json
       - persist_to_workspace:
           root: tmp
@@ -45,7 +45,7 @@ jobs:
       - run: |
           mkdir build
           sudo pip install -r test-requirements.txt -r requirements.txt
-          nosetests --with-coverage --cover-xml --cover-xml-file coverage.xml --with-xunit --with-xunit-file nosetests.xml
+          nosetests --with-coverage --cover-xml --cover-xml-file coverage.xml --with-xunit --xunit-file nosetests.xml
           ./tmp/cc-test-reporter format-coverage -t coverage.py -o tmp/python3-coverage.json
       - persist_to_workspace:
           root: tmp
