@@ -66,4 +66,4 @@ Ok... Where?
 .. |Build| image:: https://img.shields.io/circleci/project/github/dave-shawley/ietfparse/master.svg
    :target: https://circleci.com/gh/dave-shawley/ietfparse/tree/master
 .. |Version| image:: https://img.shields.io/pypi/v/ietfparse.svg
-   :target: http://badge.fury.io/py/ietfparse
+   :target: https://pypi.org/project/ietfparse/
