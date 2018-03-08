@@ -3,6 +3,10 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
+`Next Release`_
+---------------
+- Switched from travis-ci to circle-ci.
+
 `1.5.1`_ (04-Mar-2018)
 ----------------------
 - Add :rfc:`6839` content suffix support to :class:`datastructures.ContentType`
