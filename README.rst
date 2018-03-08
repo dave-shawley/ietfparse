@@ -57,11 +57,11 @@ Ok... Where?
 | Issues        | https://github.com/dave-shawley/ietfparse                          |
 +---------------+--------------------------------------------------------------------+
 
-.. |CodeClimate| image:: https://codeclimate.com/github/dave-shawley/ietfparse/badges/gpa.svg
+.. |CodeClimate| image:: https://img.shields.io/codeclimate/maintainability/dave-shawley/ietfparse.svg
    :target: https://codeclimate.com/github/dave-shawley/ietfparse/
-.. |Coverage| image:: https://coveralls.io/repos/dave-shawley/ietfparse/badge.svg
+.. |Coverage| image:: https://img.shields.io/coveralls/github/dave-shawley/ietfparse/master.svg
    :target: https://coveralls.io/r/dave-shawley/ietfparse
-.. |ReadTheDocs| image:: https://readthedocs.org/projects/ietfparse/badge/?version=stable
+.. |ReadTheDocs| image:: https://img.shields.io/readthedocs/ietfparse.svg
    :target: https://ietfparse.readthedocs.org/
 .. |Build| image:: https://img.shields.io/circleci/project/github/dave-shawley/ietfparse/master.svg
    :target: https://circleci.com/gh/dave-shawley/ietfparse/tree/master
