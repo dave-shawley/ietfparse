@@ -1,7 +1,7 @@
 ietfparse
 =========
 
-|Version| |ReadTheDocs| |Travis| |Coverage| |CodeClimate|
+|Version| |ReadTheDocs| |Build| |Coverage| |CodeClimate|
 
 Wait... Why? What??
 -------------------
@@ -45,25 +45,25 @@ Here's a sample of the code that this library lets you write::
 
 Ok... Where?
 ------------
-+---------------+-------------------------------------------------+
-| Source        | https://github.com/dave-shawley/ietfparse       |
-+---------------+-------------------------------------------------+
-| Status        | https://travis-ci.org/dave-shawley/ietfparse    |
-+---------------+-------------------------------------------------+
-| Download      | https://pypi.python.org/pypi/ietfparse          |
-+---------------+-------------------------------------------------+
-| Documentation | http://ietfparse.readthedocs.io/en/latest       |
-+---------------+-------------------------------------------------+
-| Issues        | https://github.com/dave-shawley/ietfparse       |
-+---------------+-------------------------------------------------+
++---------------+--------------------------------------------------------------------+
+| Source        | https://github.com/dave-shawley/ietfparse                          |
++---------------+--------------------------------------------------------------------+
+| Status        | https://https://circleci.com/gh/dave-shawley/ietfparse/tree/master |
++---------------+--------------------------------------------------------------------+
+| Download      | https://pypi.python.org/pypi/ietfparse                             |
++---------------+--------------------------------------------------------------------+
+| Documentation | http://ietfparse.readthedocs.io/en/latest                          |
++---------------+--------------------------------------------------------------------+
+| Issues        | https://github.com/dave-shawley/ietfparse                          |
++---------------+--------------------------------------------------------------------+
 
-.. |CodeClimate| image:: https://codeclimate.com/github/dave-shawley/ietfparse/badges/gpa.svg
+.. |CodeClimate| image:: https://img.shields.io/codeclimate/maintainability/dave-shawley/ietfparse.svg
    :target: https://codeclimate.com/github/dave-shawley/ietfparse/
-.. |Coverage| image:: https://coveralls.io/repos/dave-shawley/ietfparse/badge.svg
+.. |Coverage| image:: https://img.shields.io/coveralls/github/dave-shawley/ietfparse/master.svg
    :target: https://coveralls.io/r/dave-shawley/ietfparse
-.. |ReadTheDocs| image:: https://readthedocs.org/projects/ietfparse/badge/?version=stable
+.. |ReadTheDocs| image:: https://img.shields.io/readthedocs/ietfparse.svg
    :target: https://ietfparse.readthedocs.org/
-.. |Travis| image:: https://travis-ci.org/dave-shawley/ietfparse.svg
-   :target: https://travis-ci.org/dave-shawley/ietfparse
-.. |Version| image:: https://badge.fury.io/py/ietfparse.svg
-   :target: http://badge.fury.io/py/ietfparse
+.. |Build| image:: https://img.shields.io/circleci/project/github/dave-shawley/ietfparse/master.svg
+   :target: https://circleci.com/gh/dave-shawley/ietfparse/tree/master
+.. |Version| image:: https://img.shields.io/pypi/v/ietfparse.svg
+   :target: https://pypi.org/project/ietfparse/

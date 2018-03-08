@@ -26,9 +26,10 @@ jobs:
           at: ~/ietfparse/tmp
       - run: |
           mkdir build
-          sudo pip install -r test-requirements.txt -r requirements.txt
-          nosetests --with-coverage --cover-xml --cover-xml-file coverage.xml
+          sudo pip install -r test-requirements.txt -r requirements.txt coveralls
+          nosetests --with-coverage --cover-xml --cover-xml-file coverage.xml --with-xunit --xunit-file nosetests.xml
           ./tmp/cc-test-reporter format-coverage -t coverage.py -o tmp/python2-coverage.json
+          coveralls
       - persist_to_workspace:
           root: tmp
           paths:
@@ -44,9 +45,10 @@ jobs:
           at: ~/ietfparse/tmp
       - run: |
           mkdir build
-          sudo pip install -r test-requirements.txt -r requirements.txt
-          nosetests --with-coverage --cover-xml --cover-xml-file coverage.xml
+          sudo pip install -r test-requirements.txt -r requirements.txt coveralls
+          nosetests --with-coverage --cover-xml --cover-xml-file coverage.xml --with-xunit --xunit-file nosetests.xml
           ./tmp/cc-test-reporter format-coverage -t coverage.py -o tmp/python3-coverage.json
+          coveralls
       - persist_to_workspace:
           root: tmp
           paths:
