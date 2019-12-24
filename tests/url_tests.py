@@ -6,11 +6,11 @@ from ietfparse import algorithms
 
 
 class RewriteUrlHostTests(unittest.TestCase):
-
     def test_host_name_is_replaced(self):
-        self.assertEqual(algorithms.rewrite_url('http://example.com/docs',
-                                                host='www.example.com'),
-                         'http://www.example.com/docs')
+        self.assertEqual(
+            algorithms.rewrite_url('http://example.com/docs',
+                                   host='www.example.com'),
+            'http://www.example.com/docs')
 
     def test_host_equal_none_removes_host(self):
         self.assertEqual(
@@ -26,8 +26,7 @@ class RewriteUrlHostTests(unittest.TestCase):
         self.assertEqual(
             algorithms.rewrite_url('http://example.com',
                                    host='dollars-and-\u00a2s.com'),
-            'http://xn--dollars-and-s-7na.com'
-        )
+            'http://xn--dollars-and-s-7na.com')
 
     def test_label_longer_than_63_characters_is_rejected(self):
         # encoded form would be 'xn--' + ('a' * 56) + '-nub' which
@@ -37,25 +36,24 @@ class RewriteUrlHostTests(unittest.TestCase):
                                    host='\u00a2{0}'.format('a' * 56))
 
     def test_port_is_retained(self):
-        self.assertEqual(algorithms.rewrite_url('http://example.com:8080',
-                                                host='other.com'),
-                         'http://other.com:8080')
+        self.assertEqual(
+            algorithms.rewrite_url('http://example.com:8080',
+                                   host='other.com'), 'http://other.com:8080')
 
     def test_long_hosts_are_rejected(self):
-        long_host_name = '{0}.{1}.{2}.{3}.com'.format(
-            'a' * 63, 'b' * 63, 'c' * 63, 'd' * 63)
+        long_host_name = '{0}.{1}.{2}.{3}.com'.format('a' * 63, 'b' * 63,
+                                                      'c' * 63, 'd' * 63)
         with self.assertRaises(ValueError):
             algorithms.rewrite_url('http://example.com', host=long_host_name)
 
     def test_long_host_names_can_be_enabled(self):
-        long_host_name = '{0}.{1}.{2}.{3}.com'.format(
-            'a' * 63, 'b' * 63, 'c' * 63, 'd' * 63)
+        long_host_name = '{0}.{1}.{2}.{3}.com'.format('a' * 63, 'b' * 63,
+                                                      'c' * 63, 'd' * 63)
         self.assertEqual(
             algorithms.rewrite_url('http://example.com',
                                    host=long_host_name,
                                    enable_long_host=True),
-            'http://{0}'.format(long_host_name)
-        )
+            'http://{0}'.format(long_host_name))
 
     def test_long_labels_are_always_rejected(self):
         with self.assertRaises(ValueError):
@@ -108,7 +106,6 @@ class RewriteUrlHostTests(unittest.TestCase):
 
 
 class RewriteUrlPortTests(unittest.TestCase):
-
     def test_port_is_replaced(self):
         self.assertEqual(
             algorithms.rewrite_url('http://example.com:443', port=80),
@@ -123,9 +120,8 @@ class RewriteUrlPortTests(unittest.TestCase):
             algorithms.rewrite_url('http://example.com', port=-1)
 
     def test_port_is_ignored_without_host(self):
-        self.assertEqual(
-            algorithms.rewrite_url('http:///etc/passwd', port=80),
-            'http:///etc/passwd')
+        self.assertEqual(algorithms.rewrite_url('http:///etc/passwd', port=80),
+                         'http:///etc/passwd')
 
     def test_port_equal_none_removes_port(self):
         self.assertEqual(
@@ -134,7 +130,6 @@ class RewriteUrlPortTests(unittest.TestCase):
 
 
 class RewriteUrlPathTests(unittest.TestCase):
-
     def test_path_is_replaced(self):
         self.assertEqual(
             algorithms.rewrite_url('http://example.com/path', path='new-path'),
@@ -176,7 +171,6 @@ class RewriteUrlPathTests(unittest.TestCase):
 
 
 class RewriteUrlQueryTests(unittest.TestCase):
-
     def test_query_string_is_replaced(self):
         self.assertEqual(
             algorithms.rewrite_url('http://host/path?foo=bar', query='1=2'),
@@ -200,16 +194,16 @@ class RewriteUrlQueryTests(unittest.TestCase):
     def test_mapping_query_is_encoded_with_ampersands(self):
         self.assertEqual(
             algorithms.rewrite_url('http://host?foo=bar',
-                                   query={'first': 1, 'last': 2}),
-            'http://host?first=1&last=2'
-        )
+                                   query={
+                                       'first': 1,
+                                       'last': 2
+                                   }), 'http://host?first=1&last=2')
 
     def test_list_query_is_encoded_with_ampersands(self):
         self.assertEqual(
             algorithms.rewrite_url('http://host?foo=bar',
                                    query=[('superior', 1), ('inferior', 2)]),
-            'http://host?superior=1&inferior=2'
-        )
+            'http://host?superior=1&inferior=2')
 
     def test_that_nonascii_is_percent_encoded_as_utf8(self):
         self.assertEqual(
@@ -219,7 +213,6 @@ class RewriteUrlQueryTests(unittest.TestCase):
 
 
 class RewriteUrlUserTests(unittest.TestCase):
-
     def test_that_user_is_replaced(self):
         self.assertEqual(
             algorithms.rewrite_url('http://user1@host', user='user2'),
@@ -264,7 +257,6 @@ class RewriteUrlUserTests(unittest.TestCase):
 
 
 class RewriteUrlPasswordTests(unittest.TestCase):
-
     def test_that_password_is_replaced(self):
         self.assertEqual(
             algorithms.rewrite_url('http://user:pass@host', password='PASS'),
@@ -297,7 +289,6 @@ class RewriteUrlPasswordTests(unittest.TestCase):
 
 
 class RewriteUrlSchemeTests(unittest.TestCase):
-
     def test_that_scheme_is_replaced(self):
         self.assertEqual(
             algorithms.rewrite_url('http://host', scheme='https'),
@@ -305,8 +296,8 @@ class RewriteUrlSchemeTests(unittest.TestCase):
         )
 
     def test_that_setting_scheme_to_none_removes_it(self):
-        self.assertEqual(
-            algorithms.rewrite_url('http://host', scheme=None), '//host')
+        self.assertEqual(algorithms.rewrite_url('http://host', scheme=None),
+                         '//host')
 
     def test_that_clearing_scheme_on_idn_url_does_not_change_host(self):
         self.assertEqual(
@@ -318,30 +309,33 @@ class RewriteUrlSchemeTests(unittest.TestCase):
     def test_that_changing_scheme_and_host_honors_idna_logic(self):
         self.assertEqual(
             algorithms.rewrite_url('http://xn--dollars-and-s-7na.com',
-                                   scheme='blah', host='just-\u20ac-now'),
+                                   scheme='blah',
+                                   host='just-\u20ac-now'),
             'blah://just-%E2%82%AC-now',
         )
         self.assertEqual(
             algorithms.rewrite_url('blah://dollars-and-\u00a2s.com',
-                                   scheme='http', host='just-\u20ac-now'),
+                                   scheme='http',
+                                   host='just-\u20ac-now'),
             'http://xn--just--now-ki1e',
         )
         self.assertEqual(
             algorithms.rewrite_url('http://xn--dollars-and-s-7na.com',
-                                   scheme='blah', host='just-\u20ac-now',
+                                   scheme='blah',
+                                   host='just-\u20ac-now',
                                    encode_with_idna=True),
             'blah://xn--just--now-ki1e',
         )
         self.assertEqual(
             algorithms.rewrite_url('blah://dollars-and-\u00a2s.com',
-                                   scheme='http', host='just-\u20ac-now',
+                                   scheme='http',
+                                   host='just-\u20ac-now',
                                    encode_with_idna=False),
             'http://just-%E2%82%AC-now',
         )
 
 
 class RewriteUrlFragmentTests(unittest.TestCase):
-
     def test_that_fragment_is_replaced(self):
         self.assertEqual(
             algorithms.rewrite_url('http://foo#fragment', fragment='boom'),

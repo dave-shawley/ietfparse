@@ -34,9 +34,8 @@ class StrictHeaderParsingFailure(RootException, ValueError):
     See :func:`ietfparse.headers.parse_forwarded` for an example.
 
     """
-
     def __init__(self, header_name, header_value):
-        super(StrictHeaderParsingFailure, self).__init__(header_name,
-                                                         header_value)
+        super(StrictHeaderParsingFailure,
+              self).__init__(header_name, header_value)
         self.header_name = header_name
         self.header_value = header_value

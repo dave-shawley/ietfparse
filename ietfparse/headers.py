@@ -55,8 +55,9 @@ def parse_accept(header_value):
 
     """
     next_explicit_q = decimal.ExtendedContext.next_plus(decimal.Decimal('5.0'))
-    headers = [parse_content_type(header)
-               for header in parse_list(header_value)]
+    headers = [
+        parse_content_type(header) for header in parse_list(header_value)
+    ]
     for header in headers:
         q = header.parameters.pop('q', None)
         if q is None:
@@ -219,8 +220,7 @@ def parse_content_type(content_type, normalize_parameter_values=True):
         parts, normalize_parameter_values=normalize_parameter_values)
 
     return datastructures.ContentType(content_type, content_subtype,
-                                      dict(parameters),
-                                      content_suffix)
+                                      dict(parameters), content_suffix)
 
 
 def parse_forwarded(header_value, only_standard_parameters=False):
@@ -250,8 +250,8 @@ def parse_forwarded(header_value, only_standard_parameters=False):
         if only_standard_parameters:
             for name, _ in param_tuples:
                 if name not in ('for', 'proto', 'by', 'host'):
-                    raise errors.StrictHeaderParsingFailure('Forwarded',
-                                                            header_value)
+                    raise errors.StrictHeaderParsingFailure(
+                        'Forwarded', header_value)
         result.append(dict(param_tuples))
     return result
 
@@ -301,9 +301,10 @@ def parse_link(header_value, strict=True):
                     raise errors.MalformedLinkValue(
                         'Param list missing opening semicolon ')
 
-                yield (groups['link'].strip(),
-                       [p.replace('\001', ';').strip()
-                        for p in params[1:].split(';') if p])
+                yield (groups['link'].strip(), [
+                    p.replace('\001', ';').strip()
+                    for p in params[1:].split(';') if p
+                ])
                 buf = buf.strip()
             else:
                 raise errors.MalformedLinkValue('Malformed link header', buf)
@@ -313,8 +314,8 @@ def parse_link(header_value, strict=True):
         for name, value in _parse_parameter_list(param_list):
             parser.add_value(name, value)
 
-        links.append(datastructures.LinkHeader(target=target,
-                                               parameters=parser.values))
+        links.append(
+            datastructures.LinkHeader(target=target, parameters=parser.values))
     return links
 
 
@@ -330,8 +331,7 @@ def parse_list(value):
     for segment in segments:
         left, match, right = value.partition(segment)
         value = ''.join([left, match.replace(',', '\000'), right])
-    return [_dequote(x.strip()).replace('\000', ',')
-            for x in value.split(',')]
+    return [_dequote(x.strip()).replace('\000', ',') for x in value.split(',')]
 
 
 def _parse_parameter_list(parameter_list,
@@ -357,10 +357,10 @@ def _parse_parameter_list(parameter_list,
 
     """
     if normalized_parameter_values is not _DEF_PARAM_VALUE:  # pragma: no cover
-        warnings.warn('normalized_parameter_values keyword to '
-                      '_parse_parameter_list is deprecated, use '
-                      'normalize_parameter_values instead',
-                      DeprecationWarning)
+        warnings.warn(
+            'normalized_parameter_values keyword to _parse_parameter_list is'
+            ' deprecated, use normalize_parameter_values instead',
+            DeprecationWarning)
         normalize_parameter_values = normalized_parameter_values
     parameters = []
     for param in parameter_list:

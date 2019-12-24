@@ -34,7 +34,6 @@ class ParameterParser(object):
       raised.
 
     """
-
     def __init__(self, strict=True):
         self.strict = strict
         self._values = []

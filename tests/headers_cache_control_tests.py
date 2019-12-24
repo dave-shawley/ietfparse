@@ -4,7 +4,6 @@ from ietfparse import headers
 
 
 class WhenParsingCacheControl(unittest.TestCase):
-
     def setUp(self):
         super(WhenParsingCacheControl, self).setUp()
         self.parsed = headers.parse_cache_control(

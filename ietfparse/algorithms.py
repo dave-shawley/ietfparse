@@ -20,12 +20,10 @@ from __future__ import unicode_literals
 from operator import attrgetter
 import collections
 
-from . compat import parse
-from . import errors
+from ietfparse.compat import parse
+from ietfparse import errors
 
-
-IDNA_SCHEMES = [
-    'http', 'https', 'ftp', 'afp', 'sftp', 'smb']
+IDNA_SCHEMES = ['http', 'https', 'ftp', 'afp', 'sftp', 'smb']
 
 # these are in addition to the "always safe" set
 _rfc3986_unreserved = b'~'
@@ -44,8 +42,8 @@ PATH_SAFE_CHARS = _rfc3986_sub_delims + _rfc3986_unreserved + b':/@'
 FRAGMENT_SAFE_CHARS = b'?/'
 
 
-class RemoveUrlAuthResult(collections.namedtuple('RemoveUrlAuthResult',
-                                                 ['auth', 'url'])):
+class RemoveUrlAuthResult(
+        collections.namedtuple('RemoveUrlAuthResult', ['auth', 'url'])):
     __slots__ = ()
 
     @property
@@ -62,10 +60,9 @@ def _content_type_matches(candidate, pattern):
     def _wildcard_compare(type_spec, type_pattern):
         return type_pattern == '*' or type_spec == type_pattern
 
-    return (
-        _wildcard_compare(candidate.content_type, pattern.content_type) and
-        _wildcard_compare(candidate.content_subtype, pattern.content_subtype)
-    )
+    return (_wildcard_compare(candidate.content_type, pattern.content_type)
+            and _wildcard_compare(candidate.content_subtype,
+                                  pattern.content_subtype))
 
 
 def select_content_type(requested, available):
@@ -93,7 +90,6 @@ def select_content_type(requested, available):
     .. _Content-Type: http://tools.ietf.org/html/rfc7231#section-3.1.1.5
 
     """
-
     class Match(object):
         """Sorting assistant.
 
@@ -381,7 +377,9 @@ def _create_url_identifier(user, password):
     return None
 
 
-def _normalize_host(host, enable_long_host=False, encode_with_idna=None,
+def _normalize_host(host,
+                    enable_long_host=False,
+                    encode_with_idna=None,
                     scheme=None):
     """
     Normalize a host for a URL.
@@ -411,8 +409,8 @@ def _normalize_host(host, enable_long_host=False, encode_with_idna=None,
         enable_idna = scheme.lower() in IDNA_SCHEMES if scheme else False
     if enable_idna:
         try:
-            host = '.'.join(segment.encode('idna').decode()
-                            for segment in host.split('.'))
+            host = '.'.join(
+                segment.encode('idna').decode() for segment in host.split('.'))
         except UnicodeError as exc:
             raise ValueError('host is invalid - {0}'.format(exc))
     else:

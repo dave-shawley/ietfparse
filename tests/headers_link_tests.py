@@ -4,7 +4,6 @@ from ietfparse import errors, headers
 
 
 class LinkHeaderParsingTests(unittest.TestCase):
-
     def test_parsing_single_link(self):
         parsed = headers.parse_link(
             '<http://example.com/TheBook/chapter2>; rel="previous"; '
@@ -19,11 +18,10 @@ class LinkHeaderParsingTests(unittest.TestCase):
     def test_parsing_multiple_link_headers(self):
         parsed = headers.parse_link(
             '<http://example.com/first>; rel=first;another=value,'
-            '<http://example.com/second>',
-        )
+            '<http://example.com/second>', )
         self.assertEqual(parsed[0].target, 'http://example.com/first')
-        self.assertEqual(parsed[0].parameters,
-                         [('rel', 'first'), ('another', 'value')])
+        self.assertEqual(parsed[0].parameters, [('rel', 'first'),
+                                                ('another', 'value')])
 
         self.assertEqual(parsed[1].target, 'http://example.com/second')
         self.assertEqual(parsed[1].parameters, [])
@@ -45,12 +43,11 @@ class LinkHeaderParsingTests(unittest.TestCase):
 
     def test_that_title_star_overrides_title_parameter(self):
         parsed = headers.parse_link('<>; title=title; title*=title*')
-        self.assertEqual(parsed[0].parameters,
-                         [('title*', 'title*'), ('title', 'title*')])
+        self.assertEqual(parsed[0].parameters, [('title*', 'title*'),
+                                                ('title', 'title*')])
 
 
 class MalformedLinkHeaderTests(unittest.TestCase):
-
     def test_that_value_error_when_url_brackets_are_missing(self):
         with self.assertRaises(errors.MalformedLinkValue):
             headers.parse_link('http://foo.com; rel=wrong')
@@ -99,13 +96,12 @@ class MalformedLinkHeaderTests(unittest.TestCase):
 
 
 class LinkHeaderFormattingTests(unittest.TestCase):
-
     def test_that_parameters_are_sorted_after_rel(self):
         parsed = headers.parse_link('<http://example.com>; title="foo";'
                                     ' rel="next"; hreflang="en"')
-        self.assertEqual(str(parsed[0]),
-                         '<http://example.com>; rel="next"; hreflang="en";'
-                         ' title="foo"')
+        self.assertEqual(
+            str(parsed[0]), '<http://example.com>; rel="next"; hreflang="en";'
+            ' title="foo"')
 
     def test_that_rel_is_not_required(self):
         parsed = headers.parse_link('<>')
@@ -117,5 +113,4 @@ class LinkHeaderFormattingTests(unittest.TestCase):
 
     def test_that_parameters_are_sorted_without_rel(self):
         parsed = headers.parse_link('<>; title=foo; hreflang="en"')
-        self.assertEqual(str(parsed[0]),
-                         '<>; hreflang="en"; title="foo"')
+        self.assertEqual(str(parsed[0]), '<>; hreflang="en"; title="foo"')
