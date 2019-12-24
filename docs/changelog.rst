@@ -6,6 +6,7 @@ Changelog
 `Next Release`_
 ---------------
 - Switched from travis-ci to circle-ci.
+- Add type stubs.
 
 `1.5.1`_ (04-Mar-2018)
 ----------------------

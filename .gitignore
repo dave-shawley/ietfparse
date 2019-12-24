@@ -3,6 +3,7 @@ dist/
 env*/
 htmlcov/
 __pycache__/
+.mypy_cache/
 
 .coverage
 *.pyc
