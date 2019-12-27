@@ -1,4 +1,13 @@
 version: "2"
+checks:
+  file-lines:
+    config:
+      threshold: 1000
+  method-complexity:
+    config:
+      threshold: 10
+  similar-code:
+    enabled: false
 plugins:
   pep8:
     enabled: true
