@@ -11,16 +11,16 @@ class WhenCreatingContentType(unittest.TestCase):
                                  parameters={'Key': 'Value'},
                                  content_suffix='JSON')
 
-    def should_normalize_primary_type(self):
+    def test_that_primary_type_is_normalized(self):
         self.assertEqual(self.value.content_type, 'contenttype')
 
-    def should_normalize_subtype(self):
+    def test_that_subtype_is_normalized(self):
         self.assertEqual(self.value.content_subtype, 'subtype')
 
-    def should_normalize_suffix(self):
+    def test_that_suffix_is_normalized(self):
         self.assertEqual(self.value.content_suffix, 'json')
 
-    def should_convert_parameters_to_lowercase(self):
+    def test_that_parameter_names_are_casefolded(self):
         self.assertEqual(self.value.parameters['key'], 'Value')
 
 
