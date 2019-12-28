@@ -1,4 +1,4 @@
-version: "2"
+version: "2.1"
 
 jobs:
 
@@ -79,7 +79,7 @@ jobs:
           curl -XPOST -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/ietfparse/28564/
 
 workflows:
-  version: 2
+  version: "2"
   build-workflow:
     jobs:
       - build

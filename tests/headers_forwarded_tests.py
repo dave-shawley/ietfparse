@@ -4,15 +4,13 @@ from ietfparse import errors, headers
 
 
 class ForwardedHeaderParsingTests(unittest.TestCase):
-
     def test_that_whitespace_is_irrelevant(self):
         # RFC7239. sec 7.1
         self.assertEqual(
             headers.parse_forwarded('for=192.0.2.43,'
                                     'for="[2001:db8:cafe::17]",for=unknown'),
             headers.parse_forwarded('for=192.0.2.43, '
-                                    'for="[2001:db8:cafe::17]", for=unknown')
-        )
+                                    'for="[2001:db8:cafe::17]", for=unknown'))
 
     def test_that_order_is_preserved(self):
         parsed = headers.parse_forwarded('for=192.0.2.43,'
@@ -28,9 +26,10 @@ class ForwardedHeaderParsingTests(unittest.TestCase):
         self.assertEqual(parsed, [{'for': '[2001:db8:cafe::17]:4711'}])
 
     def test_parsing_full_header(self):
-        parsed = headers.parse_forwarded('for=192.0.2.60;proto=http;'
-                                         'by=203.0.113.43;host=example.com',
-                                         only_standard_parameters=True)
+        parsed = headers.parse_forwarded(
+            'for=192.0.2.60;proto=http;'
+            'by=203.0.113.43;host=example.com',
+            only_standard_parameters=True)
         self.assertEqual(parsed[0]['for'], '192.0.2.60')
         self.assertEqual(parsed[0]['proto'], 'http')
         self.assertEqual(parsed[0]['by'], '203.0.113.43')

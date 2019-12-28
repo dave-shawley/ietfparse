@@ -14,7 +14,6 @@ import functools
 
 @functools.total_ordering
 class ContentType(object):
-
     """A MIME ``Content-Type`` header.
 
     :param str content_type: the primary content type
@@ -43,8 +42,10 @@ class ContentType(object):
     to identify the content format.
 
     """
-
-    def __init__(self, content_type, content_subtype, parameters=None,
+    def __init__(self,
+                 content_type,
+                 content_subtype,
+                 parameters=None,
                  content_suffix=None):
         self.content_type = content_type.strip().lower()
         self.content_subtype = content_subtype.strip().lower()
@@ -66,11 +67,10 @@ class ContentType(object):
             return '{0}/{1}{2}; {3}'.format(
                 self.content_type, self.content_subtype, content_suffix,
                 '; '.join('{0}={1}'.format(name, self.parameters[name])
-                          for name in sorted(self.parameters))
-            )
+                          for name in sorted(self.parameters)))
         else:
-            return '{0}/{1}{2}'.format(
-                self.content_type, self.content_subtype, content_suffix)
+            return '{0}/{1}{2}'.format(self.content_type, self.content_subtype,
+                                       content_suffix)
 
     def __repr__(self):  # pragma: no cover
         if self.content_suffix:
@@ -80,14 +80,13 @@ class ContentType(object):
         return '<{0}.{1} {2}/{3}{4}, {5} parameters>'.format(
             self.__class__.__module__, self.__class__.__name__,
             self.content_type, self.content_subtype, content_suffix,
-            len(self.parameters),
-        )
+            len(self.parameters))
 
     def __eq__(self, other):
-        return (self.content_type == other.content_type and
-                self.content_subtype == other.content_subtype and
-                self.content_suffix == other.content_suffix and
-                self.parameters == other.parameters)
+        return (self.content_type == other.content_type
+                and self.content_subtype == other.content_subtype
+                and self.content_suffix == other.content_suffix
+                and self.parameters == other.parameters)
 
     def __lt__(self, other):
         if self.content_type == '*' and other.content_type != '*':
@@ -102,7 +101,6 @@ class ContentType(object):
 
 
 class LinkHeader(object):
-
     """
     Represents a single link within a ``Link`` header.
 
@@ -123,7 +121,6 @@ class LinkHeader(object):
     HTTP resources.
 
     """
-
     def __init__(self, target, parameters=None):
         self.target = target
         self.parameters = parameters or []
@@ -131,11 +128,15 @@ class LinkHeader(object):
     def __str__(self):
         formatted = '<{0}>'.format(self.target)
         if self.parameters:
-            params = ['{0}="{1}"'.format(*pair)
-                      for pair in self.parameters if pair[0] != 'rel']
+            params = [
+                '{0}="{1}"'.format(*pair) for pair in self.parameters
+                if pair[0] != 'rel'
+            ]
             params = '; '.join(sorted(params))
-            rel = ['{0}="{1}"'.format(*pair)
-                   for pair in self.parameters if pair[0] == 'rel']
+            rel = [
+                '{0}="{1}"'.format(*pair) for pair in self.parameters
+                if pair[0] == 'rel'
+            ]
             if rel:
                 formatted += '; ' + rel[0]
             if params:

@@ -5,7 +5,6 @@ from ietfparse import headers
 
 
 class DeprecationTests(unittest.TestCase):
-
     def test_that_parse_http_accept_header_emits_deprecation_warning(self):
         warnings.simplefilter('always')
         with warnings.catch_warnings(record=True) as caught:

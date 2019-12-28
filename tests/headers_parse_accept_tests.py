@@ -36,14 +36,13 @@ class ParseAcceptHeaderTests(unittest.TestCase):
     def test_that_specific_value_without_parameters_is_second(self):
         parsed = headers.parse_accept('text/*, text/plain,'
                                       'text/plain;format=flowed, */*')
-        self.assertEqual(
-            parsed[1], datastructures.ContentType('text', 'plain'))
+        self.assertEqual(parsed[1],
+                         datastructures.ContentType('text', 'plain'))
 
     def test_that_subtype_wildcard_is_next_to_last(self):
         parsed = headers.parse_accept('text/*, text/plain,'
                                       'text/plain;format=flowed, */*')
-        self.assertEqual(
-            parsed[2], datastructures.ContentType('text', '*'))
+        self.assertEqual(parsed[2], datastructures.ContentType('text', '*'))
 
     def test_that_least_specific_wildcard_is_least_preferred(self):
         parsed = headers.parse_accept('text/*, text/plain,'
@@ -52,15 +51,17 @@ class ParseAcceptHeaderTests(unittest.TestCase):
 
     def test_that_extension_tokens_are_parsed(self):
         self.assertEqual(
-            headers.parse_accept('application/json;charset="utf-8"'),
-            [datastructures.ContentType('application', 'json',
-                                        {'charset': 'utf-8'})])
+            headers.parse_accept('application/json;charset="utf-8"'), [
+                datastructures.ContentType('application', 'json',
+                                           {'charset': 'utf-8'})
+            ])
 
     def test_that_extension_tokens_with_spaces_are_parsed(self):
         self.assertEqual(
-            headers.parse_accept('application/json;x-foo=" something else"'),
-            [datastructures.ContentType('application', 'json',
-                                        {'x-foo': ' something else'})])
+            headers.parse_accept('application/json;x-foo=" something else"'), [
+                datastructures.ContentType('application', 'json',
+                                           {'x-foo': ' something else'})
+            ])
 
 
 class ParseAcceptCharsetHeaderTests(unittest.TestCase):
@@ -107,27 +108,23 @@ class ParseAcceptEncodingTests(unittest.TestCase):
     def test_that_response_sorted_by_quality(self):
         self.assertEqual(
             headers.parse_accept_encoding('compress, gzip;q=0.8, bzip;q=0.7'),
-            ['compress', 'gzip', 'bzip']
-        )
+            ['compress', 'gzip', 'bzip'])
 
     def test_that_unspecified_quality_is_treated_as_highest(self):
         self.assertEqual(
             headers.parse_accept_encoding('snappy;q=0.1,gzip,bzip;q=0.8'),
-            ['gzip', 'bzip', 'snappy']
-        )
+            ['gzip', 'bzip', 'snappy'])
 
     def test_that_wildcard_sorts_before_rejected_character_sets(self):
         self.assertEqual(
             headers.parse_accept_encoding('gzip;q=0.5, compress;q=1.0,'
                                           'bzip;q=0.1, snappy;q=0, *'),
-            ['compress', 'gzip', 'bzip', '*', 'snappy']
-        )
+            ['compress', 'gzip', 'bzip', '*', 'snappy'])
 
     def test_that_quality_below_0_001_is_rejected(self):
         self.assertEqual(
             headers.parse_accept_encoding('bzip, gzip;q=0.0009, *'),
-            ['bzip', '*', 'gzip']
-        )
+            ['bzip', '*', 'gzip'])
 
 
 class ParseAcceptLanguageTests(unittest.TestCase):
@@ -140,27 +137,22 @@ class ParseAcceptLanguageTests(unittest.TestCase):
     def test_that_response_sorted_by_quality(self):
         self.assertEqual(
             headers.parse_accept_language('de, en-gb;q=0.8, en;q=0.7'),
-            ['de', 'en-gb', 'en']
-        )
+            ['de', 'en-gb', 'en'])
 
     def test_that_unspecified_quality_is_treated_as_highest(self):
         self.assertEqual(
             headers.parse_accept_language('en-gb;q=0.1,de,en;q=0.8'),
-            ['de', 'en', 'en-gb']
-        )
+            ['de', 'en', 'en-gb'])
 
     def test_that_wildcard_sorts_before_rejected_character_sets(self):
         self.assertEqual(
             headers.parse_accept_language('es;q=0.5, es-mx;q=1.0,'
                                           'es-es;q=0.1, es-pr;q=0, *'),
-            ['es-mx', 'es', 'es-es', '*', 'es-pr']
-        )
+            ['es-mx', 'es', 'es-es', '*', 'es-pr'])
 
     def test_that_quality_below_0_001_is_rejected(self):
-        self.assertEqual(
-            headers.parse_accept_language('aa, bb;q=0.0009, *'),
-            ['aa', '*', 'bb']
-        )
+        self.assertEqual(headers.parse_accept_language('aa, bb;q=0.0009, *'),
+                         ['aa', '*', 'bb'])
 
     def test_that_order_is_retained_without_quality(self):
         self.assertEqual(
