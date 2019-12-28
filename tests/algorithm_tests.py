@@ -29,6 +29,8 @@ class ProactiveContentNegotiationTests(ContentNegotiationTestCase):
             headers.parse_accept(
                 'application/vnd.example.com+json;version=2, '
                 'application/vnd.example.com+json;version=1;q=0.9, '
+                'application/vnd.example.com+json;version=3;spec=1, '
+                'application/vnd.example.com+json;version=3;spec=2, '
                 'application/json;q=0.7, '
                 'application/*;q=0.6, '
                 'text/json;q=0.2, '
