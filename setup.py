@@ -44,6 +44,7 @@ setuptools.setup(
     description='Parse formats defined in IETF RFCs.',
     long_description=long_description,
     packages=setuptools.find_packages(exclude=['tests', 'tests.*']),
+    include_package_data=True,
     zip_safe=True,
     platforms='any',
     install_requires=install_requirements,
