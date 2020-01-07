@@ -3,77 +3,60 @@ import unittest
 from ietfparse.datastructures import ContentType
 
 
-class WhenCreatingContentType(unittest.TestCase):
-    def setUp(self):
-        super(WhenCreatingContentType, self).setUp()
-        self.value = ContentType('ContentType',
-                                 ' SubType ',
-                                 parameters={'Key': 'Value'},
-                                 content_suffix='JSON')
-
+class ContentTypeCreationTests(unittest.TestCase):
     def test_that_primary_type_is_normalized(self):
-        self.assertEqual(self.value.content_type, 'contenttype')
+        self.assertEqual('contenttype',
+                         ContentType('COntentType', 'b').content_type)
 
     def test_that_subtype_is_normalized(self):
-        self.assertEqual(self.value.content_subtype, 'subtype')
+        self.assertEqual('subtype',
+                         ContentType('a', '  SubType  ').content_subtype)
 
-    def test_that_suffix_is_normalized(self):
-        self.assertEqual(self.value.content_suffix, 'json')
+    def test_that_content_suffix_is_normalized(self):
+        self.assertEqual(
+            'json',
+            ContentType('a', 'b', content_suffix=' JSON').content_suffix)
 
     def test_that_parameter_names_are_casefolded(self):
-        self.assertEqual(self.value.parameters['key'], 'Value')
+        self.assertDictEqual({'key': 'Value'},
+                             ContentType('a', 'b', parameters={
+                                 'KEY': 'Value'
+                             }).parameters)
 
 
-class WhenConvertingSimpleContentTypeToStr(unittest.TestCase):
-    def test_only_contains_type_information(self):
-        self.assertEqual(str(ContentType('primary', 'subtype')),
-                         'primary/subtype')
+class ContentTypeStringificationTests(unittest.TestCase):
+    def test_that_simple_case_works(self):
+        self.assertEqual('primary/subtype',
+                         str(ContentType('primary', 'subtype')))
+
+    def test_that_parameters_are_sorted_by_name(self):
+        ct = ContentType('a', 'b', {'one': '1', 'two': '2', 'three': 3})
+        self.assertEqual('a/b; one=1; three=3; two=2', str(ct))
+
+    def test_that_content_suffix_is_appended(self):
+        ct = ContentType('a', 'b', {'foo': 'bar'}, content_suffix='xml')
+        self.assertEqual('a/b+xml; foo=bar', str(ct))
 
 
-class WhenConvertingContentTypeWithParametersToStr(unittest.TestCase):
-    def setUp(self):
-        super(WhenConvertingContentTypeWithParametersToStr, self).setUp()
-        self.returned = str(
-            ContentType('primary', 'subtype', {
-                'one': '1',
-                'two': '2',
-                'three': 3
-            }))
-
-    def test_starts_with_primary_type(self):
-        self.assertTrue(self.returned.startswith('primary/'))
-
-    def test_contains_subtype(self):
-        self.assertTrue(self.returned.startswith('primary/subtype'))
-
-    def test_parameters_sorted_by_name(self):
-        parameters = self.returned[self.returned.index(';') + 1:].strip()
-        self.assertEqual(parameters, 'one=1; three=3; two=2')
-
-
-class WhenComparingContentTypesForEquality(unittest.TestCase):
+class ContentTypeComparisonTests(unittest.TestCase):
     def test_type_equals_itself(self):
-        self.assertEqual(ContentType('primary', 'subtype'),
-                         ContentType('primary', 'subtype'))
+        self.assertEqual(ContentType('a', 'b'), ContentType('a', 'b'))
 
-    def test_different_types_are_not_equal(self):
-        self.assertNotEqual(ContentType('text', 'json'),
-                            ContentType('application', 'json'))
+    def test_that_differing_types_are_not_equal(self):
+        self.assertNotEqual(ContentType('a', 'b'), ContentType('b', 'a'))
 
-    def test_types_differing_by_case_are_equal(self):
-        self.assertEqual(ContentType('text', 'html', {'Level': '3.2'}, 'JSON'),
-                         ContentType('text', 'HTML', {'level': '3.2'}, 'json'))
+    def test_that_differing_suffixes_are_not_equal(self):
+        self.assertNotEqual(ContentType('a', 'b', content_suffix='1'),
+                            ContentType('a', 'b', content_suffix='2'))
 
-    def test_types_with_differing_params_are_not_equal(self):
-        self.assertNotEqual(ContentType('text', 'html', {'level': '1'}),
-                            ContentType('text', 'html', {'level': '2'}))
+    def test_that_differing_params_are_not_equal(self):
+        self.assertNotEqual(ContentType('a', 'b', parameters={'one': '1'}),
+                            ContentType('a', 'b'))
 
-    def test_types_with_differing_suffix_are_not_equal(self):
-        self.assertNotEqual(ContentType('text', 'html', content_suffix='json'),
-                            ContentType('text', 'html', content_suffix='xml'))
+    def test_that_case_is_ignored_when_comparing_types(self):
+        self.assertEqual(ContentType('text', 'html', {'level': '3.2'}, 'json'),
+                         ContentType('Text', 'Html', {'Level': '3.2'}, 'JSON'))
 
-
-class WhenComparingContentTypesForOrdering(unittest.TestCase):
     def test_primary_wildcard_is_less_than_anything_else(self):
         self.assertLess(ContentType('*', '*'), ContentType('text', 'plain'))
         self.assertLess(ContentType('*', '*'), ContentType('text', '*'))
