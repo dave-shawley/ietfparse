@@ -231,25 +231,27 @@ def rewrite_url(input_url, **kwargs):
     pass through case that is almost always present.
 
     """
-    scheme, netloc, path, query, fragment = parse.urlsplit(input_url)
+    result = parse.urlparse(input_url)
 
     if 'scheme' in kwargs:
         scheme = kwargs['scheme']
+    else:
+        scheme = result.scheme
 
-    ident, host_n_port = parse.splituser(netloc)
-
-    user, password = parse.splitpasswd(ident) if ident else (None, None)
+    user = None
     if 'user' in kwargs:
         user = kwargs['user']
-    elif user is not None:
-        user = parse.unquote_to_bytes(user).decode('utf-8')
+    elif result.username is not None:
+        user = parse.unquote_to_bytes(result.username).decode('utf-8')
+
+    password = None
     if 'password' in kwargs:
         password = kwargs['password']
-    elif password is not None:
-        password = parse.unquote_to_bytes(password).decode('utf-8')
+    elif result.password is not None:
+        password = parse.unquote_to_bytes(result.password).decode('utf-8')
+
     ident = _create_url_identifier(user, password)
 
-    host, port = parse.splitnport(host_n_port, defport=None)
     if 'host' in kwargs:
         host = kwargs['host']
         if host is not None:
@@ -259,13 +261,17 @@ def rewrite_url(input_url, **kwargs):
                 encode_with_idna=kwargs.get('encode_with_idna', None),
                 scheme=scheme,
             )
+    else:
+        host = result.hostname
 
     if 'port' in kwargs:
         port = kwargs['port']
         if port is not None:
             port = int(kwargs['port'])
             if port < 0:
-                raise ValueError('port is required to be non-negative')
+                raise ValueError('port is requried to be non-negative')
+    else:
+        port = result.port
 
     if host is None or host == '':
         host_n_port = None
@@ -280,6 +286,8 @@ def rewrite_url(input_url, **kwargs):
             path = '/'
         else:
             path = parse.quote(path.encode('utf-8'), safe=PATH_SAFE_CHARS)
+    else:
+        path = result.path
 
     netloc = '{0}@{1}'.format(ident, host_n_port) if ident else host_n_port
 
@@ -305,12 +313,16 @@ def rewrite_url(input_url, **kwargs):
                 query = parse.urlencode(params)
             else:
                 query = new_query
+    else:
+        query = result.query
 
     if 'fragment' in kwargs:
         fragment = kwargs['fragment']
         if fragment is not None:
             fragment = parse.quote(fragment.encode('utf-8'),
                                    safe=FRAGMENT_SAFE_CHARS)
+    else:
+        fragment = result.fragment
 
     # The following is necessary to get around some interesting special
     # case code in urllib.parse._coerce_args in Python 3.4.  Setting
@@ -319,7 +331,8 @@ def rewrite_url(input_url, **kwargs):
     if scheme is None:
         scheme = ''
 
-    return parse.urlunsplit((scheme, netloc, path, query, fragment))
+    return parse.urlunparse(
+        (scheme, netloc, path, result.params, query, fragment))
 
 
 def remove_url_auth(url):
@@ -354,7 +367,7 @@ def remove_url_auth(url):
     'http://example.com'
 
     """
-    parts = parse.urlsplit(url)
+    parts = parse.urlparse(url)
     return RemoveUrlAuthResult(auth=(parts.username or None, parts.password),
                                url=rewrite_url(url, user=None, password=None))
 

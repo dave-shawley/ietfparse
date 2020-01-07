@@ -9,38 +9,30 @@ import codecs
 
 __all__ = (
     'quote',
-    'splitnport',
-    'splitpasswd',
-    'splituser',
-    'unquote',
     'unquote_to_bytes',
     'urlencode',
-    'urlsplit',
-    'urlunsplit',
+    'urlparse',
+    'urlunparse',
 )
 
 try:
     from urllib.parse import (
         quote,
-        splitnport,
-        splitpasswd,
-        splituser,
-        unquote,
         unquote_to_bytes,
         urlencode,
-        urlsplit,
-        urlunsplit,
+        urlparse,
+        urlunparse,
     )
 except ImportError:  # pragma: no cover, coverage with tox
     from urllib import (
         quote,
-        splitnport,
-        splitpasswd,
-        splituser,
-        unquote,
+        unquote as _unquote,
         urlencode as _urlencode,
     )
-    from urlparse import urlsplit, urlunsplit
+    from urlparse import (
+        urlparse,
+        urlunparse,
+    )
 
     # unquote_to_bytes is extremely useful when you need to cleanly
     # unquote a percent-encoded UTF-8 sequence into a unicode string
@@ -51,7 +43,7 @@ except ImportError:  # pragma: no cover, coverage with tox
     # The return value of this function is the percent decoded raw
     # byte string - NOT A UNICODE STRING
     def unquote_to_bytes(s):
-        return unquote(s).encode('raw_unicode_escape')
+        return _unquote(s).encode('raw_unicode_escape')
 
     # urlencode did not encode its parameters in Python 2.x so we
     # need to implement that ourselves for compatibility.
