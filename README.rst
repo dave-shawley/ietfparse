@@ -48,7 +48,7 @@ Ok... Where?
 +---------------+--------------------------------------------------------------------+
 | Source        | https://github.com/dave-shawley/ietfparse                          |
 +---------------+--------------------------------------------------------------------+
-| Status        | https://https://circleci.com/gh/dave-shawley/ietfparse/tree/master |
+| Status        | https://circleci.com/gh/dave-shawley/ietfparse/tree/master         |
 +---------------+--------------------------------------------------------------------+
 | Download      | https://pypi.python.org/pypi/ietfparse                             |
 +---------------+--------------------------------------------------------------------+
