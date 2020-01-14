@@ -1,23 +1,19 @@
 from typing import Optional, Sequence, Tuple
 
 
+class _ParseResult:
+    fragment: Optional[str]
+    hostname: Optional[str]
+    password: Optional[str]
+    scheme: Optional[str]
+    username: Optional[str]
+    port: Optional[int]
+    path: Optional[str]
+    query: str
+    params: str
+
+
 def quote(a: bytes, safe: bytes) -> str:
-    ...
-
-
-def splitnport(host: str, defport: Optional[int] = -1) -> Tuple[str, int]:
-    ...
-
-
-def splitpasswd(a: str) -> Tuple[str, str]:
-    ...
-
-
-def splituser(a: str) -> Tuple[str, str]:
-    ...
-
-
-def unquote(a: str) -> str:
     ...
 
 
@@ -29,9 +25,9 @@ def urlencode(pairs: Sequence[Tuple[int, int]]) -> str:
     ...
 
 
-def urlsplit(url: str) -> Tuple[str, str, str, str, str]:
+def urlparse(url: str) -> _ParseResult:
     ...
 
 
-def urlunsplit(parts: Tuple[str, str, str, str, str]) -> str:
+def urlunparse(parsed: Tuple[str, str, str, str, str, str]) -> str:
     ...
