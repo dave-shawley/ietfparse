@@ -311,7 +311,8 @@ def parse_link(header_value, strict=True):
 
     for target, param_list in parse_links(sanitized):
         parser = _helpers.ParameterParser(strict=strict)
-        for name, value in _parse_parameter_list(param_list):
+        for name, value in _parse_parameter_list(
+                param_list, strip_interior_whitespace=True):
             parser.add_value(name, value)
 
         links.append(
@@ -337,7 +338,8 @@ def parse_list(value):
 def _parse_parameter_list(parameter_list,
                           normalized_parameter_values=_DEF_PARAM_VALUE,
                           normalize_parameter_names=False,
-                          normalize_parameter_values=True):
+                          normalize_parameter_values=True,
+                          strip_interior_whitespace=False):
     """
     Parse a named parameter list in the "common" format.
 
@@ -348,6 +350,8 @@ def _parse_parameter_list(parameter_list,
         as *truthy*, then parameter values are case-folded to lower case
     :keyword bool normalized_parameter_values: alternate way to spell
         ``normalize_parameter_values`` -- this one is deprecated
+    :keyword bool strip_interior_whitespace: remove whitespace between
+        name and values surrounding the ``=``
     :return: a sequence containing the name to value pairs
 
     The parsed values are normalized according to the keyword parameters
@@ -367,6 +371,8 @@ def _parse_parameter_list(parameter_list,
         param = param.strip()
         if param:
             name, value = param.split('=')
+            if strip_interior_whitespace:
+                name, value = name.strip(), value.strip()
             if normalize_parameter_names:
                 name = name.lower()
             if normalize_parameter_values:

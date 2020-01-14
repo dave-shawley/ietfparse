@@ -46,6 +46,22 @@ class LinkHeaderParsingTests(unittest.TestCase):
         self.assertEqual(parsed[0].parameters, [('title*', 'title*'),
                                                 ('title', 'title*')])
 
+    def test_optional_white_space(self):
+        parsed = headers.parse_link('<one> ; rel="one" , <two> ; rel=two')
+        self.assertEqual(2, len(parsed))
+        self.assertEqual('one', dict(parsed[0].parameters)['rel'])
+        self.assertEqual('two', dict(parsed[1].parameters)['rel'])
+
+    def test_bad_white_space(self):
+        parsed = headers.parse_link('<one>; rel = "one", <two>; rel = two')
+        self.assertEqual(2, len(parsed))
+
+        self.assertEqual('one', dict(parsed[0].parameters)['rel'])
+        self.assertEqual('<one>; rel="one"', str(parsed[0]))
+
+        self.assertEqual('two', dict(parsed[1].parameters)['rel'])
+        self.assertEqual('<two>; rel="two"', str(parsed[1]))
+
 
 class MalformedLinkHeaderTests(unittest.TestCase):
     def test_that_value_error_when_url_brackets_are_missing(self):

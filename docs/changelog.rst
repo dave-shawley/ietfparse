@@ -7,6 +7,8 @@ Changelog
 ---------------
 - Switched from travis-ci to circle-ci.
 - Add type stubs.
+- Allow "bad whitespace" around ``=`` in link header parameter lists as
+  indicated in :rfc:`8288#section-3`.
 
 `1.5.1`_ (04-Mar-2018)
 ----------------------
