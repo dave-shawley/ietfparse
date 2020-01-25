@@ -5,7 +5,7 @@ import ietfparse
 
 
 project = 'ietfparse'
-copyright = '2014-2017, Dave Shawley'
+copyright = '2014-2020, Dave Shawley'
 version = ietfparse.version
 release = '.'.join(str(x) for x in ietfparse.version_info[:2])
 
