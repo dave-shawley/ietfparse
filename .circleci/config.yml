@@ -27,7 +27,7 @@ jobs:
       - run: |
           mkdir build
           sudo pip install '.[test]' coveralls
-          coverage run -m unittest
+          coverage run -m unittest discover
           coverage xml
           ./tmp/cc-test-reporter format-coverage -t coverage.py -o tmp/python2-coverage.json
           coveralls
@@ -47,7 +47,7 @@ jobs:
       - run: |
           mkdir build
           sudo pip install '.[test]' coveralls
-          coverage run -m unittest
+          coverage run -m unittest discover
           coverage xml
           ./tmp/cc-test-reporter format-coverage -t coverage.py -o tmp/python3-coverage.json
           coveralls
