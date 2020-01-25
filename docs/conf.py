@@ -21,7 +21,7 @@ source_suffix = '.rst'
 source_encoding = 'utf-8-sig'
 master_doc = 'index'
 pygments_style = 'sphinx'
-html_static_path = []
+html_static_path = ['.']
 exclude_patterns = []
 html_sidebars = {
     '**': ['about.html', 'navigation.html', 'searchbox.html'],
