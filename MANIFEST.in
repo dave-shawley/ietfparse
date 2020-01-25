@@ -1,8 +1,7 @@
+include AUTHORS.rst
 include CONTRIBUTING.rst
 include ietfparse/py.typed
 include LICENSE
-include *requirements.txt
-include setupext.py
 include tox.ini
 graft docs
 graft tests

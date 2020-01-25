@@ -9,6 +9,7 @@ Changelog
 - Add type stubs.
 - Allow "bad whitespace" around ``=`` in link header parameter lists as
   indicated in :rfc:`8288#section-3`.
+- Replaced *nosetests* usage with the :mod:`unittest` module.
 
 `1.5.1`_ (04-Mar-2018)
 ----------------------
