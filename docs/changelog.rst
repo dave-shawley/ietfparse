@@ -3,8 +3,8 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
-`Next Release`_
----------------
+`1.6.0`_ (25-Jan-2020)
+----------------------
 - Switched from travis-ci to circle-ci.
 - Add type stubs.
 - Allow "bad whitespace" around ``=`` in link header parameter lists as
@@ -129,4 +129,5 @@ Changelog
 .. _1.4.3: https://github.com/dave-shawley/ietfparse/compare/1.4.2...1.4.3
 .. _1.5.0: https://github.com/dave-shawley/ietfparse/compare/1.4.3...1.5.0
 .. _1.5.1: https://github.com/dave-shawley/ietfparse/compare/1.5.0...1.5.1
-.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.5.1...head
+.. _1.6.0: https://github.com/dave-shawley/ietfparse/compare/1.5.1...1.6.0
+.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.6.0...head
