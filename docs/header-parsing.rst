@@ -144,7 +144,7 @@ header into an object that exposes the structured data.
 >>> header.parameters['charset']
 'ISO-8859-4'
 
-It handles dequoting and normalizing the value.  The content type
+It handles unquoting and normalizing the value.  The content type
 and all parameter names are translated to lower-case during the
 parsing process.  The relatively unknown option to include comments
 in the content type is honored and comments are discarded.

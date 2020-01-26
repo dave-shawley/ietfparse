@@ -101,7 +101,7 @@ are omitted - see section 3.2.3 of :rfc:`3986#section-3.2.3`.
 Influencing URL Processing
 --------------------------
 URLs are finicky things with a wealth of specifications that sometimes seem
-to contradict each other.  Whenever a grey area was encountered, this library
+to contradict each other.  Whenever a gray area was encountered, this library
 tried to make the result controllable from the outside.  For example,
 section 3.2.2 of :rfc:`3986#section-3.2.2` contains the following paragraph
 when describing the host portion of the URL.
@@ -135,8 +135,8 @@ collection that the library uses to know which schemes *ALWAYS* apply
 IDNA rules to host names.  You can modify this collection as needed to
 meet your application requirements.
 
-.. _Glory of REST: http://martinfowler.com/articles/richardsonMaturityModel.html
-.. _[RFC1034]: http://tools.ietf.org/html/rfc1034
-.. _[RFC3986]: http://tools.ietf.org/html/rfc3986
+.. _Glory of REST: https://martinfowler.com/articles/richardsonMaturityModel.html
+.. _[RFC1034]: https://tools.ietf.org/html/rfc1034
+.. _[RFC3986]: https://tools.ietf.org/html/rfc3986
 .. _[RFC5890]: https://tools.ietf.org/html/rfc5890
-.. _[RFC7230]: http://tools.ietf.org/html/rfc7230
+.. _[RFC7230]: https://tools.ietf.org/html/rfc7230

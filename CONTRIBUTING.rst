@@ -173,9 +173,9 @@ date, it is time to push your code back to github.com and submit a pull
 request against the upstream repository.
 
 .. _coverage: https://coverage.readthedocs.io/
-.. _flake8: http://flake8.readthedocs.io/
-.. _sphinx: http://sphinx-doc.org/
+.. _flake8: https://flake8.readthedocs.io/
+.. _sphinx: https://www.sphinx-doc.org/
 .. _tox: https://tox.readthedocs.io/
-.. _virtualenv: http://virtualenv.pypa.io/
+.. _virtualenv: https://virtualenv.pypa.io/en/stable/
 
-.. _Documentation is King: http://www.kennethreitz.org/documentation-is-king/
+.. _Documentation is King: https://www.kennethreitz.org/documentation-is-king/

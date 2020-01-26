@@ -51,7 +51,7 @@ def parse_accept(header_value):
     Which states that I prefer the ``audio/basic`` content type
     but will accept other ``audio`` sub-types with an 80% mark down.
 
-    .. _Accept: http://tools.ietf.org/html/rfc7231#section-5.3.2
+    .. _Accept: https://tools.ietf.org/html/rfc7231#section-5.3.2
 
     """
     next_explicit_q = decimal.ExtendedContext.next_plus(decimal.Decimal('5.0'))
@@ -468,7 +468,7 @@ def parse_http_accept_header(header_value):
     Which states that I prefer the ``audio/basic`` content type
     but will accept other ``audio`` sub-types with an 80% mark down.
 
-    .. _Accept: http://tools.ietf.org/html/rfc7231#section-5.3.2
+    .. _Accept: https://tools.ietf.org/html/rfc7231#section-5.3.2
 
     .. deprecated:: 1.3.0
        Use :func:`~ietfparse.headers.parse_accept` instead.

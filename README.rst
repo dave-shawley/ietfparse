@@ -43,16 +43,16 @@ Here's a sample of the code that this library lets you write::
         flask.redirect(algorithms.rewrite_url(flask.request.url,
                                               host=host, port=port))
 
-Ok... Where?
+OK... Where?
 ------------
 +---------------+--------------------------------------------------------------------+
 | Source        | https://github.com/dave-shawley/ietfparse                          |
 +---------------+--------------------------------------------------------------------+
 | Status        | https://circleci.com/gh/dave-shawley/ietfparse/tree/master         |
 +---------------+--------------------------------------------------------------------+
-| Download      | https://pypi.python.org/pypi/ietfparse                             |
+| Download      | https://pypi.org/project/ietfparse                                 |
 +---------------+--------------------------------------------------------------------+
-| Documentation | http://ietfparse.readthedocs.io/en/latest                          |
+| Documentation | https://ietfparse.readthedocs.io/en/latest                         |
 +---------------+--------------------------------------------------------------------+
 | Issues        | https://github.com/dave-shawley/ietfparse                          |
 +---------------+--------------------------------------------------------------------+
@@ -60,10 +60,10 @@ Ok... Where?
 .. |CodeClimate| image:: https://img.shields.io/codeclimate/maintainability/dave-shawley/ietfparse.svg
    :target: https://codeclimate.com/github/dave-shawley/ietfparse/
 .. |Coverage| image:: https://img.shields.io/coveralls/github/dave-shawley/ietfparse/master.svg
-   :target: https://coveralls.io/r/dave-shawley/ietfparse
+   :target: https://coveralls.io/github/dave-shawley/ietfparse
 .. |ReadTheDocs| image:: https://img.shields.io/readthedocs/ietfparse.svg
-   :target: https://ietfparse.readthedocs.org/
-.. |Build| image:: https://img.shields.io/circleci/project/github/dave-shawley/ietfparse/master.svg
+   :target: https://ietfparse.readthedocs.io/en/latest
+.. |Build| image:: https://img.shields.io/circleci/build/github/dave-shawley/ietfparse/master.svg
    :target: https://circleci.com/gh/dave-shawley/ietfparse/tree/master
 .. |Version| image:: https://img.shields.io/pypi/v/ietfparse.svg
    :target: https://pypi.org/project/ietfparse/

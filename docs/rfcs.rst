@@ -14,7 +14,7 @@ Relevant RFCs
 
 `RFC-5980`_
 -----------
-- :func:`ietfparse.algorithms.rewrite_url` encodes hostnames according
+- :func:`ietfparse.algorithms.rewrite_url` encodes host names according
   to :rfc:`5980` for the schemes identified by
   :data:`~ietfparse.algorithms.IDNA_SCHEMES`.  Encoding can also be
   forced using the ``encode_with_idna`` keyword parameter.

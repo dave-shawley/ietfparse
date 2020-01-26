@@ -86,8 +86,8 @@ def select_content_type(requested, available):
     producing.  The selected value should ultimately be used as the
     `Content-Type`_ header in the generated response.
 
-    .. _Accept: http://tools.ietf.org/html/rfc7231#section-5.3.2
-    .. _Content-Type: http://tools.ietf.org/html/rfc7231#section-3.1.1.5
+    .. _Accept: https://tools.ietf.org/html/rfc7231#section-5.3.2
+    .. _Content-Type: https://tools.ietf.org/html/rfc7231#section-3.1.1.5
 
     """
     class Match(object):
