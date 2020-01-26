@@ -3,6 +3,11 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
+`Next Release`_
+---------------
+- Fixed project URL metadata.
+- Updated links to refer to canonical URLs.
+
 `1.6.0`_ (25-Jan-2020)
 ----------------------
 - Switched from travis-ci to circle-ci.
