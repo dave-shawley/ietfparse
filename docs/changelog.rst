@@ -3,8 +3,8 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
-`Next Release`_
----------------
+`1.6.1`_ (26-Jan-2020)
+----------------------
 - Fixed project URL metadata.
 - Updated links to refer to canonical URLs.
 
@@ -135,4 +135,5 @@ Changelog
 .. _1.5.0: https://github.com/dave-shawley/ietfparse/compare/1.4.3...1.5.0
 .. _1.5.1: https://github.com/dave-shawley/ietfparse/compare/1.5.0...1.5.1
 .. _1.6.0: https://github.com/dave-shawley/ietfparse/compare/1.5.1...1.6.0
-.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.6.0...head
+.. _1.6.1: https://github.com/dave-shawley/ietfparse/compare/1.6.0...1.6.1
+.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.6.1...head
