@@ -31,14 +31,20 @@ _QUOTED_SEGMENT_RE = re.compile(r'"([^"]*)"')
 _DEF_PARAM_VALUE = object()
 
 
-def parse_accept(header_value):
+def parse_accept(header_value, strict=False):
     """Parse an HTTP accept-like header.
 
     :param str header_value: the header value to parse
+    :param bool strict: if :data:`True`, then invalid content type
+        values within `header_value` will raise :exc:`ValueError`;
+        otherwise, they are ignored
     :return: a :class:`list` of :class:`.ContentType` instances
         in decreasing quality order.  Each instance is augmented
         with the associated quality as a ``float`` property
         named ``quality``.
+    :raise: :exc:`ValueError` if `strict` is *truthy* and at least
+        one value in `header_value` could not be parsed by
+        :func:`.parse_content_type`
 
     ``Accept`` is a class of headers that contain a list of values
     and an associated preference value.  The ever present `Accept`_
@@ -55,9 +61,14 @@ def parse_accept(header_value):
 
     """
     next_explicit_q = decimal.ExtendedContext.next_plus(decimal.Decimal('5.0'))
-    headers = [
-        parse_content_type(header) for header in parse_list(header_value)
-    ]
+    headers = []
+    for header in parse_list(header_value):
+        try:
+            headers.append(parse_content_type(header))
+        except ValueError:
+            if strict:
+                raise
+
     for header in headers:
         q = header.parameters.pop('q', None)
         if q is None:
@@ -208,10 +219,17 @@ def parse_content_type(content_type, normalize_parameter_values=True):
         setting this to ``False`` will enable strict RFC2045 compliance
         in which content parameter values are case preserving.
     :return: a :class:`~ietfparse.datastructures.ContentType` instance
+    :raises: :exc:`ValueError` if the content type cannot be reasonably
+        parsed (e.g., ``Content-Type: *``)
 
     """
     parts = _remove_comments(content_type).split(';')
-    content_type, content_subtype = parts.pop(0).split('/')
+    type_spec = parts.pop(0)
+    try:
+        content_type, content_subtype = type_spec.split('/')
+    except ValueError:
+        raise ValueError('Failed to parse ' + type_spec)
+
     if '+' in content_subtype:
         content_subtype, content_suffix = content_subtype.split('+')
     else:

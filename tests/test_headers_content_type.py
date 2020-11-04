@@ -45,6 +45,12 @@ class ParsingComplexContentTypeTests(unittest.TestCase):
         self.assertEqual(self.parsed.parameters['msgtype'], 'Request')
 
 
+class ParsingBrokenContentTypes(unittest.TestCase):
+    def test_that_missing_subtype_raises_value_error(self):
+        with self.assertRaises(ValueError):
+            headers.parse_content_type('*')
+
+
 class Rfc7231ExampleTests(unittest.TestCase):
     """Test cases from RFC7231, Section 3.1.1.1"""
     def setUp(self):

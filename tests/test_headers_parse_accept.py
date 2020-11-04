@@ -63,6 +63,26 @@ class ParseAcceptHeaderTests(unittest.TestCase):
                                            {'x-foo': ' something else'})
             ])
 
+    def test_that_invalid_parts_are_skipped(self):
+        parsed = headers.parse_accept('text/html, image/gif, image/jpeg, '
+                                      '*; q=.2, */*; q=.2')
+        self.assertEqual(len(parsed), 4)
+        self.assertEqual(parsed[0], datastructures.ContentType('text', 'html'))
+        self.assertEqual(parsed[1],
+                         datastructures.ContentType('image', 'jpeg'))
+        self.assertEqual(parsed[2], datastructures.ContentType('image', 'gif'))
+        self.assertEqual(parsed[3], datastructures.ContentType('*', '*'))
+
+    def test_that_invalid_parts_raise_error_when_strict_is_enabled(self):
+        with self.assertRaises(ValueError):
+            headers.parse_accept(
+                'text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2',
+                strict=True)
+
+    def test_the_invalid_header_returns_empty_list(self):
+        parsed = headers.parse_accept('*')
+        self.assertEqual(len(parsed), 0)
+
 
 class ParseAcceptCharsetHeaderTests(unittest.TestCase):
 
