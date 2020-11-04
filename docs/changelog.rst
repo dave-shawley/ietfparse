@@ -6,6 +6,8 @@ Changelog
 `Next Release`_
 ---------------
 - Advertise support for Python 3.7-3.9, remove 3.4 & 3.5
+- Clarify that :func:`headers.parse_content_type` raises :exc:`ValueError`
+  when it encounters an invalid content type header
 
 `1.6.1`_ (26-Jan-2020)
 ----------------------

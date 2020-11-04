@@ -208,10 +208,17 @@ def parse_content_type(content_type, normalize_parameter_values=True):
         setting this to ``False`` will enable strict RFC2045 compliance
         in which content parameter values are case preserving.
     :return: a :class:`~ietfparse.datastructures.ContentType` instance
+    :raises: :exc:`ValueError` if the content type cannot be reasonably
+        parsed (e.g., ``Content-Type: *``)
 
     """
     parts = _remove_comments(content_type).split(';')
-    content_type, content_subtype = parts.pop(0).split('/')
+    type_spec = parts.pop(0)
+    try:
+        content_type, content_subtype = type_spec.split('/')
+    except ValueError:
+        raise ValueError('Failed to parse ' + type_spec)
+
     if '+' in content_subtype:
         content_subtype, content_suffix = content_subtype.split('+')
     else:
