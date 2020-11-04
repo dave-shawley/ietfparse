@@ -3,8 +3,8 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
-`Next Release`_
----------------
+`1.7.0`_ (04-Nov-2020)
+----------------------
 .. rubric:: Behavioural Change
 
 :func:`headers.parse_accept` used to fail with a :exc:`ValueError` when
@@ -150,4 +150,5 @@ the invalid value.  If you want the previous behaviour, then pass ``strict=True`
 .. _1.5.1: https://github.com/dave-shawley/ietfparse/compare/1.5.0...1.5.1
 .. _1.6.0: https://github.com/dave-shawley/ietfparse/compare/1.5.1...1.6.0
 .. _1.6.1: https://github.com/dave-shawley/ietfparse/compare/1.6.0...1.6.1
-.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.6.1...head
+.. _1.7.0: https://github.com/dave-shawley/ietfparse/compare/1.6.1...1.7.0
+.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.7.0...head
