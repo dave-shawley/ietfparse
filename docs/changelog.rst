@@ -3,6 +3,10 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
+`Next Release`_
+---------------
+- Advertise support for Python 3.7-3.9, remove 3.4 & 3.5
+
 `1.6.1`_ (26-Jan-2020)
 ----------------------
 - Fixed project URL metadata.
