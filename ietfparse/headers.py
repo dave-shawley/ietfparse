@@ -55,9 +55,13 @@ def parse_accept(header_value):
 
     """
     next_explicit_q = decimal.ExtendedContext.next_plus(decimal.Decimal('5.0'))
-    headers = [
-        parse_content_type(header) for header in parse_list(header_value)
-    ]
+    headers = []
+    for header in parse_list(header_value):
+        try:
+            headers.append(parse_content_type(header))
+        except ValueError:
+            pass
+
     for header in headers:
         q = header.parameters.pop('q', None)
         if q is None:
