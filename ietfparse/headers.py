@@ -31,14 +31,20 @@ _QUOTED_SEGMENT_RE = re.compile(r'"([^"]*)"')
 _DEF_PARAM_VALUE = object()
 
 
-def parse_accept(header_value):
+def parse_accept(header_value, strict=False):
     """Parse an HTTP accept-like header.
 
     :param str header_value: the header value to parse
+    :param bool strict: if :data:`True`, then invalid content type
+        values within `header_value` will raise :exc:`ValueError`;
+        otherwise, they are ignored
     :return: a :class:`list` of :class:`.ContentType` instances
         in decreasing quality order.  Each instance is augmented
         with the associated quality as a ``float`` property
         named ``quality``.
+    :raise: :exc:`ValueError` if `strict` is *truthy* and at least
+        one value in `header_value` could not be parsed by
+        :func:`.parse_content_type`
 
     ``Accept`` is a class of headers that contain a list of values
     and an associated preference value.  The ever present `Accept`_
@@ -60,7 +66,8 @@ def parse_accept(header_value):
         try:
             headers.append(parse_content_type(header))
         except ValueError:
-            pass
+            if strict:
+                raise
 
     for header in headers:
         q = header.parameters.pop('q', None)

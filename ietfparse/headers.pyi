@@ -3,7 +3,7 @@ from typing import Collection, Dict, List, Optional, Sequence, Union
 from ietfparse import datastructures
 
 
-def parse_accept(header_value: str) -> List[datastructures.ContentType]:
+def parse_accept(header_value: str, strict: bool = False) -> List[datastructures.ContentType]:
     ...
 
 
