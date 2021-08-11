@@ -3,8 +3,8 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
-`Next release`_
----------------
+`1.8.0`_ (11-Aug-2021)
+----------------------
 - Removing support for Python versions before 3.7
 
 `1.7.0`_ (04-Nov-2020)
@@ -155,4 +155,5 @@ the invalid value.  If you want the previous behaviour, then pass ``strict=True`
 .. _1.6.0: https://github.com/dave-shawley/ietfparse/compare/1.5.1...1.6.0
 .. _1.6.1: https://github.com/dave-shawley/ietfparse/compare/1.6.0...1.6.1
 .. _1.7.0: https://github.com/dave-shawley/ietfparse/compare/1.6.1...1.7.0
-.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.7.0...head
+.. _1.8.0: https://github.com/dave-shawley/ietfparse/compare/1.7.0...1.8.0
+.. _Next Release: https://github.com/dave-shawley/ietfparse/compare/1.8.0...head
