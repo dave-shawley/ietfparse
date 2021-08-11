@@ -3,6 +3,10 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
+`Next release`_
+---------------
+- Removing support for Python versions before 3.7
+
 `1.7.0`_ (04-Nov-2020)
 ----------------------
 .. rubric:: Behavioural Change
