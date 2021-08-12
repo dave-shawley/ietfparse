@@ -16,11 +16,10 @@ described in IETF RFCs.
    A collection of schemes that use IDN encoding for its host.
 
 """
-from __future__ import unicode_literals
 from operator import attrgetter
 import collections
+from urllib import parse
 
-from ietfparse.compat import parse
 from ietfparse import errors
 
 IDNA_SCHEMES = ['http', 'https', 'ftp', 'afp', 'sftp', 'smb']

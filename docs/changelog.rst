@@ -3,6 +3,10 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
+`Next Release`_
+---------------
+- Removed ``ietfparse.compat`` module.
+
 `1.8.0`_ (11-Aug-2021)
 ----------------------
 - Removing support for Python versions before 3.7
