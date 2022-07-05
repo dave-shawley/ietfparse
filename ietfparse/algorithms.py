@@ -41,9 +41,10 @@ PATH_SAFE_CHARS = _rfc3986_sub_delims + _rfc3986_unreserved + b':/@'
 FRAGMENT_SAFE_CHARS = b'?/'
 
 
-class RemoveUrlAuthResult(
-        collections.namedtuple('RemoveUrlAuthResult', ['auth', 'url'])):
-    __slots__ = ()
+class RemoveUrlAuthResult:
+    def __init__(self, auth, url):
+        self.auth = auth
+        self.url = url
 
     @property
     def username(self):
@@ -52,6 +53,20 @@ class RemoveUrlAuthResult(
     @property
     def password(self):
         return self.auth[1]
+
+    # len(result) is a holdover from when this class was
+    # a namedtuple, please do not depend on this
+    def __len__(self):  # pragma: no cover
+        warnings.warn('deprecated without replacement', DeprecationWarning)
+        return 2
+
+    def __getitem__(self, index):
+        # included to make return value destructuring work
+        if index == 0:
+            return self.auth
+        elif index == 1:
+            return self.url
+        raise IndexError()
 
 
 def _content_type_matches(candidate, pattern):
