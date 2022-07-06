@@ -7,18 +7,6 @@ Relevant RFCs
   the :mailheader:`Content-Type` header described in :rfc:`2045` and
   fully specified in section `5.1`_.
 
-`RFC-3986`_
------------
-- :func:`ietfparse.algorithms.rewrite_url` implements encoding and
-  parsing per :rfc:`3986`.
-
-`RFC-5980`_
------------
-- :func:`ietfparse.algorithms.rewrite_url` encodes host names according
-  to :rfc:`5980` for the schemes identified by
-  :data:`~ietfparse.algorithms.IDNA_SCHEMES`.  Encoding can also be
-  forced using the ``encode_with_idna`` keyword parameter.
-
 `RFC-5988`_
 -----------
 - :func:`ietfparse.headers.parse_link_header` parses a :mailheader:`Link`
@@ -54,10 +42,6 @@ Relevant RFCs
 
 .. _RFC-2045: https://tools.ietf.org/html/rfc2045
 .. _5.1: https://tools.ietf.org/html/rfc2045#section-5.1
-
-.. _RFC-3986: https://tools.ietf.org/html/rfc3986
-
-.. _RFC-5980: https://tools.ietf.org/html/rfc5980
 
 .. _RFC-5988: https://tools.ietf.org/html/rfc5988
 
