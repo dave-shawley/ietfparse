@@ -8,6 +8,7 @@ Changelog
 - Removed ``ietfparse.compat`` module.
 - Changed ``algorithms.RemoveUrlAuthResult`` from a named tuple to a proper class.
 - Deprecated using ``len()`` on the return value from :func:`algorithms.remove_url_auth`
+- Replace type hints with annotations.
 
 `1.8.0`_ (11-Aug-2021)
 ----------------------

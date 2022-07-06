@@ -16,11 +16,15 @@ described in IETF RFCs.
    A collection of schemes that use IDN encoding for its host.
 
 """
-from operator import attrgetter
-import collections
-from urllib import parse
+from __future__ import annotations
 
-from ietfparse import errors
+import typing
+import warnings
+from operator import attrgetter
+from urllib import parse
+from typing import Dict, List, Sequence, Tuple
+
+from ietfparse import datastructures, errors
 
 IDNA_SCHEMES = ['http', 'https', 'ftp', 'afp', 'sftp', 'smb']
 
@@ -42,25 +46,25 @@ FRAGMENT_SAFE_CHARS = b'?/'
 
 
 class RemoveUrlAuthResult:
-    def __init__(self, auth, url):
+    def __init__(self, auth: Tuple[str | None, str | None], url: str) -> None:
         self.auth = auth
         self.url = url
 
     @property
-    def username(self):
+    def username(self) -> str | None:
         return self.auth[0]
 
     @property
-    def password(self):
+    def password(self) -> str | None:
         return self.auth[1]
 
     # len(result) is a holdover from when this class was
     # a namedtuple, please do not depend on this
-    def __len__(self):  # pragma: no cover
+    def __len__(self) -> int:  # pragma: no cover
         warnings.warn('deprecated without replacement', DeprecationWarning)
         return 2
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> str | Tuple[str | None, str | None]:
         # included to make return value destructuring work
         if index == 0:
             return self.auth
@@ -69,9 +73,10 @@ class RemoveUrlAuthResult:
         raise IndexError()
 
 
-def _content_type_matches(candidate, pattern):
+def _content_type_matches(candidate: datastructures.ContentType,
+                          pattern: datastructures.ContentType) -> bool:
     """Is ``candidate`` an exact match or sub-type of ``pattern``?"""
-    def _wildcard_compare(type_spec, type_pattern):
+    def _wildcard_compare(type_spec: str, type_pattern: str) -> bool:
         return type_pattern == '*' or type_spec == type_pattern
 
     return (_wildcard_compare(candidate.content_type, pattern.content_type)
@@ -79,7 +84,10 @@ def _content_type_matches(candidate, pattern):
                                   pattern.content_subtype))
 
 
-def select_content_type(requested, available):
+def select_content_type(
+    requested: Sequence[datastructures.ContentType],
+    available: Sequence[datastructures.ContentType]
+) -> Tuple[datastructures.ContentType, datastructures.ContentType]:
     """Selects the best content type.
 
     :param requested: a sequence of :class:`.ContentType` instances
@@ -134,7 +142,8 @@ def select_content_type(requested, available):
         """
         WILDCARD, PARTIAL, FULL_TYPE, = 2, 1, 0
 
-        def __init__(self, candidate, pattern):
+        def __init__(self, candidate: datastructures.ContentType,
+                     pattern: datastructures.ContentType) -> None:
             self.candidate = candidate
             self.pattern = pattern
 
@@ -153,8 +162,8 @@ def select_content_type(requested, available):
                     else:
                         self.parameter_distance += 1
 
-    def extract_quality(obj):
-        return getattr(obj, 'quality', 1.0)
+    def extract_quality(obj: datastructures.ContentType) -> float:
+        return 1.0 if obj.quality is None else obj.quality
 
     matches = []
     for pattern in sorted(requested, key=extract_quality, reverse=True):
@@ -174,42 +183,56 @@ def select_content_type(requested, available):
     return matches[0].candidate, matches[0].pattern
 
 
-def rewrite_url(input_url, **kwargs):
+unspecified_str = '...'
+
+
+def rewrite_url(input_url: str,
+                *,
+                scheme: str | None = unspecified_str,
+                user: str | None = unspecified_str,
+                password: str | None = unspecified_str,
+                host: str | None = unspecified_str,
+                port: int | str | None = unspecified_str,
+                path: str | None = unspecified_str,
+                query: str | dict[str, str] = unspecified_str,
+                fragment: str | None = unspecified_str,
+                enable_long_host: bool = False,
+                encode_with_idna: bool | None = None) -> str:
     """
     Create a new URL from `input_url` with modifications applied.
 
-    :param str input_url: the URL to modify
+    :param input_url: the URL to modify
 
-    :keyword str fragment: if specified, this keyword sets the
+    :param fragment: if specified, this keyword sets the
         fragment portion of the URL.  A value of :data:`None`
         will remove the fragment portion of the URL.
-    :keyword str host: if specified, this keyword sets the host
+    :param host: if specified, this keyword sets the host
         portion of the network location.  A value of :data:`None`
         will remove the network location portion of the URL.
-    :keyword str password: if specified, this keyword sets the
+    :param password: if specified, this keyword sets the
         password portion of the URL.  A value of :data:`None` will
         remove the password from the URL.
-    :keyword str path: if specified, this keyword sets the path
+    :param path: if specified, this keyword sets the path
         portion of the URL.  A value of :data:`None` will remove
         the path from the URL.
-    :keyword int port: if specified, this keyword sets the port
+    :param port: if specified, this keyword sets the port
         portion of the network location.  A value of :data:`None`
         will remove the port from the URL.
-    :keyword query: if specified, this keyword sets the query portion
+    :param query: if specified, this keyword sets the query portion
         of the URL.  See the comments for a description of this
         parameter.
-    :keyword str scheme: if specified, this keyword sets the scheme
+    :param scheme: if specified, this keyword sets the scheme
         portion of the URL.  A value of :data:`None` will remove
         the scheme.  Note that this will make the URL relative and
         may have unintended consequences.
-    :keyword str user: if specified, this keyword sets the user
+    :param user: if specified, this keyword sets the user
         portion of the URL.  A value of :data:`None` will remove
         the user and password portions.
 
-    :keyword bool enable_long_host: if this keyword is specified
+    :param enable_long_host: if this keyword is specified
         and it is :data:`True`, then the host name length restriction
         from :rfc:`3986#section-3.2.2` is relaxed.
-    :keyword bool encode_with_idna: if this keyword is specified
+    :param encode_with_idna: if this keyword is specified
         and it is :data:`True`, then the ``host`` parameter will be
         encoded using IDN.  If this value is provided as :data:`False`,
         then the percent-encoding scheme is used instead.  If this
@@ -217,8 +240,7 @@ def rewrite_url(input_url, **kwargs):
         the ``host`` parameter is processed using :data:`IDNA_SCHEMES`.
 
     :return: the modified URL
-    :raises ValueError: when a keyword parameter is given an invalid
-        value
+    :raises ValueError: when a keyword parameter is given an invalid value
 
     If the `host` parameter is specified and not :data:`None`, then
     it will be processed as an Internationalized Domain Name (IDN)
@@ -247,96 +269,78 @@ def rewrite_url(input_url, **kwargs):
     """
     result = parse.urlparse(input_url)
 
-    if 'scheme' in kwargs:
-        scheme = kwargs['scheme']
-    else:
+    if scheme is unspecified_str:
         scheme = result.scheme
 
-    user = None
-    if 'user' in kwargs:
-        user = kwargs['user']
-    elif result.username is not None:
-        user = parse.unquote_to_bytes(result.username).decode('utf-8')
+    if user is unspecified_str:
+        user = result.username
+        if user is not None:
+            user = parse.unquote_to_bytes(user).decode('utf-8')
 
-    password = None
-    if 'password' in kwargs:
-        password = kwargs['password']
-    elif result.password is not None:
-        password = parse.unquote_to_bytes(result.password).decode('utf-8')
+    if password is unspecified_str:
+        password = result.password
+        if password is not None:
+            password = parse.unquote_to_bytes(password).decode('utf-8')
 
     ident = _create_url_identifier(user, password)
 
-    if 'host' in kwargs:
-        host = kwargs['host']
-        if host is not None:
-            host = _normalize_host(
-                host,
-                enable_long_host=kwargs.get('enable_long_host', False),
-                encode_with_idna=kwargs.get('encode_with_idna', None),
-                scheme=scheme,
-            )
-    else:
+    if host is unspecified_str:
         host = result.hostname
+    elif host is not None:
+        host = _normalize_host(
+            host,
+            enable_long_host=enable_long_host,
+            encode_with_idna=encode_with_idna,
+            scheme=scheme,
+        )
 
-    if 'port' in kwargs:
-        port = kwargs['port']
-        if port is not None:
-            port = int(kwargs['port'])
-            if port < 0:
-                raise ValueError('port is requried to be non-negative')
-    else:
+    if port is unspecified_str:
         port = result.port
+    elif port is not None:
+        port = int(port)
+        if port < 0:
+            raise ValueError('port is requried to be non-negative')
 
     if host is None or host == '':
         host_n_port = None
     elif port is None:
         host_n_port = host
     else:
-        host_n_port = '{0}:{1}'.format(host, port)
+        host_n_port = f'{host}:{port}'
 
-    if 'path' in kwargs:
-        path = kwargs['path']
-        if path is None:
-            path = '/'
-        else:
-            path = parse.quote(path.encode('utf-8'), safe=PATH_SAFE_CHARS)
-    else:
+    if path is unspecified_str:
         path = result.path
+    elif path is None:
+        path = '/'
+    else:
+        path = parse.quote(path.encode('utf-8'), safe=PATH_SAFE_CHARS)
 
-    netloc = '{0}@{1}'.format(ident, host_n_port) if ident else host_n_port
+    netloc = f'{ident}@{host_n_port}' if ident else host_n_port
 
-    if 'query' in kwargs:
-        new_query = kwargs['query']
-        if new_query is None:
-            query = None
-        else:
-            params = []
-            try:
-                for param in sorted(new_query.keys()):
-                    params.append((param, new_query[param]))
-            except AttributeError:  # arg is None or not a dict
+    if query is unspecified_str:
+        query = result.query
+    elif query is not None:
+        PairList = List[Tuple[str, str]]
+        params: PairList = []
+        try:
+            query = typing.cast(Dict[str, str], query)
+            for param in sorted(query.keys()):
+                params.append((param, query[param]))
+        except AttributeError:  # arg is not a dict
+            try:  # does it look like a list of tuples?
+                params = [(param, value)
+                          for param, value in typing.cast(PairList, query)]
+            except ValueError:  # guess not...
                 pass
 
-            if not params:  # maybe a sequence of tuples?
-                try:
-                    params = [(param, value) for param, value in new_query]
-                except ValueError:  # guess not...
-                    pass
+        if params:
+            query = parse.urlencode(params)
 
-            if params:
-                query = parse.urlencode(params)
-            else:
-                query = new_query
-    else:
-        query = result.query
-
-    if 'fragment' in kwargs:
-        fragment = kwargs['fragment']
-        if fragment is not None:
-            fragment = parse.quote(fragment.encode('utf-8'),
-                                   safe=FRAGMENT_SAFE_CHARS)
-    else:
+    if fragment is unspecified_str:
         fragment = result.fragment
+    elif fragment is not None:
+        fragment = parse.quote(fragment.encode('utf-8'),
+                               safe=FRAGMENT_SAFE_CHARS)
 
     # The following is necessary to get around some interesting special
     # case code in urllib.parse._coerce_args in Python 3.4.  Setting
@@ -345,11 +349,13 @@ def rewrite_url(input_url, **kwargs):
     if scheme is None:
         scheme = ''
 
+    # for some reason mypy is convinced that parse.urlunparse() returns
+    # a collection of strings...
     return parse.urlunparse(
-        (scheme, netloc, path, result.params, query, fragment))
+        (scheme, netloc, path, result.params, query, fragment))  # type: ignore
 
 
-def remove_url_auth(url):
+def remove_url_auth(url: str) -> RemoveUrlAuthResult:
     """
     Removes the user & password and returns them along with a new url.
 
@@ -386,12 +392,13 @@ def remove_url_auth(url):
                                url=rewrite_url(url, user=None, password=None))
 
 
-def _create_url_identifier(user, password):
+def _create_url_identifier(user: str | None,
+                           password: str | None) -> str | None:
     """
     Generate the user+password portion of a URL.
 
-    :param str user: the user name or :data:`None`
-    :param str password: the password or :data:`None`
+    :param user: the user name or :data:`None`
+    :param password: the password or :data:`None`
 
     """
     if user is not None:
@@ -399,15 +406,15 @@ def _create_url_identifier(user, password):
         if password:
             password = parse.quote(password.encode('utf-8'),
                                    safe=USERINFO_SAFE_CHARS)
-            return '{0}:{1}'.format(user, password)
+            return f'{user}:{password}'
         return user
     return None
 
 
-def _normalize_host(host,
-                    enable_long_host=False,
-                    encode_with_idna=None,
-                    scheme=None):
+def _normalize_host(host: str,
+                    enable_long_host: bool = False,
+                    encode_with_idna: bool | None = None,
+                    scheme: str | None = None) -> str:
     """
     Normalize a host for a URL.
 

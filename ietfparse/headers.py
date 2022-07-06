@@ -15,10 +15,13 @@ of the module.  They are not designed for direct usage unless otherwise
 mentioned.
 
 """
+from __future__ import annotations
+
 import functools
 import decimal
 import re
 import warnings
+from typing import Dict, Generator, Iterable, List, Tuple
 
 from . import datastructures, errors, _helpers
 
@@ -31,11 +34,12 @@ _QUOTED_SEGMENT_RE = re.compile(r'"([^"]*)"')
 _DEF_PARAM_VALUE = object()
 
 
-def parse_accept(header_value, strict=False):
+def parse_accept(header_value: str,
+                 strict: bool = False) -> List[datastructures.ContentType]:
     """Parse an HTTP accept-like header.
 
-    :param str header_value: the header value to parse
-    :param bool strict: if :data:`True`, then invalid content type
+    :param header_value: the header value to parse
+    :param strict: if :data:`True`, then invalid content type
         values within `header_value` will raise :exc:`ValueError`;
         otherwise, they are ignored
     :return: a :class:`list` of :class:`.ContentType` instances
@@ -62,9 +66,9 @@ def parse_accept(header_value, strict=False):
     """
     next_explicit_q = decimal.ExtendedContext.next_plus(decimal.Decimal('5.0'))
     headers = []
-    for header in parse_list(header_value):
+    for content_type in parse_list(header_value):
         try:
-            headers.append(parse_content_type(header))
+            headers.append(parse_content_type(content_type))
         except ValueError:
             if strict:
                 raise
@@ -72,37 +76,37 @@ def parse_accept(header_value, strict=False):
     for header in headers:
         q = header.parameters.pop('q', None)
         if q is None:
-            q = '1.0'
+            header.quality = 1.0
         elif float(q) == 1.0:
-            q = float(next_explicit_q)
+            header.quality = float(next_explicit_q)
             next_explicit_q = next_explicit_q.next_minus()
-        header.quality = float(q)
+        else:
+            header.quality = float(q)
 
-    def ordering(left, right):
-        """
-        Method for sorting the header values
-
-        :param mixed left:
-        :param mixed right:
-        :rtype: mixed
-
-        """
-        if left.quality != right.quality:
-            return right.quality - left.quality
-        if left == right:
-            return 0
-        if left > right:
+    def ordering(left: datastructures.ContentType,
+                 right: datastructures.ContentType) -> int:
+        assert left.quality is not None  # appease mypy
+        assert right.quality is not None  # appease mypy
+        if left.quality == right.quality:
+            if left == right:
+                return 0
+            elif left > right:
+                return -1
+            else:  # left < right
+                return 1
+        elif left.quality > right.quality:
             return -1
-        return 1
+        else:  # left.quality < right.quality:
+            return 1
 
     return sorted(headers, key=functools.cmp_to_key(ordering))
 
 
-def parse_accept_charset(header_value):
+def parse_accept_charset(header_value: str) -> List[str]:
     """
     Parse the ``Accept-Charset`` header into a sorted list.
 
-    :param str header_value: header value to parse
+    :param header_value: header value to parse
 
     :return: list of character sets sorted from highest to lowest
         priority
@@ -124,11 +128,11 @@ def parse_accept_charset(header_value):
     return _parse_qualified_list(header_value)
 
 
-def parse_accept_encoding(header_value):
+def parse_accept_encoding(header_value: str) -> List[str]:
     """
     Parse the ``Accept-Encoding`` header into a sorted list.
 
-    :param str header_value: header value to parse
+    :param header_value: header value to parse
 
     :return: list of encodings sorted from highest to lowest priority
 
@@ -149,11 +153,11 @@ def parse_accept_encoding(header_value):
     return _parse_qualified_list(header_value)
 
 
-def parse_accept_language(header_value):
+def parse_accept_language(header_value: str) -> List[str]:
     """
     Parse the ``Accept-Language`` header into a sorted list.
 
-    :param str header_value: header value to parse
+    :param header_value: header value to parse
 
     :return: list of languages sorted from highest to lowest priority
 
@@ -174,7 +178,8 @@ def parse_accept_language(header_value):
     return _parse_qualified_list(header_value)
 
 
-def parse_cache_control(header_value):
+def parse_cache_control(
+        header_value: str) -> Dict[str, str | int | bool | None]:
     """
     Parse a `Cache-Control`_ header, returning a dictionary of key-value pairs.
 
@@ -182,14 +187,13 @@ def parse_cache_control(header_value):
     as ``public`` or ``no-cache`` will be returned with a value of ``True``
     if they are set in the header.
 
-    :param str header_value: ``Cache-Control`` header value to parse
+    :param header_value: ``Cache-Control`` header value to parse
     :return: the parsed ``Cache-Control`` header values
-    :rtype: dict
 
     .. _Cache-Control: https://tools.ietf.org/html/rfc7234#section-5.2
 
     """
-    directives = {}
+    directives: Dict[str, str | int | bool | None] = {}
 
     for segment in parse_list(header_value):
         name, sep, value = segment.partition('=')
@@ -211,11 +215,13 @@ def parse_cache_control(header_value):
     return directives
 
 
-def parse_content_type(content_type, normalize_parameter_values=True):
+def parse_content_type(
+        content_type: str,
+        normalize_parameter_values: bool = True) -> datastructures.ContentType:
     """Parse a content type like header.
 
-    :param str content_type: the string to parse as a content type
-    :param bool normalize_parameter_values:
+    :param content_type: the string to parse as a content type
+    :param normalize_parameter_values:
         setting this to ``False`` will enable strict RFC2045 compliance
         in which content parameter values are case preserving.
     :return: a :class:`~ietfparse.datastructures.ContentType` instance
@@ -230,23 +236,25 @@ def parse_content_type(content_type, normalize_parameter_values=True):
     except ValueError:
         raise ValueError('Failed to parse ' + type_spec)
 
-    if '+' in content_subtype:
-        content_subtype, content_suffix = content_subtype.split('+')
-    else:
-        content_suffix = None
     parameters = _parse_parameter_list(
         parts, normalize_parameter_values=normalize_parameter_values)
+    if '+' in content_subtype:
+        content_subtype, content_suffix = content_subtype.split('+')
+        return datastructures.ContentType(content_type, content_subtype,
+                                          dict(parameters), content_suffix)
+    else:
+        return datastructures.ContentType(content_type, content_subtype,
+                                          dict(parameters))
 
-    return datastructures.ContentType(content_type, content_subtype,
-                                      dict(parameters), content_suffix)
 
-
-def parse_forwarded(header_value, only_standard_parameters=False):
+def parse_forwarded(
+        header_value: str,
+        only_standard_parameters: bool = False) -> List[Dict[str, str]]:
     """
     Parse RFC7239 Forwarded header.
 
-    :param str header_value: value to parse
-    :keyword bool only_standard_parameters: if this keyword is specified
+    :param header_value: value to parse
+    :param only_standard_parameters: if this keyword is specified
         and given a *truthy* value, then a non-standard parameter name
         will result in :exc:`~ietfparse.errors.StrictHeaderParsingFailure`
     :return: an ordered :class:`list` of :class:`dict` instances
@@ -274,7 +282,8 @@ def parse_forwarded(header_value, only_standard_parameters=False):
     return result
 
 
-def parse_link(header_value, strict=True):
+def parse_link(header_value: str,
+               strict: bool = True) -> List[datastructures.LinkHeader]:
     """
     Parse a HTTP Link header.
 
@@ -291,16 +300,14 @@ def parse_link(header_value, strict=True):
     sanitized = _remove_comments(header_value)
     links = []
 
-    def parse_links(buf):
-        """
+    def parse_links(buf: str) -> Generator[Tuple[str, List[str]], None, None]:
+        """Parse links from `buf`
+
         Find quoted parts, these are allowed to contain commas
         however, it is much easier to parse if they do not so
         replace them with \000.  Since the NUL byte is not allowed
         to be there, we can replace it with a comma later on.
         A similar trick is performed on semicolons with \001.
-
-        :param str buf: The link buffer
-        :return:
         """
         quoted = re.findall('"([^"]*)"', buf)
         for segment in quoted:
@@ -335,14 +342,15 @@ def parse_link(header_value, strict=True):
 
         links.append(
             datastructures.LinkHeader(target=target, parameters=parser.values))
+
     return links
 
 
-def parse_list(value):
+def parse_list(value: str) -> List[str]:
     """
     Parse a comma-separated list header.
 
-    :param str value: header value to split into elements
+    :param value: header value to split into elements
     :return: list of header elements as strings
 
     """
@@ -353,22 +361,20 @@ def parse_list(value):
     return [_dequote(x.strip()).replace('\000', ',') for x in value.split(',')]
 
 
-def _parse_parameter_list(parameter_list,
-                          normalized_parameter_values=_DEF_PARAM_VALUE,
-                          normalize_parameter_names=False,
-                          normalize_parameter_values=True,
-                          strip_interior_whitespace=False):
+def _parse_parameter_list(
+        parameter_list: Iterable[str],
+        normalize_parameter_names: bool = False,
+        normalize_parameter_values: bool = True,
+        strip_interior_whitespace: bool = False) -> List[Tuple[str, str]]:
     """
     Parse a named parameter list in the "common" format.
 
     :param parameter_list: sequence of string values to parse
-    :keyword bool normalize_parameter_names: if specified and *truthy*
+    :keyword normalize_parameter_names: if specified and *truthy*
         then parameter names will be case-folded to lower case
-    :keyword bool normalize_parameter_values: if omitted or specified
+    :keyword normalize_parameter_values: if omitted or specified
         as *truthy*, then parameter values are case-folded to lower case
-    :keyword bool normalized_parameter_values: alternate way to spell
-        ``normalize_parameter_values`` -- this one is deprecated
-    :keyword bool strip_interior_whitespace: remove whitespace between
+    :keyword strip_interior_whitespace: remove whitespace between
         name and values surrounding the ``=``
     :return: a sequence containing the name to value pairs
 
@@ -378,12 +384,6 @@ def _parse_parameter_list(parameter_list,
     if they were present.
 
     """
-    if normalized_parameter_values is not _DEF_PARAM_VALUE:  # pragma: no cover
-        warnings.warn(
-            'normalized_parameter_values keyword to _parse_parameter_list is'
-            ' deprecated, use normalize_parameter_values instead',
-            DeprecationWarning)
-        normalize_parameter_values = normalized_parameter_values
     parameters = []
     for param in parameter_list:
         param = param.strip()
@@ -399,14 +399,13 @@ def _parse_parameter_list(parameter_list,
     return parameters
 
 
-def _parse_qualified_list(value):
+def _parse_qualified_list(value: str) -> List[str]:
     """
     Parse a header value, returning a sorted list of values based upon
     the quality rules specified in https://tools.ietf.org/html/rfc7231 for
     the Accept-* headers.
 
-    :param str value: The value to parse into a list
-    :rtype: list
+    :param value: The value to parse into a list
 
     """
     found_wildcard = False
@@ -435,16 +434,15 @@ def _parse_qualified_list(value):
     return parsed
 
 
-def _remove_comments(value):
-    """:rtype: str"""  # makes PyCharm happy
+def _remove_comments(value: str) -> str:
     return _COMMENT_RE.sub('', value)
 
 
-def _dequote(value):
+def _dequote(value: str) -> str:
     """
     Remove from value if the entire string is quoted.
 
-    :param str value: value to dequote
+    :param value: value to dequote
 
     :return: a new :class:`str` with leading and trailing quotes
         removed or `value` if not fully quoted
@@ -466,7 +464,8 @@ def _dequote(value):
 # Backwards Compatibility Functions
 
 
-def parse_http_accept_header(header_value):
+def parse_http_accept_header(
+        header_value: str) -> List[datastructures.ContentType]:
     """Parse an HTTP accept-like header.
 
     :param str header_value: the header value to parse
@@ -496,12 +495,13 @@ def parse_http_accept_header(header_value):
     return parse_accept(header_value)
 
 
-def parse_link_header(header_value, strict=True):
+def parse_link_header(header_value: str,
+                      strict: bool = True) -> List[datastructures.LinkHeader]:
     """
     Parse a HTTP Link header.
 
-    :param str header_value: the header value to parse
-    :param bool strict: set this to ``False`` to disable semantic
+    :param header_value: the header value to parse
+    :param strict: set this to ``False`` to disable semantic
         checking.  Syntactical errors will still raise an exception.
         Use this if you want to receive all parameters.
     :return: a sequence of :class:`~ietfparse.datastructures.LinkHeader`
@@ -517,11 +517,11 @@ def parse_link_header(header_value, strict=True):
     return parse_link(header_value, strict)
 
 
-def parse_list_header(value):
+def parse_list_header(value: str) -> List[str]:
     """
     Parse a comma-separated list header.
 
-    :param str value: header value to split into elements
+    :param value: header value to split into elements
     :return: list of header elements as strings
 
     .. deprecated:: 1.3.0
