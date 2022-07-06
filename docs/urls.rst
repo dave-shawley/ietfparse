@@ -2,6 +2,12 @@
 
 URL Processing
 ==============
+
+.. warning::
+
+   The URL related functions will be removed in version 2.0.
+   Use `yarl <https://yarl.readthedocs.io/>` instead.
+
 If your applications have reached the `Glory of REST`_ by using hypermedia
 controls throughout, then you aren't manipulating URLs a lot unless you
 are responsible for generating them.  However, if you are interacting with

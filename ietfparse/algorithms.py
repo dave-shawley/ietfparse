@@ -1,19 +1,16 @@
 """
 Implementations of algorithms from various specifications.
 
-- :func:`.remove_url_auth`: removes and returns the auth portion
-  of a URL.  This is particularly handy for processing URLs from
-  configuration files or environment variables.
-- :func:`.rewrite_url`: modify a portion of a URL.
 - :func:`.select_content_type`: select the best match between a
   HTTP ``Accept`` header and a list of available ``Content-Type`` s
 
 This module implements some of the more interesting algorithms
 described in IETF RFCs.
 
-.. data:: IDNA_SCHEMES
+.. warning::
 
-   A collection of schemes that use IDN encoding for its host.
+   The URL related functions will be removed in version 2.0.
+   Use `yarl <https://yarl.readthedocs.io/>`_ instead.
 
 """
 from __future__ import annotations
@@ -266,7 +263,16 @@ def rewrite_url(input_url: str,
     URLs since *no URL escaping is performed*.  This is the obvious
     pass through case that is almost always present.
 
+    .. deprecated:: 1.9
+       URL processing functions are scheduled for removal in 2.0.
+       Please use `yarl`_ instead.  It is simply a better solution.
+
+    .. _yarl: https://yarl.readthedocs.io/
+
     """
+    warnings.warn(
+        'rewrite_url will be removed in 2.0, please use yarl instead',
+        DeprecationWarning)
     result = parse.urlparse(input_url)
 
     if scheme is unspecified_str:
@@ -386,7 +392,16 @@ def remove_url_auth(url: str) -> RemoveUrlAuthResult:
     >>> result.url
     'http://example.com'
 
+    .. deprecated:: 1.9
+       URL processing functions are scheduled for removal in 2.0.
+       Please use `yarl`_ instead.  It is simply a better solution.
+
+    .. _yarl: https://yarl.readthedocs.io/
+
     """
+    warnings.warn(
+        'remove_url_auth will be removed in 2.0, please use yarl instead',
+        DeprecationWarning)
     parts = parse.urlparse(url)
     return RemoveUrlAuthResult(auth=(parts.username or None, parts.password),
                                url=rewrite_url(url, user=None, password=None))
