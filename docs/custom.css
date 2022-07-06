@@ -27,9 +27,11 @@ ol > li > p {
     margin-bottom: 0;
 }
 
-dl.class > dt {
+dl.class > dt,
+dl.function > dt {
     text-indent: -3em hanging;
     margin-left: 3em;
+	padding-top: 1em;
 }
 
 blockquote {
