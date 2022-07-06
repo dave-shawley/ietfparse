@@ -9,17 +9,20 @@ useful outside of a particular piece of functionality, it
 is fully fleshed out and ends up here.
 
 """
+from __future__ import annotations
+
 import functools
+from typing import Mapping, MutableMapping, Sequence, Tuple
 
 
 @functools.total_ordering
 class ContentType(object):
     """A MIME ``Content-Type`` header.
 
-    :param str content_type: the primary content type
-    :param str content_subtype: the content sub-type
-    :param str content_suffix: optional content suffix
-    :param dict parameters: optional dictionary of content type
+    :param content_type: the primary content type
+    :param content_subtype: the content sub-type
+    :param content_suffix: optional content suffix
+    :param parameters: optional dictionary of content type
         parameters
 
     Internet content types are described by the :mailheader:`Content-Type`
@@ -42,13 +45,20 @@ class ContentType(object):
     to identify the content format.
 
     """
+    content_type: str
+    content_subtype: str
+    parameters: MutableMapping[str, str]
+    content_suffix: str | None
+    quality: float | None
+
     def __init__(self,
-                 content_type,
-                 content_subtype,
-                 parameters=None,
-                 content_suffix=None):
+                 content_type: str,
+                 content_subtype: str,
+                 parameters: Mapping[str, str | int] | None = None,
+                 content_suffix: str | None = None) -> None:
         self.content_type = content_type.strip().lower()
         self.content_subtype = content_subtype.strip().lower()
+        self.quality = None
         if content_suffix is not None:
             self.content_suffix = content_suffix.strip().lower()
         else:
@@ -56,25 +66,21 @@ class ContentType(object):
         self.parameters = {}
         if parameters is not None:
             for name in parameters:
-                self.parameters[name.lower()] = parameters[name]
+                self.parameters[name.lower()] = str(parameters[name])
 
-    def __str__(self):
+    def __str__(self) -> str:
+        suffix, params = '', ''
         if self.content_suffix:
-            content_suffix = '+{0}'.format(self.content_suffix)
-        else:
-            content_suffix = ''
+            suffix = f'+{self.content_suffix}'
         if self.parameters:
-            return '{0}/{1}{2}; {3}'.format(
-                self.content_type, self.content_subtype, content_suffix,
-                '; '.join('{0}={1}'.format(name, self.parameters[name])
-                          for name in sorted(self.parameters)))
-        else:
-            return '{0}/{1}{2}'.format(self.content_type, self.content_subtype,
-                                       content_suffix)
+            params = '; '.join(f'{name}={self.parameters[name]}'
+                               for name in sorted(self.parameters))
+            params = f'; {params}'
+        return f'{self.content_type}/{self.content_subtype}{suffix}{params}'
 
-    def __repr__(self):  # pragma: no cover
+    def __repr__(self) -> str:  # pragma: no cover
         if self.content_suffix:
-            content_suffix = '+{0}'.format(self.content_suffix)
+            content_suffix = f'+{self.content_suffix}'
         else:
             content_suffix = ''
         return '<{0}.{1} {2}/{3}{4}, {5} parameters>'.format(
@@ -82,13 +88,17 @@ class ContentType(object):
             self.content_type, self.content_subtype, content_suffix,
             len(self.parameters))
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ContentType):
+            return NotImplemented
         return (self.content_type == other.content_type
                 and self.content_subtype == other.content_subtype
                 and self.content_suffix == other.content_suffix
                 and self.parameters == other.parameters)
 
-    def __lt__(self, other):
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, ContentType):
+            return NotImplemented
         if self.content_type == '*' and other.content_type != '*':
             return True
         if self.content_subtype == '*' and other.content_subtype != '*':
@@ -121,18 +131,23 @@ class LinkHeader(object):
     HTTP resources.
 
     """
-    def __init__(self, target, parameters=None):
+    target: str
+    parameters: Sequence[Tuple[str, str]]
+
+    def __init__(self,
+                 target: str,
+                 parameters: Sequence[Tuple[str, str]] | None = None) -> None:
         self.target = target
         self.parameters = parameters or []
 
-    def __str__(self):
+    def __str__(self) -> str:
         formatted = '<{0}>'.format(self.target)
         if self.parameters:
-            params = [
-                '{0}="{1}"'.format(*pair) for pair in self.parameters
-                if pair[0] != 'rel'
-            ]
-            params = '; '.join(sorted(params))
+            params = '; '.join(
+                sorted([
+                    '{0}="{1}"'.format(*pair) for pair in self.parameters
+                    if pair[0] != 'rel'
+                ]))
             rel = [
                 '{0}="{1}"'.format(*pair) for pair in self.parameters
                 if pair[0] == 'rel'
@@ -141,4 +156,5 @@ class LinkHeader(object):
                 formatted += '; ' + rel[0]
             if params:
                 formatted += '; ' + params
+
         return formatted

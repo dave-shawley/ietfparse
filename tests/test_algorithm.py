@@ -158,26 +158,31 @@ class PriorizationTests(unittest.TestCase):
 
 class RemoveUrlAuthTests(unittest.TestCase):
     def test_that_auth_and_url_are_returned(self):
-        result = algorithms.remove_url_auth('http://me:secret@example.com')
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0], ('me', 'secret'))
-        self.assertEqual(result[1], 'http://example.com')
+        auth, url = algorithms.remove_url_auth('https://me:secret@example.com')
+        self.assertEqual(auth, ('me', 'secret'))
+        self.assertEqual(url, 'https://example.com')
 
     def test_that_return_value_has_attributes_too(self):
-        result = algorithms.remove_url_auth('http://me:secret@example.com')
+        result = algorithms.remove_url_auth('https://me:secret@example.com')
         self.assertEqual(result.auth, ('me', 'secret'))
         self.assertEqual(result.username, 'me')
         self.assertEqual(result.password, 'secret')
-        self.assertEqual(result.url, 'http://example.com')
+        self.assertEqual(result.url, 'https://example.com')
 
     def test_that_username_can_be_omitted(self):
-        result = algorithms.remove_url_auth('http://:secret@example.com')
+        result = algorithms.remove_url_auth('https://:secret@example.com')
         self.assertIsNone(result.username)
         self.assertEqual(result.password, 'secret')
-        self.assertEqual(result.url, 'http://example.com')
+        self.assertEqual(result.url, 'https://example.com')
 
     def test_that_password_can_be_omitted(self):
-        result = algorithms.remove_url_auth('http://insecure@example.com')
+        result = algorithms.remove_url_auth('https://insecure@example.com')
         self.assertEqual(result.username, 'insecure')
         self.assertIsNone(result.password)
-        self.assertEqual(result.url, 'http://example.com')
+        self.assertEqual(result.url, 'https://example.com')
+
+    def test_without_auth_in_url(self):
+        result = algorithms.remove_url_auth('https://example.com')
+        self.assertIsNone(result.username)
+        self.assertIsNone(result.password)
+        self.assertEqual(result.url, 'https://example.com')

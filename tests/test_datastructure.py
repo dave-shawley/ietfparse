@@ -83,3 +83,8 @@ class ContentTypeComparisonTests(unittest.TestCase):
         self.assertLess(
             ContentType('application', 'first', parameters={'1': 1}),
             ContentType('application', 'second', parameters={'1': 1}))
+
+    def test_comparing_non_content_type_instances(self):
+        self.assertNotEqual(ContentType('application', 'binary'), object())
+        with self.assertRaises(TypeError):
+            ContentType('application', 'binary') > object()

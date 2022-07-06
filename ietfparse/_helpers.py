@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Dict, List, Sequence, Tuple
+
 from . import errors
 
 
@@ -5,7 +9,7 @@ class ParameterParser(object):
     """
     Utility class to parse Link headers.
 
-    :param bool strict: controls whether parsing follows all of
+    :param strict: controls whether parsing follows all of
         the rules laid out in :rfc:`5988`
 
     This class parses the parameters for a single :mailheader:`Link`
@@ -34,10 +38,10 @@ class ParameterParser(object):
       raised.
 
     """
-    def __init__(self, strict=True):
+    def __init__(self, strict: bool = True) -> None:
         self.strict = strict
-        self._values = []
-        self._rfc_values = {
+        self._values: List[Tuple[str, str]] = []
+        self._rfc_values: Dict[str, str | None] = {
             'rel': None,
             'media': None,
             'type': None,
@@ -45,7 +49,7 @@ class ParameterParser(object):
             'title*': None,
         }
 
-    def add_value(self, name, value):
+    def add_value(self, name: str, value: str) -> None:
         """
         Add a new value to the list.
 
@@ -79,19 +83,16 @@ class ParameterParser(object):
         self._values.append((name, value))
 
     @property
-    def values(self):
-        """
-        The name/value mapping that was parsed.
-
-        :returns: a sequence of name/value pairs.
-
-        """
+    def values(self) -> Sequence[Tuple[str, str]]:
+        """The name/value mapping that was parsed."""
         values = self._values[:]
         if self.strict:
-            if self._rfc_values['title*']:
-                values.append(('title*', self._rfc_values['title*']))
-                if self._rfc_values['title']:
-                    values.append(('title', self._rfc_values['title*']))
-            elif self._rfc_values['title']:
-                values.append(('title', self._rfc_values['title']))
+            preferred_title = self._rfc_values['title*']
+            fallback_title = self._rfc_values['title']
+            if preferred_title is not None:
+                values.append(('title*', preferred_title))
+                if fallback_title is not None:
+                    values.append(('title', preferred_title))
+            elif fallback_title is not None:
+                values.append(('title', fallback_title))
         return values
