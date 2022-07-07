@@ -32,6 +32,13 @@ extensions.append('sphinx.ext.autodoc')
 # https://www.sphinx-doc.org/en/master/usage/extensions/viewcode.html
 extensions.append('sphinx.ext.viewcode')
 
+# https://www.sphinx-doc.org/en/master/usage/extensions/extlinks.html
+extensions.append('sphinx.ext.extlinks')
+extlinks = {
+    'issue': ('https://github.com/dave-shawley/ietfparse/issues/%s', '#%s'),
+    'compare': ('https://github.com/dave-shawley/ietfparse/compare/%s', '%s'),
+}
+
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
 extensions.append('sphinx.ext.intersphinx')
 intersphinx_mapping = {
