@@ -40,3 +40,6 @@ intersphinx_mapping = {
 
 # https://sphinxcontrib-httpdomain.readthedocs.io/
 extensions.append('sphinxcontrib.httpdomain')
+
+# https://github.com/tox-dev/sphinx-autodoc-typehints
+extensions.append('sphinx_autodoc_typehints')
