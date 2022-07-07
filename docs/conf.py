@@ -15,16 +15,18 @@ source_suffix = '.rst'
 source_encoding = 'utf-8-sig'
 master_doc = 'index'
 pygments_style = 'sphinx'
-html_static_path = ['.']
 exclude_patterns = []
-html_sidebars = {
-    '**': ['about.html', 'navigation.html', 'searchbox.html'],
-}
-html_theme_options = {
-    'github_user': 'dave-shawley',
-    'github_repo': 'ietfparse',
-    'github_banner': True,
-}
+html_theme_options = {}
+
+# https://github.com/bashtage/sphinx-material
+html_theme = 'sphinx_material'
+html_css_files = ['custom.css']
+html_theme_options.update({
+    'globaltoc_depth': 2,
+    'repo_type': 'github',
+    'repo_url': 'https://github.com/dave-shawley/ietfparse',
+})
+html_sidebars = {'**': ['globaltoc.html', 'localtoc.html', 'searchbox.html']}
 
 # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
 extensions.append('sphinx.ext.autodoc')
