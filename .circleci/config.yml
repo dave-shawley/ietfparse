@@ -5,7 +5,7 @@ jobs:
   build:
     working_directory: ~/ietfparse
     docker:
-      - image: circleci/python:3
+      - image: cimg/python:3.10
     steps:
       - run: |
           mkdir -p tmp/
@@ -19,14 +19,14 @@ jobs:
   python-3-test:
     working_directory: ~/ietfparse
     docker:
-      - image: circleci/python:3
+      - image: cimg/python:3.10
     steps:
       - checkout
       - attach_workspace:
           at: ~/ietfparse/tmp
       - run: |
           mkdir build
-          sudo pip install '.[test]' coveralls
+          pip install --user '.[test]' coveralls
           coverage run -m unittest discover
           coverage xml
           ./tmp/cc-test-reporter format-coverage -t coverage.py -o tmp/python3-coverage.json
@@ -39,7 +39,7 @@ jobs:
   upload-coverage:
     working_directory: ~/ietfparse
     docker:
-      - image: circleci/python:3
+      - image: cimg/python:3.10
     steps:
       - attach_workspace:
           at: ~/ietfparse/tmp
@@ -50,13 +50,12 @@ jobs:
   distribute-tag:
     working_directory: ~/ietfparse
     docker:
-      - image: circleci/python:3
+      - image: cimg/python:3.10
     steps:
       - checkout
       - run: |
-          sudo pip install --upgrade readme_renderer twine wheel
-          ./setup.py check -r -s
-          ./setup.py bdist_wheel sdist
+          pip install --user --upgrade build readme_renderer twine wheel
+          python -m build --sdist --wheel
           twine check dist/*
           twine upload --skip-existing dist/*
           curl -XPOST -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/ietfparse/28564/
