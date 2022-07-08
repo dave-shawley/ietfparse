@@ -28,13 +28,16 @@ jobs:
           mkdir build
           pip install --user '.[test]' coveralls
           coverage run -m unittest discover
+          coverage report
           coverage xml
           ./tmp/cc-test-reporter format-coverage -t coverage.py -o tmp/python3-coverage.json
           coveralls
+          cp coverage.xml tmp/
       - persist_to_workspace:
           root: tmp
           paths:
             - python3-coverage.json
+            - coverage.xml
 
   upload-coverage:
     working_directory: ~/ietfparse
@@ -46,6 +49,18 @@ jobs:
       - run: |
           ./tmp/cc-test-reporter sum-coverage tmp/*-coverage.json -p 1 -o tmp/codeclimate-total.json
           ./tmp/cc-test-reporter upload-coverage -i tmp/codeclimate-total.json
+
+  update-sonarcloud:
+    working_directory: ~/ietfparse
+    docker:
+      - image: cimg/openjdk:18.0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/ietfparse/tmp
+      - run: |
+          cp tmp/coverage.xml coverage.xml
+      - sonarcloud/scan
 
   distribute-tag:
     working_directory: ~/ietfparse
@@ -60,6 +75,9 @@ jobs:
           twine upload --skip-existing dist/*
           curl -XPOST -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/ietfparse/28564/
 
+orbs:
+  sonarcloud: sonarsource/sonarcloud@1.1.1
+
 workflows:
   version: 2
   build-workflow:
@@ -69,6 +87,9 @@ workflows:
           requires:
             - build
       - upload-coverage:
+          requires:
+            - python-3-test
+      - update-sonarcloud:
           requires:
             - python-3-test
       - distribute-tag:
