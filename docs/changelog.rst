@@ -3,14 +3,15 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
-:compare:`Next Release <1.8.0...master>`
-----------------------------------------
+:compare:`1.9.0 <1.8.0...1.9.0>` (08-Jul-2022)
+----------------------------------------------
 - Removed ``ietfparse.compat`` module.
 - Changed ``algorithms.RemoveUrlAuthResult`` from a named tuple to a proper class.
 - Deprecated using ``len()`` on the return value from :func:`algorithms.remove_url_auth`
 - Replace type hints with annotations.
 - Deprecated ``rewrite_url`` and ``remove_url_auth``.  Use `yarl`_ instead.  It is an
   awesome library and a more general solution.
+- Stop building universal wheels
 
 .. _yarl: https://pypi.org/project/yarl/
 
