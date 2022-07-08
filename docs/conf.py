@@ -44,7 +44,7 @@ extlinks = {
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
 extensions.append('sphinx.ext.intersphinx')
 intersphinx_mapping = {
-    'python': ('http://docs.python.org/3/', None),
+    'python': ('https://docs.python.org/3/', None),
 }
 
 # https://sphinxcontrib-httpdomain.readthedocs.io/
