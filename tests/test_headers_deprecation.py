@@ -16,7 +16,7 @@ class DeprecationTests(unittest.TestCase):
         warnings.simplefilter('always')
         with warnings.catch_warnings(record=True) as caught:
             headers.parse_link_header(
-                '<http://example.com/TheBook/chapter2>; rel="previous"; '
+                '<https://example.com/TheBook/chapter2>; rel="previous"; '
                 'title="previous chapter"')
             self.assertEqual(len(caught), 1)
             self.assertEqual(caught[-1].category, DeprecationWarning)

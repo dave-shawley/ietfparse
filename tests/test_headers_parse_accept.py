@@ -5,7 +5,7 @@ from ietfparse import datastructures, headers
 
 class ParseAcceptHeaderTests(unittest.TestCase):
 
-    # First example from http://tools.ietf.org/html/rfc7231#section-5.3.2
+    # First example from https://tools.ietf.org/html/rfc7231#section-5.3.2
 
     def test_that_all_items_are_returned(self):
         parsed = headers.parse_accept('audio/*;q=0.2,audio/basic,'
@@ -24,7 +24,7 @@ class ParseAcceptHeaderTests(unittest.TestCase):
         for value in parsed:
             self.assertNotIn('q', value.parameters)
 
-    # Final example in http://tools.ietf.org/html/rfc7231#section-5.3.2
+    # Final example in https://tools.ietf.org/html/rfc7231#section-5.3.2
 
     def test_that_most_specific_value_is_first(self):
         parsed = headers.parse_accept('text/*, text/plain,'
@@ -86,7 +86,7 @@ class ParseAcceptHeaderTests(unittest.TestCase):
 
 class ParseAcceptCharsetHeaderTests(unittest.TestCase):
 
-    # Final example in http://tools.ietf.org/html/rfc7231#section-5.3.3
+    # Final example in https://tools.ietf.org/html/rfc7231#section-5.3.3
 
     def test_that_simple_wildcard_parses(self):
         self.assertEqual(headers.parse_accept_charset('*'), ['*'])
@@ -120,7 +120,7 @@ class ParseAcceptCharsetHeaderTests(unittest.TestCase):
 
 class ParseAcceptEncodingTests(unittest.TestCase):
 
-    # Final example in http://tools.ietf.org/html/rfc7231#section-5.3.4
+    # Final example in https://tools.ietf.org/html/rfc7231#section-5.3.4
 
     def test_that_simple_wildcard_parses(self):
         self.assertEqual(headers.parse_accept_encoding('*'), ['*'])
@@ -149,7 +149,7 @@ class ParseAcceptEncodingTests(unittest.TestCase):
 
 class ParseAcceptLanguageTests(unittest.TestCase):
 
-    # Final example in http://tools.ietf.org/html/rfc7231#section-5.3.5
+    # Final example in https://tools.ietf.org/html/rfc7231#section-5.3.5
 
     def test_that_simple_wildcard_parses(self):
         self.assertEqual(headers.parse_accept_language('*'), ['*'])

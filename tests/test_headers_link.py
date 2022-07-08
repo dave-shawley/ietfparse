@@ -6,38 +6,38 @@ from ietfparse import errors, headers
 class LinkHeaderParsingTests(unittest.TestCase):
     def test_parsing_single_link(self):
         parsed = headers.parse_link(
-            '<http://example.com/TheBook/chapter2>; rel="previous"; '
+            '<https://example.com/TheBook/chapter2>; rel="previous"; '
             'title="previous chapter"')
 
         self.assertEqual(len(parsed), 1)
         self.assertEqual(parsed[0].target,
-                         'http://example.com/TheBook/chapter2')
+                         'https://example.com/TheBook/chapter2')
         self.assertIn(('rel', 'previous'), parsed[0].parameters)
         self.assertIn(('title', 'previous chapter'), parsed[0].parameters)
 
     def test_parsing_multiple_link_headers(self):
         parsed = headers.parse_link(
-            '<http://example.com/first>; rel=first;another=value,'
-            '<http://example.com/second>', )
-        self.assertEqual(parsed[0].target, 'http://example.com/first')
+            '<https://example.com/first>; rel=first;another=value,'
+            '<https://example.com/second>', )
+        self.assertEqual(parsed[0].target, 'https://example.com/first')
         self.assertEqual(parsed[0].parameters, [('rel', 'first'),
                                                 ('another', 'value')])
 
-        self.assertEqual(parsed[1].target, 'http://example.com/second')
+        self.assertEqual(parsed[1].target, 'https://example.com/second')
         self.assertEqual(parsed[1].parameters, [])
 
     def test_that_quoted_uris_can_contain_semicolons(self):
-        parsed = headers.parse_link('<http://host/matrix;param/>')
-        self.assertEqual(parsed[0].target, 'http://host/matrix;param/')
+        parsed = headers.parse_link('<https://host/matrix;param/>')
+        self.assertEqual(parsed[0].target, 'https://host/matrix;param/')
 
     def test_that_quoted_parameters_can_contain_commas(self):
         parsed = headers.parse_link(
-            '<http://example/com>; rel="quoted, with comma", <1>')
+            '<https://example/com>; rel="quoted, with comma", <1>')
         self.assertEqual(parsed[0].parameters, [('rel', 'quoted, with comma')])
 
     def test_that_quoted_parameters_can_contain_semicolons(self):
         parsed = headers.parse_link(
-            '<http://example/com>; rel="quoted; with semicolon", <1>')
+            '<https://example/com>; rel="quoted; with semicolon", <1>')
         self.assertEqual(parsed[0].parameters,
                          [('rel', 'quoted; with semicolon')])
 
@@ -66,11 +66,11 @@ class LinkHeaderParsingTests(unittest.TestCase):
 class MalformedLinkHeaderTests(unittest.TestCase):
     def test_that_value_error_when_url_brackets_are_missing(self):
         with self.assertRaises(errors.MalformedLinkValue):
-            headers.parse_link('http://foo.com; rel=wrong')
+            headers.parse_link('https://example.com; rel=wrong')
 
     def test_that_first_semicolon_is_required(self):
         with self.assertRaises(errors.MalformedLinkValue):
-            headers.parse_link('<http://foo.com> rel="still wrong"')
+            headers.parse_link('<https://example.com> rel="still wrong"')
 
     def test_that_first_rel_parameter_is_used(self):
         # semantically malformed but handled appropriately
@@ -113,10 +113,10 @@ class MalformedLinkHeaderTests(unittest.TestCase):
 
 class LinkHeaderFormattingTests(unittest.TestCase):
     def test_that_parameters_are_sorted_after_rel(self):
-        parsed = headers.parse_link('<http://example.com>; title="foo";'
+        parsed = headers.parse_link('<https://example.com>; title="foo";'
                                     ' rel="next"; hreflang="en"')
         self.assertEqual(
-            str(parsed[0]), '<http://example.com>; rel="next"; hreflang="en";'
+            str(parsed[0]), '<https://example.com>; rel="next"; hreflang="en";'
             ' title="foo"')
 
     def test_that_rel_is_not_required(self):
