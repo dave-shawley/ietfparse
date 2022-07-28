@@ -3,6 +3,12 @@ Changelog
 
 .. py:currentmodule:: ietfparse
 
+:compare:`Next <1.9.0...main>` (Unreleased)
+-------------------------------------------
+- Replaced setup.py/cfg with pyproject.yaml and hatch_
+
+.. _hatch: https://hatch.pypa.io/
+
 :compare:`1.9.0 <1.8.0...1.9.0>` (08-Jul-2022)
 ----------------------------------------------
 - Removed ``ietfparse.compat`` module.

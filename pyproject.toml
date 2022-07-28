@@ -1,0 +1,80 @@
+[project]
+name = "ietfparse"
+dynamic = ["version"]
+description = "Parse formats defined in IETF RFCs"
+readme = "README.rst"
+requires-python = ">=3.7"
+license = { file = "LICENSE" }
+authors = [ { name = "Dave Shawley", email = "daveshawley@gmail.com" } ]
+classifiers = [
+	"Intended Audience :: Developers",
+	"License :: OSI Approved :: BSD License",
+	"Operating System :: OS Independent",
+	"Programming Language :: Python",
+	"Programming Language :: Python :: 3",
+	"Programming Language :: Python :: 3.7",
+	"Programming Language :: Python :: 3.8",
+	"Programming Language :: Python :: 3.9",
+	"Programming Language :: Python :: 3.10",
+	"Development Status :: 5 - Production/Stable",
+	"Environment :: Web Environment",
+	"Topic :: Internet :: WWW/HTTP",
+	"Topic :: Text Processing",
+	"Typing :: Typed"
+]
+
+[project.urls]
+Documentation = "https://ietfparse.readthedocs.io/"
+"Source Code" = "https://github.com/dave-shawley/ietfparse"
+"Code Coverage" = "https://coveralls.io/github/dave-shawley/ietfparse"
+Maintainability = "https://codeclimate.com/github/dave-shawley/ietfparse/"
+
+[project.optional-dependencies]
+dev = [
+	"coverage[toml]==5.5",
+	"flake8==3.9.2",
+	"mypy==0.910",
+	"sphinx==5.0.2",
+	"sphinxcontrib-httpdomain==1.8.0",
+	"sphinx-autodoc-typehints==1.18.3",
+	"sphinx-material==0.0.35",
+	"tox==3.24.1",
+	"yapf==0.31.0"
+]
+test = [
+	"coverage[toml]==5.5"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "ietfparse/__init__.py"
+pattern = "version = '(?P<version>[^']*)'"
+
+[tool.hatch.build.targets.sdist]
+include = [
+	"/.circleci",
+	"/.flake8",
+	"/docs",
+	"/ietfparse",
+	"/tests",
+	"/.codeclimate.yml",
+	"/.readthedocs.yml",
+	"/AUTHORS.rst",
+	"/CONTRIBUTING.rst",
+	"/sonar-project.properties",
+	"/tox.ini",
+]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.coverage.run]
+branch = true
+source = ["ietfparse"]
+
+[tool.yapf]
+allow_split_before_dict_value = false
+split_before_logical_operator = true
