@@ -16,11 +16,19 @@ create a virtual environment for your endeavours::
 
    $ python -mvenv env
 
-If you are developing against something earlier than Python 3.4, then I
-highly recommend using `virtualenv`_ to create the environment.  Otherwise,
-use the :mod:`venv` module.  The next step is to install the development
-tools that you will need.  These are included in the setuptools *extra*
-``.[dev]``::
+.. note::
+
+   I am in the process of moving from setuptools to *pyproject.toml* and the
+   hatch_ build backend.  If you want to continue using ``pip``, then you will
+   need to upgrade to at least pip version 21.3 for :pep:`660` support.  You
+   can also use ``hatch`` by running ``hatch env create`` instead.  I still
+   recommend using ``pip`` since it is a more comfortable workflow for most
+   developers.
+
+.. _hatch: https://hatch.pypa.io/
+
+The next step is to install the development tools that you will need.  These
+are included in the setuptools *extra* ``.[dev]``::
 
    $ env/bin/pip install -qe '.[dev]'
    $ env/bin/pip freeze
@@ -62,7 +70,7 @@ and report the result of the test run::
 If you want to see the test coverage, then use the excellent `coverage`_
 utility::
 
-   $ env/bin/coverage -munittest
+   $ env/bin/coverage run -munittest
    ......................................................................
    ......................................................................
    .........................
@@ -104,7 +112,8 @@ opinion on that as well.  *Just use the tools directly.*
 The more interesting pivot is that I *did not choose to use pytest* or any
 other replacement for nose.  The :mod:`unittest` module together with the
 `coverage`_ utility is more than capable of handling the task at hand without
-depending on yet another utility.
+depending on yet another utility.  In full transparency, I do use pytest in
+my development environment.
 
 .. _a future version of python: https://mail.python.org/archives/list
    /python-dev@python.org/thread/EYLXCGGJOUMZSE5X35ILW3UNTJM3MCRE
