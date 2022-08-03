@@ -119,33 +119,19 @@ my development environment.
    /python-dev@python.org/thread/EYLXCGGJOUMZSE5X35ILW3UNTJM3MCRE
    /#5PTA432JSFSNRU3QAKXM727KDK6ZI7UX
 
-Before you can call the code complete, you really need to make sure that it
-works across the supported python versions.  My CI pipeline will take care of
-making sure that this is the case when the code is pushed to github but you
-should do this before you push.  The easiest way to do this is
-to run `tox`_::
+Before you can call the code complete, you should make sure that it works
+across the supported python versions.  My CI pipeline will take care of
+making sure that this is the case when you create a pull request.  If you
+want to do this before submitting, then you will have to install hatch_.
+The easiest way to do this is to install it using ``pip install --user``.
+Hatch will store virtual environments somewhere in your home directory
+(see `Hatch Configuration <https://hatch.pypa.io/latest/config/hatch/>`_
+and `User Installs`_ for additional information).::
 
-   $ env/bin/tox -p auto
-   GLOB sdist-make: /Users/daveshawley/Source/python/ietfparse/setup.py
-   ✔ OK py38 in 8.701 seconds
-   ✔ OK py37 in 8.746 seconds
-   ✔ OK py36 in 9.008 seconds
-   ✔ OK py27 in 9.02 seconds
-   ✔ OK coverage in 9.546 seconds
-   ✔ OK py35 in 9.69 seconds
-   ✔ OK lint in 23.357 seconds
-   _______________________________ summary _______________________________
-     py27: commands succeeded
-     py35: commands succeeded
-     py36: commands succeeded
-     py37: commands succeeded
-     py38: commands succeeded
-     lint: commands succeeded
-     coverage: commands succeeded
-     congratulations :)
+   $ python3.9 -m pip install --user hatch
+   $ python3.9 -m hatch run all:test
 
-This is what you want to see.  Tests passing across the board.  Time to
-submit a PR.
+If the tests all pass, then it is time to submit a PR.
 
 Submitting a Pull Request
 -------------------------
@@ -181,10 +167,48 @@ After the tests are written, code is complete, and documents are up to
 date, it is time to push your code back to github.com and submit a pull
 request against the upstream repository.
 
+Using hatch
+-----------
+I replaced setuptools & tox_ with hatch_ to manage project metadata,
+dependencies, and provide developer-friendly scripts.  Best of all is that it
+does not require that you use it unless you want to!  I did have to change
+this guide since I replaced tox with hatch environments.  So I lied a little
+bit... if you want to test across multiple python versions, then you will need
+to install hatch (or let the CI pipeline take care of it).  I installed the
+hatch utility using the "--user" option since that makes it available
+regardless of which enviroment is activated::
+
+   $ python3.9 -m pip install --user hatch
+
+If you want to run the ``hatch`` utility as a CLI utility instead of a module,
+then you need to add the "user installation" directory to your path. You can
+find the user installation root using::
+
+   $ python3.9 -m site --user-base
+   /Users/daveshawley/.local
+
+Simply add the ``bin`` directory to your path and you can run ``hatch``
+instead of ``python3.9 -m hatch``.  If you are unfamiliar with "user
+installs", then read `User Installs`_ for the detailed version.
+
+Once you have hatch installed and available, running any of the ``hatch``
+commands will result in the creation of a new virtual environment or updating
+the existing one.  For example::
+
+   $ hatch run test
+
+will ensure that the virtual environment exists and run the "test" script
+which is ``python -m unittest discover -f tests``.  You can see the available
+scripts with ``hatch env show``.  The ``all`` environment can be used to run
+the commands across all of the supported Python versions (e.g., ``hatch run
+all:test``).
+
 .. _coverage: https://coverage.readthedocs.io/
 .. _flake8: https://flake8.readthedocs.io/
+.. _hatch: https://hatch.pypa.io/
 .. _sphinx: https://www.sphinx-doc.org/
 .. _tox: https://tox.readthedocs.io/
 .. _virtualenv: https://virtualenv.pypa.io/en/stable/
 
 .. _Documentation is King: https://www.kennethreitz.org/documentation-is-king/
+.. _User Installs: https://pip.pypa.io/en/stable/user_guide/#user-installs
