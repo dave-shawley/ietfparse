@@ -6,6 +6,7 @@ Changelog
 :compare:`Next <1.9.0...main>` (Unreleased)
 -------------------------------------------
 - Replaced setup.py/cfg with pyproject.yaml and hatch_
+- Replaced tox with hatch_ environments
 
 .. _hatch: https://hatch.pypa.io/
 
