@@ -39,10 +39,6 @@ Here's a sample of the code that this library lets you write::
             handler.set_header('Content-Type', 'application/example+json; v=2')
             handler.write(generate_modern_json(data_dict))
 
-    def redirect_to_peer(host, port=80):
-        flask.redirect(algorithms.rewrite_url(flask.request.url,
-                                              host=host, port=port))
-
 OK... Where?
 ------------
 +---------------+--------------------------------------------------------------------+

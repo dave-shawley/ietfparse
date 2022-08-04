@@ -5,6 +5,7 @@ Changelog
 
 :compare:`Next <1.9.0...main>` (Unreleased)
 -------------------------------------------
+- Remove ``rewrite_url`` and ``remove_url_auth``
 - Replaced setup.py/cfg with pyproject.yaml and hatch_
 - Replaced tox with hatch_ environments
 
