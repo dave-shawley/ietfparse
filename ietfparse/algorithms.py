@@ -7,11 +7,6 @@ Implementations of algorithms from various specifications.
 This module implements some of the more interesting algorithms
 described in IETF RFCs.
 
-.. warning::
-
-   The URL related functions will be removed in version 2.0.
-   Use `yarl <https://yarl.readthedocs.io/>`_ instead.
-
 """
 from __future__ import annotations
 

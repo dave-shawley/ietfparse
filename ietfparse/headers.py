@@ -10,17 +10,12 @@ Functions for parsing headers.
 - :func:`.parse_list`: parse a comma-separated list that is
   present in so many headers
 
-This module also defines classes that might be of some use outside
-of the module.  They are not designed for direct usage unless otherwise
-mentioned.
-
 """
 from __future__ import annotations
 
 import functools
 import decimal
 import re
-import warnings
 from typing import Dict, Generator, Iterable, List, Tuple
 
 from . import datastructures, errors, _helpers
@@ -459,74 +454,3 @@ def _dequote(value: str) -> str:
     if value[0] == '"' and value[-1] == '"':
         return value[1:-1]
     return value
-
-
-# Backwards Compatibility Functions
-
-
-def parse_http_accept_header(
-        header_value: str) -> List[datastructures.ContentType]:
-    """Parse an HTTP accept-like header.
-
-    :param str header_value: the header value to parse
-    :return: a :class:`list` of :class:`.ContentType` instances
-        in decreasing quality order.  Each instance is augmented
-        with the associated quality as a ``float`` property
-        named ``quality``.
-
-    ``Accept`` is a class of headers that contain a list of values
-    and an associated preference value.  The ever present `Accept`_
-    header is a perfect example.  It is a list of content types and
-    an optional parameter named ``q`` that indicates the relative
-    weight of a particular type.  The most basic example is::
-
-        Accept: audio/*;q=0.2, audio/basic
-
-    Which states that I prefer the ``audio/basic`` content type
-    but will accept other ``audio`` sub-types with an 80% mark down.
-
-    .. _Accept: https://tools.ietf.org/html/rfc7231#section-5.3.2
-
-    .. deprecated:: 1.3.0
-       Use :func:`~ietfparse.headers.parse_accept` instead.
-
-    """
-    warnings.warn("deprecated", DeprecationWarning)
-    return parse_accept(header_value)
-
-
-def parse_link_header(header_value: str,
-                      strict: bool = True) -> List[datastructures.LinkHeader]:
-    """
-    Parse a HTTP Link header.
-
-    :param header_value: the header value to parse
-    :param strict: set this to ``False`` to disable semantic
-        checking.  Syntactical errors will still raise an exception.
-        Use this if you want to receive all parameters.
-    :return: a sequence of :class:`~ietfparse.datastructures.LinkHeader`
-        instances
-    :raises ietfparse.errors.MalformedLinkValue:
-        if the specified `header_value` cannot be parsed
-
-    .. deprecated:: 1.3.0
-       Use :func:`~ietfparse.headers.parse_link` instead.
-
-    """
-    warnings.warn("deprecated", DeprecationWarning)
-    return parse_link(header_value, strict)
-
-
-def parse_list_header(value: str) -> List[str]:
-    """
-    Parse a comma-separated list header.
-
-    :param value: header value to split into elements
-    :return: list of header elements as strings
-
-    .. deprecated:: 1.3.0
-       Use :func:`~ietfparse.headers.parse_list` instead.
-
-    """
-    warnings.warn("deprecated", DeprecationWarning)
-    return parse_list(value)

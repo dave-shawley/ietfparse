@@ -5,7 +5,8 @@ Changelog
 
 :compare:`Next <1.9.0...main>` (Unreleased)
 -------------------------------------------
-- Remove ``rewrite_url`` and ``remove_url_auth``
+- Remove deprecated functions: ``rewrite_url``, ``remove_url_auth``, ``parse_http_accept_header``,
+  ``parse_link_header``, and ``parse_list_header``
 - Replaced setup.py/cfg with pyproject.yaml and hatch_
 - Replaced tox with hatch_ environments
 

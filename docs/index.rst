@@ -4,7 +4,6 @@
 .. toctree::
    :hidden:
 
-   urls
    header-parsing
    header-processing
    reference
