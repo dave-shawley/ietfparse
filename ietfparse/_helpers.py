@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Dict, List, Sequence, Tuple
-
 from . import errors
 
 
@@ -40,8 +38,8 @@ class ParameterParser(object):
     """
     def __init__(self, strict: bool = True) -> None:
         self.strict = strict
-        self._values: List[Tuple[str, str]] = []
-        self._rfc_values: Dict[str, str | None] = {
+        self._values: list[tuple[str, str]] = []
+        self._rfc_values: dict[str, str | None] = {
             'rel': None,
             'media': None,
             'type': None,
@@ -83,7 +81,7 @@ class ParameterParser(object):
         self._values.append((name, value))
 
     @property
-    def values(self) -> Sequence[Tuple[str, str]]:
+    def values(self) -> list[tuple[str, str]]:
         """The name/value mapping that was parsed."""
         values = self._values[:]
         if self.strict:

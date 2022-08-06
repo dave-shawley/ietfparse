@@ -16,7 +16,7 @@ from __future__ import annotations
 import functools
 import decimal
 import re
-from typing import Dict, Generator, Iterable, List, Tuple
+from collections import abc
 
 from . import datastructures, errors, _helpers
 
@@ -30,7 +30,7 @@ _DEF_PARAM_VALUE = object()
 
 
 def parse_accept(header_value: str,
-                 strict: bool = False) -> List[datastructures.ContentType]:
+                 strict: bool = False) -> list[datastructures.ContentType]:
     """Parse an HTTP accept-like header.
 
     :param header_value: the header value to parse
@@ -97,7 +97,7 @@ def parse_accept(header_value: str,
     return sorted(headers, key=functools.cmp_to_key(ordering))
 
 
-def parse_accept_charset(header_value: str) -> List[str]:
+def parse_accept_charset(header_value: str) -> list[str]:
     """
     Parse the ``Accept-Charset`` header into a sorted list.
 
@@ -123,7 +123,7 @@ def parse_accept_charset(header_value: str) -> List[str]:
     return _parse_qualified_list(header_value)
 
 
-def parse_accept_encoding(header_value: str) -> List[str]:
+def parse_accept_encoding(header_value: str) -> list[str]:
     """
     Parse the ``Accept-Encoding`` header into a sorted list.
 
@@ -148,7 +148,7 @@ def parse_accept_encoding(header_value: str) -> List[str]:
     return _parse_qualified_list(header_value)
 
 
-def parse_accept_language(header_value: str) -> List[str]:
+def parse_accept_language(header_value: str) -> list[str]:
     """
     Parse the ``Accept-Language`` header into a sorted list.
 
@@ -174,7 +174,7 @@ def parse_accept_language(header_value: str) -> List[str]:
 
 
 def parse_cache_control(
-        header_value: str) -> Dict[str, str | int | bool | None]:
+        header_value: str) -> dict[str, str | int | bool | None]:
     """
     Parse a `Cache-Control`_ header, returning a dictionary of key-value pairs.
 
@@ -188,7 +188,7 @@ def parse_cache_control(
     .. _Cache-Control: https://tools.ietf.org/html/rfc7234#section-5.2
 
     """
-    directives: Dict[str, str | int | bool | None] = {}
+    directives: dict[str, str | int | bool | None] = {}
 
     for segment in parse_list(header_value):
         name, sep, value = segment.partition('=')
@@ -244,7 +244,7 @@ def parse_content_type(
 
 def parse_forwarded(
         header_value: str,
-        only_standard_parameters: bool = False) -> List[Dict[str, str]]:
+        only_standard_parameters: bool = False) -> list[dict[str, str]]:
     """
     Parse RFC7239 Forwarded header.
 
@@ -278,7 +278,7 @@ def parse_forwarded(
 
 
 def parse_link(header_value: str,
-               strict: bool = True) -> List[datastructures.LinkHeader]:
+               strict: bool = True) -> list[datastructures.LinkHeader]:
     """
     Parse a HTTP Link header.
 
@@ -295,7 +295,8 @@ def parse_link(header_value: str,
     sanitized = _remove_comments(header_value)
     links = []
 
-    def parse_links(buf: str) -> Generator[Tuple[str, List[str]], None, None]:
+    def parse_links(
+            buf: str) -> abc.Generator[tuple[str, list[str]], None, None]:
         """Parse links from `buf`
 
         Find quoted parts, these are allowed to contain commas
@@ -341,7 +342,7 @@ def parse_link(header_value: str,
     return links
 
 
-def parse_list(value: str) -> List[str]:
+def parse_list(value: str) -> list[str]:
     """
     Parse a comma-separated list header.
 
@@ -357,10 +358,10 @@ def parse_list(value: str) -> List[str]:
 
 
 def _parse_parameter_list(
-        parameter_list: Iterable[str],
+        parameter_list: abc.Iterable[str],
         normalize_parameter_names: bool = False,
         normalize_parameter_values: bool = True,
-        strip_interior_whitespace: bool = False) -> List[Tuple[str, str]]:
+        strip_interior_whitespace: bool = False) -> list[tuple[str, str]]:
     """
     Parse a named parameter list in the "common" format.
 
@@ -394,7 +395,7 @@ def _parse_parameter_list(
     return parameters
 
 
-def _parse_qualified_list(value: str) -> List[str]:
+def _parse_qualified_list(value: str) -> list[str]:
     """
     Parse a header value, returning a sorted list of values based upon
     the quality rules specified in https://tools.ietf.org/html/rfc7231 for

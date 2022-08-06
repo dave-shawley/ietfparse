@@ -10,8 +10,8 @@ described in IETF RFCs.
 """
 from __future__ import annotations
 
+from collections import abc
 from operator import attrgetter
-from typing import Sequence, Tuple
 
 from ietfparse import datastructures, errors
 
@@ -28,9 +28,9 @@ def _content_type_matches(candidate: datastructures.ContentType,
 
 
 def select_content_type(
-    requested: Sequence[datastructures.ContentType],
-    available: Sequence[datastructures.ContentType]
-) -> Tuple[datastructures.ContentType, datastructures.ContentType]:
+    requested: abc.Sequence[datastructures.ContentType],
+    available: abc.Sequence[datastructures.ContentType]
+) -> tuple[datastructures.ContentType, datastructures.ContentType]:
     """Selects the best content type.
 
     :param requested: a sequence of :class:`.ContentType` instances
