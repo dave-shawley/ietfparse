@@ -86,7 +86,7 @@ coverage = [
 	"python -m coverage report"
 ]
 lint = [
-	"flake8 --output-file=build/pep8.txt",
+	"flake8",
 	"mypy --strict --package ietfparse",
 	"yapf -dr ietfparse tests"
 ]
