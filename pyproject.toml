@@ -94,9 +94,6 @@ test = [
 	"python -m unittest discover -f tests"
 ]
 
-[tool.hatch.envs.all]
-dependencies = []
-
 [[tool.hatch.envs.all.matrix]]
 python = ["37", "38", "39", "310"]
 
