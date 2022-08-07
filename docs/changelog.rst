@@ -5,8 +5,11 @@ Changelog
 
 :compare:`Next <1.9.0...main>` (Unreleased)
 -------------------------------------------
+- Removed deprecated functions: ``rewrite_url``, ``remove_url_auth``, ``parse_http_accept_header``,
+  ``parse_link_header``, and ``parse_list_header``
 - Replaced setup.py/cfg with pyproject.yaml and hatch_
 - Replaced tox with hatch_ environments
+- Replaced usage of the ``typing`` module with equivalents following :pep:`585`
 
 .. _hatch: https://hatch.pypa.io/
 

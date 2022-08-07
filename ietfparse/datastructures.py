@@ -2,6 +2,7 @@
 Important data structures.
 
 - :class:`.ContentType`: MIME ``Content-Type`` header.
+- :class:`.LinkHeader`: parsed ``Link`` header.
 
 This module contains data structures that were useful in
 implementing this library.  If a data structure might be
@@ -12,7 +13,7 @@ is fully fleshed out and ends up here.
 from __future__ import annotations
 
 import functools
-from typing import Mapping, MutableMapping, Sequence, Tuple
+from collections import abc
 
 
 @functools.total_ordering
@@ -47,14 +48,14 @@ class ContentType(object):
     """
     content_type: str
     content_subtype: str
-    parameters: MutableMapping[str, str]
+    parameters: abc.MutableMapping[str, str]
     content_suffix: str | None
     quality: float | None
 
     def __init__(self,
                  content_type: str,
                  content_subtype: str,
-                 parameters: Mapping[str, str | int] | None = None,
+                 parameters: abc.Mapping[str, str | int] | None = None,
                  content_suffix: str | None = None) -> None:
         self.content_type = content_type.strip().lower()
         self.content_subtype = content_subtype.strip().lower()
@@ -132,13 +133,14 @@ class LinkHeader(object):
 
     """
     target: str
-    parameters: Sequence[Tuple[str, str]]
+    parameters: abc.Sequence[tuple[str, str]]
 
-    def __init__(self,
-                 target: str,
-                 parameters: Sequence[Tuple[str, str]] | None = None) -> None:
+    def __init__(
+            self,
+            target: str,
+            parameters: abc.Sequence[tuple[str, str]] | None = None) -> None:
         self.target = target
-        self.parameters = parameters or []
+        self.parameters = [] if parameters is None else parameters
 
     def __str__(self) -> str:
         formatted = '<{0}>'.format(self.target)
