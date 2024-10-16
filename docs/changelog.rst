@@ -10,6 +10,7 @@ Changelog
 - Replaced setup.py/cfg with pyproject.yaml and hatch_
 - Replaced tox with hatch_ environments
 - Replaced usage of the ``typing`` module with equivalents following :pep:`585`
+- Remove support for Python versions before 3.9
 
 .. _hatch: https://hatch.pypa.io/
 

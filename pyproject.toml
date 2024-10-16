@@ -3,7 +3,7 @@ name = "ietfparse"
 dynamic = ["version"]
 description = "Parse formats defined in IETF RFCs"
 readme = "README.rst"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 license = { file = "LICENSE" }
 authors = [ { name = "Dave Shawley", email = "daveshawley@gmail.com" } ]
 classifiers = [
@@ -12,10 +12,11 @@ classifiers = [
 	"Operating System :: OS Independent",
 	"Programming Language :: Python",
 	"Programming Language :: Python :: 3",
-	"Programming Language :: Python :: 3.7",
-	"Programming Language :: Python :: 3.8",
 	"Programming Language :: Python :: 3.9",
 	"Programming Language :: Python :: 3.10",
+	"Programming Language :: Python :: 3.11",
+	"Programming Language :: Python :: 3.12",
+	"Programming Language :: Python :: 3.13",
 	"Development Status :: 5 - Production/Stable",
 	"Environment :: Web Environment",
 	"Topic :: Internet :: WWW/HTTP",
@@ -75,7 +76,7 @@ dependencies = [
 	"sphinx-material==0.0.35",
 	"yapf==0.31.0"
 ]
-python = "3.10"
+python = "3.12"
 
 [tool.hatch.envs.default.scripts]
 build-docs = [
@@ -95,7 +96,7 @@ test = [
 ]
 
 [[tool.hatch.envs.all.matrix]]
-python = ["37", "38", "39", "310"]
+python = ["39", "310", "311", "312", "313"]
 
 
 [tool.coverage.report]
