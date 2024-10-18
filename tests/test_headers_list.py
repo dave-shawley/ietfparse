@@ -4,6 +4,7 @@ from ietfparse import headers
 
 
 class ListHeaderParsingTests(unittest.TestCase):
+
     def test_that_elements_are_whitespace_normalized(self):
         self.assertEqual(headers.parse_list('one, two,three    ,four,five'),
                          ['one', 'two', 'three', 'four', 'five'])

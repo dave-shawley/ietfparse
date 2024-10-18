@@ -33,13 +33,14 @@ Maintainability = "https://codeclimate.com/github/dave-shawley/ietfparse/"
 [project.optional-dependencies]
 dev = [
 	"coverage[toml]==5.5",
-	"flake8==3.9.2",
 	"mypy==0.910",
+	"pytest==7.1.2",
+	"ruff==0.6.9",
 	"sphinx==5.0.2",
 	"sphinxcontrib-httpdomain==1.8.0",
 	"sphinx-autodoc-typehints==1.18.3",
 	"sphinx-material==0.0.35",
-	"yapf==0.31.0"
+	"yapf==0.40.2"
 ]
 
 [build-system]
@@ -53,7 +54,6 @@ pattern = "version = '(?P<version>[^']*)'"
 [tool.hatch.build.targets.sdist]
 include = [
 	"/.circleci",
-	"/.flake8",
 	"/docs",
 	"/ietfparse",
 	"/tests",
@@ -65,17 +65,7 @@ include = [
 ]
 
 [tool.hatch.envs.default]
-dependencies = [
-	"coverage[toml]==5.5",
-	"flake8==3.9.2",
-	"mypy==0.910",
-	"pytest==7.1.2",
-	"sphinx==5.0.2",
-	"sphinxcontrib-httpdomain==1.8.0",
-	"sphinx-autodoc-typehints==1.18.3",
-	"sphinx-material==0.0.35",
-	"yapf==0.31.0"
-]
+features = ["dev"]
 python = "3.12"
 
 [tool.hatch.envs.default.scripts]
@@ -87,7 +77,7 @@ coverage = [
 	"python -m coverage report"
 ]
 lint = [
-	"flake8",
+	"ruff check",
 	"mypy --strict --package ietfparse",
 	"yapf -dr ietfparse tests"
 ]
@@ -98,13 +88,41 @@ test = [
 [[tool.hatch.envs.all.matrix]]
 python = ["39", "310", "311", "312", "313"]
 
-
 [tool.coverage.report]
 show_missing = true
 
 [tool.coverage.run]
 branch = true
 source = ["ietfparse"]
+
+[tool.ruff]
+line-length = 79
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+	"ANN",  # TODO -- temporarily ignoring these
+	"C901",	# TODO -- temporarily ignoring these
+	"D1",	# TODO -- temporarily ignoring these
+	"UP",   # TODO -- temporarily ignoring these
+
+	"D203",		# No blank lines before class docstring
+	"D213",		# Start multiline docstrings on the second line
+	"N818",		# Exception class names don't end in "Error"
+	"PT",   	# I don't like pytest conventions
+	"EM101",	# Passing literal messages in raise is fine
+	"EM102",	# Passing f-strings in raise is fine
+	"TRY003",	# Passing literal messages in raise is fine
+]
+exclude = ["docs/conf.py"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+	"D",    	# tests don't require docs
+]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
 
 [tool.yapf]
 allow_split_before_dict_value = false

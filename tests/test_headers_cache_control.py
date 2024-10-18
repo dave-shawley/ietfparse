@@ -4,14 +4,21 @@ from ietfparse import headers
 
 
 class CacheControlParsingTests(unittest.TestCase):
+
     def test_that_flags_are_parsed_as_booleans(self):
         flags = {
-            'must-revalidate', 'no-cache', 'no-store', 'no-transform',
-            'only-if-cached', 'public', 'private', 'proxy-revalidate'
+            'must-revalidate',
+            'no-cache',
+            'no-store',
+            'no-transform',
+            'only-if-cached',
+            'public',
+            'private',
+            'proxy-revalidate',
         }
         for flag in flags:
             parsed = headers.parse_cache_control(flag)
-            self.assertIs(parsed[flag], True)
+            self.assertIs(parsed[flag], True)  # noqa: FBT003
 
     def test_that_numeric_parameters_are_parsed(self):
         parsed = headers.parse_cache_control('min-fresh=20, max-age=100')

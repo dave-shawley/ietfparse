@@ -4,6 +4,7 @@ from ietfparse import errors, headers
 
 
 class ForwardedHeaderParsingTests(unittest.TestCase):
+
     def test_that_whitespace_is_irrelevant(self):
         # RFC7239. sec 7.1
         self.assertEqual(

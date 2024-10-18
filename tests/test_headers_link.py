@@ -4,6 +4,7 @@ from ietfparse import errors, headers
 
 
 class LinkHeaderParsingTests(unittest.TestCase):
+
     def test_parsing_single_link(self):
         parsed = headers.parse_link(
             '<https://example.com/TheBook/chapter2>; rel="previous"; '
@@ -18,7 +19,7 @@ class LinkHeaderParsingTests(unittest.TestCase):
     def test_parsing_multiple_link_headers(self):
         parsed = headers.parse_link(
             '<https://example.com/first>; rel=first;another=value,'
-            '<https://example.com/second>', )
+            '<https://example.com/second>')
         self.assertEqual(parsed[0].target, 'https://example.com/first')
         self.assertEqual(parsed[0].parameters, [('rel', 'first'),
                                                 ('another', 'value')])
@@ -64,6 +65,7 @@ class LinkHeaderParsingTests(unittest.TestCase):
 
 
 class MalformedLinkHeaderTests(unittest.TestCase):
+
     def test_that_value_error_when_url_brackets_are_missing(self):
         with self.assertRaises(errors.MalformedLinkValue):
             headers.parse_link('https://example.com; rel=wrong')
@@ -106,12 +108,12 @@ class MalformedLinkHeaderTests(unittest.TestCase):
             '<multiple-titles>;title=one;title=two;title*=three;title*=four, '
             '<multiple-rels>; rel=first; rel=second,'
             '<multiple-medias>; media=one; media=two',
-            strict=False,
-        )
+            strict=False)
         self.assertEqual(len(parsed), 3)
 
 
 class LinkHeaderFormattingTests(unittest.TestCase):
+
     def test_that_parameters_are_sorted_after_rel(self):
         parsed = headers.parse_link('<https://example.com>; title="foo";'
                                     ' rel="next"; hreflang="en"')

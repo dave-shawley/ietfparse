@@ -53,14 +53,14 @@ class ParseAcceptHeaderTests(unittest.TestCase):
         self.assertEqual(
             headers.parse_accept('application/json;charset="utf-8"'), [
                 datastructures.ContentType('application', 'json',
-                                           {'charset': 'utf-8'})
+                                           {'charset': 'utf-8'}),
             ])
 
     def test_that_extension_tokens_with_spaces_are_parsed(self):
         self.assertEqual(
             headers.parse_accept('application/json;x-foo=" something else"'), [
                 datastructures.ContentType('application', 'json',
-                                           {'x-foo': ' something else'})
+                                           {'x-foo': ' something else'}),
             ])
 
     def test_that_invalid_parts_are_skipped(self):

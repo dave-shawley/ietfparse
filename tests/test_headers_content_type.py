@@ -4,6 +4,7 @@ from ietfparse import datastructures, headers
 
 
 class SimpleContentTypeParsingTests(unittest.TestCase):
+
     def setUp(self):
         super(SimpleContentTypeParsingTests, self).setUp()
         self.parsed = headers.parse_content_type(
@@ -23,6 +24,7 @@ class SimpleContentTypeParsingTests(unittest.TestCase):
 
 
 class ParsingComplexContentTypeTests(unittest.TestCase):
+
     def setUp(self):
         super(ParsingComplexContentTypeTests, self).setUp()
         self.parsed = headers.parse_content_type(
@@ -46,6 +48,7 @@ class ParsingComplexContentTypeTests(unittest.TestCase):
 
 
 class ParsingBrokenContentTypes(unittest.TestCase):
+
     def test_that_missing_subtype_raises_value_error(self):
         with self.assertRaises(ValueError):
             headers.parse_content_type('*')
@@ -53,6 +56,7 @@ class ParsingBrokenContentTypes(unittest.TestCase):
 
 class Rfc7231ExampleTests(unittest.TestCase):
     """Test cases from RFC7231, Section 3.1.1.1"""
+
     def setUp(self):
         self.normalized = datastructures.ContentType('text', 'html',
                                                      {'charset': 'utf-8'})

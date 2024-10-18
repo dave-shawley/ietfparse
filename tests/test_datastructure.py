@@ -4,6 +4,7 @@ from ietfparse.datastructures import ContentType
 
 
 class ContentTypeCreationTests(unittest.TestCase):
+
     def test_that_primary_type_is_normalized(self):
         self.assertEqual('contenttype',
                          ContentType('COntentType', 'b').content_type)
@@ -19,12 +20,15 @@ class ContentTypeCreationTests(unittest.TestCase):
 
     def test_that_parameter_names_are_casefolded(self):
         self.assertDictEqual({'key': 'Value'},
-                             ContentType('a', 'b', parameters={
-                                 'KEY': 'Value'
-                             }).parameters)
+                             ContentType('a',
+                                         'b',
+                                         parameters={
+                                             'KEY': 'Value',
+                                         }).parameters)
 
 
 class ContentTypeStringificationTests(unittest.TestCase):
+
     def test_that_simple_case_works(self):
         self.assertEqual('primary/subtype',
                          str(ContentType('primary', 'subtype')))
@@ -39,6 +43,7 @@ class ContentTypeStringificationTests(unittest.TestCase):
 
 
 class ContentTypeComparisonTests(unittest.TestCase):
+
     def test_type_equals_itself(self):
         self.assertEqual(ContentType('a', 'b'), ContentType('a', 'b'))
 
@@ -72,7 +77,7 @@ class ContentTypeComparisonTests(unittest.TestCase):
             ContentType('application', 'text', parameters={'1': 1}),
             ContentType('application', 'text', parameters={
                 '1': 1,
-                '2': 2
+                '2': 2,
             }))
 
     def test_otherwise_equal_types_ordered_by_primary(self):
@@ -87,4 +92,4 @@ class ContentTypeComparisonTests(unittest.TestCase):
     def test_comparing_non_content_type_instances(self):
         self.assertNotEqual(ContentType('application', 'binary'), object())
         with self.assertRaises(TypeError):
-            ContentType('application', 'binary') > object()
+            ContentType('application', 'binary') > object()  # noqa: B015

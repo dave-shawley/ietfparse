@@ -1,19 +1,21 @@
-"""
-Important data structures.
+"""Important data structures.
 
 - :class:`.ContentType`: MIME ``Content-Type`` header.
 - :class:`.LinkHeader`: parsed ``Link`` header.
 
 This module contains data structures that were useful in
 implementing this library.  If a data structure might be
-useful outside of a particular piece of functionality, it
-is fully fleshed out and ends up here.
+useful outside a particular piece of functionality, it is
+fully fleshed out and ends up here.
 
 """
 from __future__ import annotations
 
 import functools
-from collections import abc
+import typing
+
+if typing.TYPE_CHECKING:
+    from collections import abc
 
 
 @functools.total_ordering
@@ -46,6 +48,7 @@ class ContentType(object):
     to identify the content format.
 
     """
+
     content_type: str
     content_subtype: str
     parameters: abc.MutableMapping[str, str]
@@ -112,8 +115,7 @@ class ContentType(object):
 
 
 class LinkHeader(object):
-    """
-    Represents a single link within a ``Link`` header.
+    """Represents a single link within a ``Link`` header.
 
     .. attribute:: target
 
@@ -132,6 +134,7 @@ class LinkHeader(object):
     HTTP resources.
 
     """
+
     target: str
     parameters: abc.Sequence[tuple[str, str]]
 

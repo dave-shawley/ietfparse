@@ -1,5 +1,4 @@
-"""
-Implementations of algorithms from various specifications.
+"""Implementations of algorithms from various specifications.
 
 - :func:`.select_content_type`: select the best match between a
   HTTP ``Accept`` header and a list of available ``Content-Type`` s
@@ -10,17 +9,21 @@ described in IETF RFCs.
 """
 from __future__ import annotations
 
-from collections import abc
+import typing
 from operator import attrgetter
 
 from ietfparse import datastructures, errors
 
+if typing.TYPE_CHECKING:
+    from collections import abc
+
 
 def _content_type_matches(candidate: datastructures.ContentType,
                           pattern: datastructures.ContentType) -> bool:
-    """Is ``candidate`` an exact match or sub-type of ``pattern``?"""
+    """Is ``candidate`` an exact match or sub-type of ``pattern``?"""  # noqa: D400
+
     def _wildcard_compare(type_spec: str, type_pattern: str) -> bool:
-        return type_pattern == '*' or type_spec == type_pattern
+        return type_pattern in ('*', type_spec)
 
     return (_wildcard_compare(candidate.content_type, pattern.content_type)
             and _wildcard_compare(candidate.content_subtype,
@@ -29,9 +32,9 @@ def _content_type_matches(candidate: datastructures.ContentType,
 
 def select_content_type(
     requested: abc.Sequence[datastructures.ContentType],
-    available: abc.Sequence[datastructures.ContentType]
+    available: abc.Sequence[datastructures.ContentType],
 ) -> tuple[datastructures.ContentType, datastructures.ContentType]:
-    """Selects the best content type.
+    """Select the best content type.
 
     :param requested: a sequence of :class:`.ContentType` instances
     :param available: a sequence of :class:`.ContentType` instances
@@ -55,6 +58,7 @@ def select_content_type(
     .. _Content-Type: https://tools.ietf.org/html/rfc7231#section-3.1.1.5
 
     """
+
     class Match(object):
         """Sorting assistant.
 
@@ -83,6 +87,7 @@ def select_content_type(
         the stronger the match.
 
         """
+
         WILDCARD, PARTIAL, FULL_TYPE, = 2, 1, 0
 
         def __init__(self, candidate: datastructures.ContentType,
