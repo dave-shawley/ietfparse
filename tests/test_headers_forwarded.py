@@ -4,7 +4,7 @@ from ietfparse import errors, headers
 
 
 class ForwardedHeaderParsingTests(unittest.TestCase):
-    def test_that_whitespace_is_irrelevant(self):
+    def test_that_whitespace_is_irrelevant(self) -> None:
         # RFC7239. sec 7.1
         self.assertEqual(
             headers.parse_forwarded(
@@ -15,7 +15,7 @@ class ForwardedHeaderParsingTests(unittest.TestCase):
             ),
         )
 
-    def test_that_order_is_preserved(self):
+    def test_that_order_is_preserved(self) -> None:
         parsed = headers.parse_forwarded(
             'for=192.0.2.43,for="[2001:db8:cafe::17]",for=unknown'
         )
@@ -24,11 +24,11 @@ class ForwardedHeaderParsingTests(unittest.TestCase):
         self.assertEqual(parsed[1], {'for': '[2001:db8:cafe::17]'})
         self.assertEqual(parsed[2], {'for': 'unknown'})
 
-    def test_that_param_names_are_normalized(self):
+    def test_that_param_names_are_normalized(self) -> None:
         parsed = headers.parse_forwarded('For="[2001:db8:cafe::17]:4711"')
         self.assertEqual(parsed, [{'for': '[2001:db8:cafe::17]:4711'}])
 
-    def test_parsing_full_header(self):
+    def test_parsing_full_header(self) -> None:
         parsed = headers.parse_forwarded(
             'for=192.0.2.60;proto=http;by=203.0.113.43;host=example.com',
             only_standard_parameters=True,
@@ -38,11 +38,11 @@ class ForwardedHeaderParsingTests(unittest.TestCase):
         self.assertEqual(parsed[0]['by'], '203.0.113.43')
         self.assertEqual(parsed[0]['host'], 'example.com')
 
-    def test_that_non_standard_parameters_are_parsed(self):
+    def test_that_non_standard_parameters_are_parsed(self) -> None:
         parsed = headers.parse_forwarded('for=127.0.0.1;one=two')
         self.assertEqual(parsed[0]['one'], 'two')
 
-    def test_that_non_standard_parameters_can_be_prohibited(self):
+    def test_that_non_standard_parameters_can_be_prohibited(self) -> None:
         with self.assertRaises(errors.StrictHeaderParsingFailure) as context:
             headers.parse_forwarded(
                 'for=127.0.0.1;one=2', only_standard_parameters=True

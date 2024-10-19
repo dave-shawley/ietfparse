@@ -78,7 +78,7 @@ coverage = [
 lint = [
 	"ruff format",
 	"ruff check",
-	"mypy --strict --package ietfparse",
+	"mypy --strict --package ietfparse --package tests",
 ]
 test = [
 	"python -m unittest discover -f tests"
@@ -103,8 +103,8 @@ quote-style = "single"
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-	"ANN",  # TODO -- temporarily ignoring these
-
+	"ANN101",	# type annotation not required for `self`
+	"ANN102",	# type annotation not required for `cls`
 	"COM812",	# conflicts with ruff formatter
 	"D104",		# No need for docstring at the package level
 	"D105",		# No need for docstrings in magic methods
