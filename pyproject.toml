@@ -104,7 +104,6 @@ quote-style = "single"
 select = ["ALL"]
 ignore = [
 	"ANN",  # TODO -- temporarily ignoring these
-	"C901",	# TODO -- temporarily ignoring these
 	"D1",	# TODO -- temporarily ignoring these
 	"UP",   # TODO -- temporarily ignoring these
 

@@ -32,7 +32,7 @@ def _content_type_matches(
     ) and _wildcard_compare(candidate.content_subtype, pattern.content_subtype)
 
 
-def select_content_type(
+def select_content_type(  # noqa: C901 -- overly complex
     requested: abc.Sequence[datastructures.ContentType],
     available: abc.Sequence[datastructures.ContentType],
 ) -> tuple[datastructures.ContentType, datastructures.ContentType]:

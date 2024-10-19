@@ -39,7 +39,7 @@ _QUOTED_SEGMENT_RE = re.compile(r'"([^"]*)"')
 _DEF_PARAM_VALUE = object()
 
 
-def parse_accept(
+def parse_accept(  # noqa: C901 -- overly complex
     header_value: str, *, strict: bool = False
 ) -> list[datastructures.ContentType]:
     """Parse an HTTP accept-like header.
