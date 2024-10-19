@@ -4,25 +4,28 @@ from ietfparse import errors, headers
 
 
 class LinkHeaderParsingTests(unittest.TestCase):
-
     def test_parsing_single_link(self):
         parsed = headers.parse_link(
             '<https://example.com/TheBook/chapter2>; rel="previous"; '
-            'title="previous chapter"')
+            'title="previous chapter"'
+        )
 
         self.assertEqual(len(parsed), 1)
-        self.assertEqual(parsed[0].target,
-                         'https://example.com/TheBook/chapter2')
+        self.assertEqual(
+            parsed[0].target, 'https://example.com/TheBook/chapter2'
+        )
         self.assertIn(('rel', 'previous'), parsed[0].parameters)
         self.assertIn(('title', 'previous chapter'), parsed[0].parameters)
 
     def test_parsing_multiple_link_headers(self):
         parsed = headers.parse_link(
             '<https://example.com/first>; rel=first;another=value,'
-            '<https://example.com/second>')
+            '<https://example.com/second>'
+        )
         self.assertEqual(parsed[0].target, 'https://example.com/first')
-        self.assertEqual(parsed[0].parameters, [('rel', 'first'),
-                                                ('another', 'value')])
+        self.assertEqual(
+            parsed[0].parameters, [('rel', 'first'), ('another', 'value')]
+        )
 
         self.assertEqual(parsed[1].target, 'https://example.com/second')
         self.assertEqual(parsed[1].parameters, [])
@@ -33,19 +36,23 @@ class LinkHeaderParsingTests(unittest.TestCase):
 
     def test_that_quoted_parameters_can_contain_commas(self):
         parsed = headers.parse_link(
-            '<https://example/com>; rel="quoted, with comma", <1>')
+            '<https://example/com>; rel="quoted, with comma", <1>'
+        )
         self.assertEqual(parsed[0].parameters, [('rel', 'quoted, with comma')])
 
     def test_that_quoted_parameters_can_contain_semicolons(self):
         parsed = headers.parse_link(
-            '<https://example/com>; rel="quoted; with semicolon", <1>')
-        self.assertEqual(parsed[0].parameters,
-                         [('rel', 'quoted; with semicolon')])
+            '<https://example/com>; rel="quoted; with semicolon", <1>'
+        )
+        self.assertEqual(
+            parsed[0].parameters, [('rel', 'quoted; with semicolon')]
+        )
 
     def test_that_title_star_overrides_title_parameter(self):
         parsed = headers.parse_link('<>; title=title; title*=title*')
-        self.assertEqual(parsed[0].parameters, [('title*', 'title*'),
-                                                ('title', 'title*')])
+        self.assertEqual(
+            parsed[0].parameters, [('title*', 'title*'), ('title', 'title*')]
+        )
 
     def test_optional_white_space(self):
         parsed = headers.parse_link('<one> ; rel="one" , <two> ; rel=two')
@@ -65,7 +72,6 @@ class LinkHeaderParsingTests(unittest.TestCase):
 
 
 class MalformedLinkHeaderTests(unittest.TestCase):
-
     def test_that_value_error_when_url_brackets_are_missing(self):
         with self.assertRaises(errors.MalformedLinkValue):
             headers.parse_link('https://example.com; rel=wrong')
@@ -108,18 +114,20 @@ class MalformedLinkHeaderTests(unittest.TestCase):
             '<multiple-titles>;title=one;title=two;title*=three;title*=four, '
             '<multiple-rels>; rel=first; rel=second,'
             '<multiple-medias>; media=one; media=two',
-            strict=False)
+            strict=False,
+        )
         self.assertEqual(len(parsed), 3)
 
 
 class LinkHeaderFormattingTests(unittest.TestCase):
-
     def test_that_parameters_are_sorted_after_rel(self):
-        parsed = headers.parse_link('<https://example.com>; title="foo";'
-                                    ' rel="next"; hreflang="en"')
+        parsed = headers.parse_link(
+            '<https://example.com>; title="foo"; rel="next"; hreflang="en"'
+        )
         self.assertEqual(
-            str(parsed[0]), '<https://example.com>; rel="next"; hreflang="en";'
-            ' title="foo"')
+            str(parsed[0]),
+            '<https://example.com>; rel="next"; hreflang="en"; title="foo"',
+        )
 
     def test_that_rel_is_not_required(self):
         parsed = headers.parse_link('<>')

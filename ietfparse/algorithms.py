@@ -7,6 +7,7 @@ This module implements some of the more interesting algorithms
 described in IETF RFCs.
 
 """
+
 from __future__ import annotations
 
 import typing
@@ -18,16 +19,17 @@ if typing.TYPE_CHECKING:
     from collections import abc
 
 
-def _content_type_matches(candidate: datastructures.ContentType,
-                          pattern: datastructures.ContentType) -> bool:
+def _content_type_matches(
+    candidate: datastructures.ContentType, pattern: datastructures.ContentType
+) -> bool:
     """Is ``candidate`` an exact match or sub-type of ``pattern``?"""  # noqa: D400
 
     def _wildcard_compare(type_spec: str, type_pattern: str) -> bool:
         return type_pattern in ('*', type_spec)
 
-    return (_wildcard_compare(candidate.content_type, pattern.content_type)
-            and _wildcard_compare(candidate.content_subtype,
-                                  pattern.content_subtype))
+    return _wildcard_compare(
+        candidate.content_type, pattern.content_type
+    ) and _wildcard_compare(candidate.content_subtype, pattern.content_subtype)
 
 
 def select_content_type(
@@ -88,10 +90,15 @@ def select_content_type(
 
         """
 
-        WILDCARD, PARTIAL, FULL_TYPE, = 2, 1, 0
+        FULL_TYPE = 0
+        PARTIAL = 1
+        WILDCARD = 2
 
-        def __init__(self, candidate: datastructures.ContentType,
-                     pattern: datastructures.ContentType) -> None:
+        def __init__(
+            self,
+            candidate: datastructures.ContentType,
+            pattern: datastructures.ContentType,
+        ) -> None:
             self.candidate = candidate
             self.pattern = pattern
 
@@ -126,6 +133,7 @@ def select_content_type(
     if not matches:
         raise errors.NoMatch
 
-    matches = sorted(matches,
-                     key=attrgetter('match_type', 'parameter_distance'))
+    matches = sorted(
+        matches, key=attrgetter('match_type', 'parameter_distance')
+    )
     return matches[0].candidate, matches[0].pattern

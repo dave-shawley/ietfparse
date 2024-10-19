@@ -4,11 +4,11 @@ from ietfparse import datastructures, headers
 
 
 class SimpleContentTypeParsingTests(unittest.TestCase):
-
     def setUp(self):
         super(SimpleContentTypeParsingTests, self).setUp()
         self.parsed = headers.parse_content_type(
-            'text/plain', normalize_parameter_values=False)
+            'text/plain', normalize_parameter_values=False
+        )
 
     def test_that_type_is_parsed(self):
         self.assertEqual(self.parsed.content_type, 'text')
@@ -24,12 +24,12 @@ class SimpleContentTypeParsingTests(unittest.TestCase):
 
 
 class ParsingComplexContentTypeTests(unittest.TestCase):
-
     def setUp(self):
         super(ParsingComplexContentTypeTests, self).setUp()
         self.parsed = headers.parse_content_type(
             'message/HTTP+JSON; version=2.0 (someday); MsgType="Request"',
-            normalize_parameter_values=False)
+            normalize_parameter_values=False,
+        )
 
     def test_that_type_is_parsed(self):
         self.assertEqual(self.parsed.content_type, 'message')
@@ -48,7 +48,6 @@ class ParsingComplexContentTypeTests(unittest.TestCase):
 
 
 class ParsingBrokenContentTypes(unittest.TestCase):
-
     def test_that_missing_subtype_raises_value_error(self):
         with self.assertRaises(ValueError):
             headers.parse_content_type('*')
@@ -58,23 +57,30 @@ class Rfc7231ExampleTests(unittest.TestCase):
     """Test cases from RFC7231, Section 3.1.1.1"""
 
     def setUp(self):
-        self.normalized = datastructures.ContentType('text', 'html',
-                                                     {'charset': 'utf-8'})
+        self.normalized = datastructures.ContentType(
+            'text', 'html', {'charset': 'utf-8'}
+        )
 
     def test_that_simplest_header_matches(self):
-        self.assertEqual(headers.parse_content_type('text/html;charset=utf-8'),
-                         self.normalized)
+        self.assertEqual(
+            headers.parse_content_type('text/html;charset=utf-8'),
+            self.normalized,
+        )
 
     def test_that_media_type_parameters_are_case_insensitive(self):
-        self.assertEqual(headers.parse_content_type('text/html;charset=UTF-8'),
-                         self.normalized)
+        self.assertEqual(
+            headers.parse_content_type('text/html;charset=UTF-8'),
+            self.normalized,
+        )
 
     def test_that_media_type_is_case_insensitive(self):
         self.assertEqual(
             headers.parse_content_type('Text/HTML;Charset="utf-8"'),
-            self.normalized)
+            self.normalized,
+        )
 
     def test_that_whitespace_is_ignored(self):
         self.assertEqual(
             headers.parse_content_type('text/html; charset="utf-8"'),
-            self.normalized)
+            self.normalized,
+        )

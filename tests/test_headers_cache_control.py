@@ -4,7 +4,6 @@ from ietfparse import headers
 
 
 class CacheControlParsingTests(unittest.TestCase):
-
     def test_that_flags_are_parsed_as_booleans(self):
         flags = {
             'must-revalidate',
@@ -27,7 +26,8 @@ class CacheControlParsingTests(unittest.TestCase):
 
     def test_that_string_parameters_are_parsed(self):
         parsed = headers.parse_cache_control(
-            'community="UCI", x-token=" foo bar "')
+            'community="UCI", x-token=" foo bar "'
+        )
         self.assertEqual('UCI', parsed['community'])
         self.assertEqual(' foo bar ', parsed['x-token'])
 
