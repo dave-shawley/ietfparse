@@ -61,7 +61,7 @@ def select_content_type(  # noqa: C901 -- overly complex
 
     """
 
-    class Match(object):
+    class Match:
         """Sorting assistant.
 
         Sorting matches is a tricky business.  We need a way to

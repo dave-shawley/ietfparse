@@ -25,7 +25,7 @@ class ContentNegotiationTestCase(unittest.TestCase):
 class ProactiveContentNegotiationTests(ContentNegotiationTestCase):
     @classmethod
     def setUpClass(cls):
-        super(ProactiveContentNegotiationTests, cls).setUpClass()
+        super().setUpClass()
         cls.requested.extend(
             headers.parse_accept(
                 'application/vnd.example.com+json;version=2, '
@@ -89,7 +89,7 @@ class ProactiveContentNegotiationTests(ContentNegotiationTestCase):
 class Rfc7231ExampleTests(ContentNegotiationTestCase):
     @classmethod
     def setUpClass(cls):
-        super(Rfc7231ExampleTests, cls).setUpClass()
+        super().setUpClass()
         cls.requested.extend(
             headers.parse_accept(
                 'text/*;q=0.3, text/html;q=0.7, text/html;level=1, '

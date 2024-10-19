@@ -104,7 +104,6 @@ quote-style = "single"
 select = ["ALL"]
 ignore = [
 	"ANN",  # TODO -- temporarily ignoring these
-	"UP",   # TODO -- temporarily ignoring these
 
 	"COM812",	# conflicts with ruff formatter
 	"D104",		# No need for docstring at the package level

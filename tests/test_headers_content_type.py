@@ -5,7 +5,7 @@ from ietfparse import datastructures, headers
 
 class SimpleContentTypeParsingTests(unittest.TestCase):
     def setUp(self):
-        super(SimpleContentTypeParsingTests, self).setUp()
+        super().setUp()
         self.parsed = headers.parse_content_type(
             'text/plain', normalize_parameter_values=False
         )
@@ -25,7 +25,7 @@ class SimpleContentTypeParsingTests(unittest.TestCase):
 
 class ParsingComplexContentTypeTests(unittest.TestCase):
     def setUp(self):
-        super(ParsingComplexContentTypeTests, self).setUp()
+        super().setUp()
         self.parsed = headers.parse_content_type(
             'message/HTTP+JSON; version=2.0 (someday); MsgType="Request"',
             normalize_parameter_values=False,

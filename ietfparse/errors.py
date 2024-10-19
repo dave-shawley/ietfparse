@@ -31,8 +31,6 @@ class StrictHeaderParsingFailure(RootException, ValueError):
     """
 
     def __init__(self, header_name: str, header_value: str) -> None:
-        super(StrictHeaderParsingFailure, self).__init__(
-            header_name, header_value
-        )
+        super().__init__(header_name, header_value)
         self.header_name = header_name
         self.header_value = header_value

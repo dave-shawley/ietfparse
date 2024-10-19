@@ -3,7 +3,7 @@ from __future__ import annotations
 from ietfparse import errors
 
 
-class ParameterParser(object):
+class ParameterParser:
     """Utility class to parse Link headers.
 
     :param strict: controls whether parsing follows all of

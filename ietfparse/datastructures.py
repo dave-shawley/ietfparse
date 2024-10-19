@@ -20,7 +20,7 @@ if typing.TYPE_CHECKING:
 
 
 @functools.total_ordering
-class ContentType(object):
+class ContentType:
     """A MIME ``Content-Type`` header.
 
     :param content_type: the primary content type
@@ -92,7 +92,8 @@ class ContentType(object):
             content_suffix = f'+{self.content_suffix}'
         else:
             content_suffix = ''
-        return '<{0}.{1} {2}/{3}{4}, {5} parameters>'.format(
+        # disabled ruff: UP032 since the f-string version is horrid
+        return '<{}.{} {}/{}{}, {} parameters>'.format(  # noqa: UP032
             self.__class__.__module__,
             self.__class__.__name__,
             self.content_type,
@@ -125,7 +126,7 @@ class ContentType(object):
         return self.content_type < other.content_type
 
 
-class LinkHeader(object):
+class LinkHeader:
     """Represents a single link within a ``Link`` header.
 
     .. attribute:: target
@@ -158,21 +159,21 @@ class LinkHeader(object):
         self.parameters = [] if parameters is None else parameters
 
     def __str__(self) -> str:
-        formatted = '<{0}>'.format(self.target)
+        formatted = f'<{self.target}>'
         if self.parameters:
             params = '; '.join(
                 sorted(
                     [
-                        '{0}="{1}"'.format(*pair)
-                        for pair in self.parameters
-                        if pair[0] != 'rel'
+                        f'{name}="{value}"'
+                        for name, value in self.parameters
+                        if name != 'rel'
                     ]
                 )
             )
             rel = [
-                '{0}="{1}"'.format(*pair)
-                for pair in self.parameters
-                if pair[0] == 'rel'
+                f'{name}="{value}"'
+                for name, value in self.parameters
+                if name == 'rel'
             ]
             if rel:
                 formatted += '; ' + rel[0]
