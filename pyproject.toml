@@ -104,10 +104,12 @@ quote-style = "single"
 select = ["ALL"]
 ignore = [
 	"ANN",  # TODO -- temporarily ignoring these
-	"D1",	# TODO -- temporarily ignoring these
 	"UP",   # TODO -- temporarily ignoring these
 
 	"COM812",	# conflicts with ruff formatter
+	"D104",		# No need for docstring at the package level
+	"D105",		# No need for docstrings in magic methods
+	"D107",		# __init__ params are in the class docstring
 	"D203",		# No blank lines before class docstring
 	"D213",		# Start multiline docstrings on the second line
 	"ISC001",	# conflicts with ruff formatter
