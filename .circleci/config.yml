@@ -1,71 +1,104 @@
 version: 2.1
 
+executors:
+  python:
+    docker:
+      - image: cimg/python:3.12
+  sonar-scanner:
+    docker:
+      - image: cimg/openjdk:21.0
+
 jobs:
 
-  build:
-    working_directory: ~/ietfparse
-    docker:
-      - image: cimg/python:3.10
+  lint:
+    executor: python
+    steps:
+      - checkout
+      - run: |
+          pip install --user hatch
+          hatch run lint
+
+  code-climate:
+    executor: python
     steps:
       - run: |
-          mkdir -p tmp/
-          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./tmp/cc-test-reporter
-          chmod +x ./tmp/cc-test-reporter
+          mkdir -p code-climate/
+          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./code-climate/test-reporter
+          chmod +x ./code-climate/test-reporter
       - persist_to_workspace:
-          root: tmp
+          root: code-climate
           paths:
-            - cc-test-reporter
+            - test-reporter
 
-  python-3-test:
-    working_directory: ~/ietfparse
+  test:
+    parameters:
+      python-version:
+        type: string
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/python:<< parameters.python-version >>
     steps:
       - checkout
       - attach_workspace:
-          at: ~/ietfparse/tmp
+          at: code-climate
       - run: |
-          mkdir build
-          pip install --user 'coverage[toml]' coveralls
-          coverage run -m unittest discover
-          coverage report
-          coverage xml
-          ./tmp/cc-test-reporter format-coverage -t coverage.py -o tmp/python3-coverage.json
-          coveralls
-          cp coverage.xml tmp/
+          ./code-climate/test-reporter before-build
+          pip install --user hatch
+          hatch env run -i python=<< parameters.python-version >> -e all ci
+          code-climate/test-reporter format-coverage -t coverage.py -o coverage/codeclimate.<< parameters.python-version >>.json
+          mv .coverage coverage/data-<< parameters.python-version >>
       - persist_to_workspace:
-          root: tmp
+          root: coverage
           paths:
-            - python3-coverage.json
+            - codeclimate.<< parameters.python-version >>.json
+            - data-<< parameters.python-version >>
+      - store_test_results:
+          path: test-results
+
+  combine-output:
+    executor: python
+    steps:
+      - checkout
+      - attach_workspace:
+          at: code-climate
+      - attach_workspace:
+          at: coverage
+      - run: |
+          pip install --user coverage
+          ./code-climate/test-reporter sum-coverage coverage/codeclimate.*.json
+          coverage combine --data-file coverage/data coverage/data-*
+          coverage report --data-file coverage/data
+          coverage xml --data-file coverage/data -o coverage/coverage.xml
+      - persist_to_workspace:
+          root: coverage
+          paths:
+            - data
+            - codeclimate.json
             - coverage.xml
+      - store_test_results:
+          path: coverage/coverage.xml
 
   upload-coverage:
-    working_directory: ~/ietfparse
-    docker:
-      - image: cimg/python:3.10
+    executor: python
     steps:
       - attach_workspace:
-          at: ~/ietfparse/tmp
+          at: code-climate
+      - attach_workspace:
+          at: coverage
       - run: |
-          ./tmp/cc-test-reporter sum-coverage tmp/*-coverage.json -p 1 -o tmp/codeclimate-total.json
-          ./tmp/cc-test-reporter upload-coverage -i tmp/codeclimate-total.json
+          ./code-climate/test-reporter upload-coverage
 
   update-sonarcloud:
-    working_directory: ~/ietfparse
-    docker:
-      - image: cimg/openjdk:18.0
+    executor: sonar-scanner
     steps:
       - checkout
       - attach_workspace:
-          at: ~/ietfparse/tmp
+          at: coverage
       - run: |
-          cp tmp/coverage.xml coverage.xml
+          cp coverage/coverage.xml .
       - sonarcloud/scan
 
   distribute-tag:
-    working_directory: ~/ietfparse
-    docker:
-      - image: cimg/python:3.10
+    executor: python
     steps:
       - checkout
       - run: |
@@ -76,23 +109,33 @@ jobs:
           curl -XPOST -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/ietfparse/28564/
 
 orbs:
-  sonarcloud: sonarsource/sonarcloud@1.1.1
+  sonarcloud: sonarsource/sonarcloud@2.0.0
 
 workflows:
-  version: 2
   build-workflow:
     jobs:
-      - build
-      - python-3-test:
+      - lint
+      - code-climate
+      - test:
           requires:
-            - build
+            - lint
+            - code-climate
+          matrix:
+            parameters:
+              python-version: ["3.9", "3.10", "3.11", "3.12"]
+      - combine-output:
+          requires:
+            - test
       - upload-coverage:
           requires:
-            - python-3-test
+            - combine-output
       - update-sonarcloud:
+          context: org-global
           requires:
-            - python-3-test
+            - combine-output
       - distribute-tag:
+          requires:
+            - test
           context: org-global
           filters:
             branches:

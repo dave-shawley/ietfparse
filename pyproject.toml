@@ -32,7 +32,7 @@ Maintainability = "https://codeclimate.com/github/dave-shawley/ietfparse/"
 
 [project.optional-dependencies]
 dev = [
-	"coverage[toml]==5.5",
+	"coverage[toml]>=7.6",
 	"mypy==0.910",
 	"pytest==7.1.2",
 	"ruff==0.6.9",
@@ -71,9 +71,21 @@ python = "3.12"
 build-docs = [
 	"sphinx-build docs build/sphinx/html -aEW"
 ]
+ci = [
+	"ruff format",
+	"ruff check",
+	"mypy --strict --package ietfparse --package tests",
+	"python -m coverage run -m pytest --junit-xml=test-results/junit.xml tests",
+	"python -m coverage xml",
+	"mkdir -p coverage",
+	"cp .coverage coverage/raw-{matrix:python:3.12}",
+]
 coverage = [
 	"python -m coverage run -m pytest tests",
-	"python -m coverage report"
+]
+coverage-report = [
+	"python -m coverage combine",
+	"python -m coverage report",
 ]
 lint = [
 	"ruff format",
@@ -81,11 +93,12 @@ lint = [
 	"mypy --strict --package ietfparse --package tests",
 ]
 test = [
-	"python -m unittest discover -f tests"
+	"python -m coverage run -m pytest tests",
+	"python -m coverage report"
 ]
 
 [[tool.hatch.envs.all.matrix]]
-python = ["39", "310", "311", "312", "313"]
+python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
 [tool.coverage.report]
 show_missing = true
