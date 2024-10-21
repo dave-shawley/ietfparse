@@ -1,23 +1,26 @@
-"""
-Important data structures.
+"""Important data structures.
 
 - :class:`.ContentType`: MIME ``Content-Type`` header.
 - :class:`.LinkHeader`: parsed ``Link`` header.
 
 This module contains data structures that were useful in
 implementing this library.  If a data structure might be
-useful outside of a particular piece of functionality, it
-is fully fleshed out and ends up here.
+useful outside a particular piece of functionality, it is
+fully fleshed out and ends up here.
 
 """
+
 from __future__ import annotations
 
 import functools
-from collections import abc
+import typing
+
+if typing.TYPE_CHECKING:
+    from collections import abc
 
 
 @functools.total_ordering
-class ContentType(object):
+class ContentType:
     """A MIME ``Content-Type`` header.
 
     :param content_type: the primary content type
@@ -46,17 +49,20 @@ class ContentType(object):
     to identify the content format.
 
     """
+
     content_type: str
     content_subtype: str
     parameters: abc.MutableMapping[str, str]
     content_suffix: str | None
     quality: float | None
 
-    def __init__(self,
-                 content_type: str,
-                 content_subtype: str,
-                 parameters: abc.Mapping[str, str | int] | None = None,
-                 content_suffix: str | None = None) -> None:
+    def __init__(
+        self,
+        content_type: str,
+        content_subtype: str,
+        parameters: abc.Mapping[str, str | int] | None = None,
+        content_suffix: str | None = None,
+    ) -> None:
         self.content_type = content_type.strip().lower()
         self.content_subtype = content_subtype.strip().lower()
         self.quality = None
@@ -74,8 +80,10 @@ class ContentType(object):
         if self.content_suffix:
             suffix = f'+{self.content_suffix}'
         if self.parameters:
-            params = '; '.join(f'{name}={self.parameters[name]}'
-                               for name in sorted(self.parameters))
+            params = '; '.join(
+                f'{name}={self.parameters[name]}'
+                for name in sorted(self.parameters)
+            )
             params = f'; {params}'
         return f'{self.content_type}/{self.content_subtype}{suffix}{params}'
 
@@ -84,18 +92,25 @@ class ContentType(object):
             content_suffix = f'+{self.content_suffix}'
         else:
             content_suffix = ''
-        return '<{0}.{1} {2}/{3}{4}, {5} parameters>'.format(
-            self.__class__.__module__, self.__class__.__name__,
-            self.content_type, self.content_subtype, content_suffix,
-            len(self.parameters))
+        # disabled ruff: UP032 since the f-string version is horrid
+        return '<{}.{} {}/{}{}, {} parameters>'.format(  # noqa: UP032
+            self.__class__.__module__,
+            self.__class__.__name__,
+            self.content_type,
+            self.content_subtype,
+            content_suffix,
+            len(self.parameters),
+        )
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, ContentType):
             return NotImplemented
-        return (self.content_type == other.content_type
-                and self.content_subtype == other.content_subtype
-                and self.content_suffix == other.content_suffix
-                and self.parameters == other.parameters)
+        return (
+            self.content_type == other.content_type
+            and self.content_subtype == other.content_subtype
+            and self.content_suffix == other.content_suffix
+            and self.parameters == other.parameters
+        )
 
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, ContentType):
@@ -111,9 +126,8 @@ class ContentType(object):
         return self.content_type < other.content_type
 
 
-class LinkHeader(object):
-    """
-    Represents a single link within a ``Link`` header.
+class LinkHeader:
+    """Represents a single link within a ``Link`` header.
 
     .. attribute:: target
 
@@ -132,27 +146,34 @@ class LinkHeader(object):
     HTTP resources.
 
     """
+
     target: str
     parameters: abc.Sequence[tuple[str, str]]
 
     def __init__(
-            self,
-            target: str,
-            parameters: abc.Sequence[tuple[str, str]] | None = None) -> None:
+        self,
+        target: str,
+        parameters: abc.Sequence[tuple[str, str]] | None = None,
+    ) -> None:
         self.target = target
         self.parameters = [] if parameters is None else parameters
 
     def __str__(self) -> str:
-        formatted = '<{0}>'.format(self.target)
+        formatted = f'<{self.target}>'
         if self.parameters:
             params = '; '.join(
-                sorted([
-                    '{0}="{1}"'.format(*pair) for pair in self.parameters
-                    if pair[0] != 'rel'
-                ]))
+                sorted(
+                    [
+                        f'{name}="{value}"'
+                        for name, value in self.parameters
+                        if name != 'rel'
+                    ]
+                )
+            )
             rel = [
-                '{0}="{1}"'.format(*pair) for pair in self.parameters
-                if pair[0] == 'rel'
+                f'{name}="{value}"'
+                for name, value in self.parameters
+                if name == 'rel'
             ]
             if rel:
                 formatted += '; ' + rel[0]

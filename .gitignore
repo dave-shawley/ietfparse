@@ -1,11 +1,17 @@
-build/
-dist/
-env*/
-htmlcov/
-__pycache__/
-.mypy_cache/
+.*
 
-.coverage
+!/.circleci/
+!/.codeclimate.yml
+!/.readthedocs.yml
+
+/build/
+/coverage/
+/dist/
+/env*/
+/htmlcov/
+__pycache__/
+
+coverage.xml
 *.pyc
 *.egg
 *.egg-info

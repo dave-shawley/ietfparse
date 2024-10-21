@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from . import errors
+from ietfparse import errors
 
 
-class ParameterParser(object):
-    """
-    Utility class to parse Link headers.
+class ParameterParser:
+    """Utility class to parse Link headers.
 
     :param strict: controls whether parsing follows all of
         the rules laid out in :rfc:`5988`
@@ -36,7 +35,8 @@ class ParameterParser(object):
       raised.
 
     """
-    def __init__(self, strict: bool = True) -> None:
+
+    def __init__(self, *, strict: bool = True) -> None:
         self.strict = strict
         self._values: list[tuple[str, str]] = []
         self._rfc_values: dict[str, str | None] = {
@@ -48,8 +48,7 @@ class ParameterParser(object):
         }
 
     def add_value(self, name: str, value: str) -> None:
-        """
-        Add a new value to the list.
+        """Add a new value to the list.
 
         :param str name: name of the value that is being parsed
         :param str value: value that is being parsed
@@ -69,8 +68,8 @@ class ParameterParser(object):
                 self._rfc_values[name] = value
             elif self.strict:
                 if name in ('media', 'type'):
-                    raise errors.MalformedLinkValue(
-                        'More than one {} parameter present'.format(name))
+                    msg = f'More than one {name} parameter present'
+                    raise errors.MalformedLinkValue(msg)
                 return
         except KeyError:
             pass

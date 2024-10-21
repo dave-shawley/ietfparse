@@ -1,5 +1,4 @@
-"""
-Implementations of algorithms from various specifications.
+"""Implementations of algorithms from various specifications.
 
 - :func:`.select_content_type`: select the best match between a
   HTTP ``Accept`` header and a list of available ``Content-Type`` s
@@ -8,30 +7,36 @@ This module implements some of the more interesting algorithms
 described in IETF RFCs.
 
 """
+
 from __future__ import annotations
 
-from collections import abc
+import typing
 from operator import attrgetter
 
 from ietfparse import datastructures, errors
 
+if typing.TYPE_CHECKING:
+    from collections import abc
 
-def _content_type_matches(candidate: datastructures.ContentType,
-                          pattern: datastructures.ContentType) -> bool:
-    """Is ``candidate`` an exact match or sub-type of ``pattern``?"""
+
+def _content_type_matches(
+    candidate: datastructures.ContentType, pattern: datastructures.ContentType
+) -> bool:
+    """Is ``candidate`` an exact match or sub-type of ``pattern``?"""  # noqa: D400
+
     def _wildcard_compare(type_spec: str, type_pattern: str) -> bool:
-        return type_pattern == '*' or type_spec == type_pattern
+        return type_pattern in ('*', type_spec)
 
-    return (_wildcard_compare(candidate.content_type, pattern.content_type)
-            and _wildcard_compare(candidate.content_subtype,
-                                  pattern.content_subtype))
+    return _wildcard_compare(
+        candidate.content_type, pattern.content_type
+    ) and _wildcard_compare(candidate.content_subtype, pattern.content_subtype)
 
 
-def select_content_type(
+def select_content_type(  # noqa: C901 -- overly complex
     requested: abc.Sequence[datastructures.ContentType],
-    available: abc.Sequence[datastructures.ContentType]
+    available: abc.Sequence[datastructures.ContentType],
 ) -> tuple[datastructures.ContentType, datastructures.ContentType]:
-    """Selects the best content type.
+    """Select the best content type.
 
     :param requested: a sequence of :class:`.ContentType` instances
     :param available: a sequence of :class:`.ContentType` instances
@@ -55,7 +60,8 @@ def select_content_type(
     .. _Content-Type: https://tools.ietf.org/html/rfc7231#section-3.1.1.5
 
     """
-    class Match(object):
+
+    class Match:
         """Sorting assistant.
 
         Sorting matches is a tricky business.  We need a way to
@@ -83,10 +89,16 @@ def select_content_type(
         the stronger the match.
 
         """
-        WILDCARD, PARTIAL, FULL_TYPE, = 2, 1, 0
 
-        def __init__(self, candidate: datastructures.ContentType,
-                     pattern: datastructures.ContentType) -> None:
+        FULL_TYPE = 0
+        PARTIAL = 1
+        WILDCARD = 2
+
+        def __init__(
+            self,
+            candidate: datastructures.ContentType,
+            pattern: datastructures.ContentType,
+        ) -> None:
             self.candidate = candidate
             self.pattern = pattern
 
@@ -121,6 +133,7 @@ def select_content_type(
     if not matches:
         raise errors.NoMatch
 
-    matches = sorted(matches,
-                     key=attrgetter('match_type', 'parameter_distance'))
+    matches = sorted(
+        matches, key=attrgetter('match_type', 'parameter_distance')
+    )
     return matches[0].candidate, matches[0].pattern
