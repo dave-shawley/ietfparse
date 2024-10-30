@@ -23,22 +23,15 @@ if typing.TYPE_CHECKING:
 class ContentType:
     """A MIME ``Content-Type`` header.
 
-    :param content_type: the primary content type
-    :param content_subtype: the content sub-type
-    :param content_suffix: optional content suffix
-    :param parameters: optional dictionary of content type
-        parameters
-
-    Internet content types are described by the :mailheader:`Content-Type`
-    header from :rfc:`2045`.  It was reused across many other protocol
-    specifications, most notably HTTP (:rfc:`7231`).  This header's
-    syntax is described in :rfc:`2045#section-5.1`.  In its most basic
-    form, a content type header looks like ``text/html``.  The primary
-    content type is ``text`` with a *subtype* of ``html``.  Content type
-    headers can include *parameters* as ``name=value`` pairs separated
+    Internet content types are described by the [HTTP-Content-Type]
+    header from [RFC-2045-section-5].  It was reused across many other
+    protocol specifications, most notably HTTP ([RFC-9110]). In its most
+    basic form, a content type header looks like `text/html`. The primary
+    content type is `text` with a *subtype* of `html`.  Content type
+    headers may include *parameters* as `name=value` pairs separated
     by colons.
 
-    :rfc:`6839` added the ability to use a content type to identify the
+    [RFC-6839] added the ability to use a content type to identify the
     semantic value of a representation with a content type and also identify
     the document format as a content type suffix.  For example,
     ``application/vnd.github.v3+json`` is used to identify documents that
@@ -47,6 +40,12 @@ class ContentType:
     ``application/vnd.github.v3+msgpack``.  In this case, the content type
     identifies the information that is in the document and the suffix is used
     to identify the content format.
+
+    :param content_type: the primary content type
+    :param content_subtype: the content subtype
+    :param content_suffix: optional content suffix
+    :param parameters: optional dictionary of content type
+        parameters
 
     """
 
@@ -127,28 +126,27 @@ class ContentType:
 
 
 class LinkHeader:
-    """Represents a single link within a ``Link`` header.
+    """Represents a single link within a `Link` header.
 
-    .. attribute:: target
-
-       The target URL of the link.  This may be a relative URL so
-       the caller may have to make the link absolute by resolving
-       it against a base URL as described in :rfc:`3986#section-5`.
-
-    .. attribute:: parameters
-
-       Possibly empty sequence of name and value pairs.  Parameters
-       are represented as a sequence since a single parameter may
-       occur more than once.
-
-    The :mailheader:`Link` header is specified by :rfc:`5988`.  It
-    is one of the methods used to represent HyperMedia links between
+    The [HTTP-Link] header is specified by [RFC-8288]. It is one
+    of the methods used to represent HyperMedia links between
     HTTP resources.
-
     """
 
     target: str
+    """The target URL of the link
+
+    This may be a relative URL so the caller may have to make the
+    link absolute by resolving it against a base URL as described
+    in [RFC-3986-section-5].
+    """
+
     parameters: abc.Sequence[tuple[str, str]]
+    """Possibly empty sequence of name and value pairs
+
+    Parameters are represented as a sequence since a single
+    parameter may occur more than once.
+    """
 
     def __init__(
         self,

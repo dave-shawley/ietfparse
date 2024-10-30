@@ -42,32 +42,35 @@ _DEF_PARAM_VALUE = object()
 def parse_accept(  # noqa: C901 -- overly complex
     header_value: str, *, strict: bool = False
 ) -> list[datastructures.ContentType]:
-    """Parse an HTTP accept-like header.
+    """Parse an HTTP Accept header.
+
+    "Accept" is a class of headers that contain a list of values
+    and an associated preference value. The ever present [HTTP-Accept]
+    header is a perfect example. It is a list of content types and
+    an optional parameter named ``q`` that indicates the relative
+    weight of a particular type.  The most basic example is:
+
+        Accept: audio/*;q=0.2, audio/basic
+
+    Which states that I prefer the `audio/basic` content type
+    but will accept other `audio` subtypes with an 80% mark down.
+
+    !!! warning
+        This function will raise a [ValueError][] when in encounters
+        an invalid value such as `*` which happens much more frequently
+        than you might expect.
 
     :param header_value: the header value to parse
-    :param strict: if :data:`True`, then invalid content type
-        values within `header_value` will raise :exc:`ValueError`;
-        otherwise, they are ignored
-    :return: a :class:`list` of :class:`.ContentType` instances
-        in decreasing quality order.  Each instance is augmented
-        with the associated quality as a ``float`` property
+    :param strict: if truthy, then invalid content type values within
+        `header_value` will raise [ValueError][]; otherwise, they are
+        ignored
+    :return: a [list][] of [ietfparse.datastructures.ContentType][]
+        instances in decreasing quality order.  Each instance is
+        augmented with the associated quality as a ``float`` property
         named ``quality``.
     :raise: :exc:`ValueError` if `strict` is *truthy* and at least
         one value in `header_value` could not be parsed by
         :func:`.parse_content_type`
-
-    ``Accept`` is a class of headers that contain a list of values
-    and an associated preference value.  The ever present `Accept`_
-    header is a perfect example.  It is a list of content types and
-    an optional parameter named ``q`` that indicates the relative
-    weight of a particular type.  The most basic example is::
-
-        Accept: audio/*;q=0.2, audio/basic
-
-    Which states that I prefer the ``audio/basic`` content type
-    but will accept other ``audio`` sub-types with an 80% mark down.
-
-    .. _Accept: https://tools.ietf.org/html/rfc7231#section-5.3.2
 
     """
     if strict:
@@ -110,73 +113,61 @@ def parse_accept(  # noqa: C901 -- overly complex
 
 
 def parse_accept_charset(header_value: str) -> list[str]:
-    """Parse the ``Accept-Charset`` header into a sorted list.
+    """Parse an Accept-Charset header into a sorted list.
 
-    :param header_value: header value to parse
-
-    :return: list of character sets sorted from highest to lowest
-        priority
-
-    The `Accept-Charset`_ header is a list of character set names with
-    optional *quality* values.  The quality value indicates the strength
+    The [HTTP-Accept-Charset] header is a list of character set names with
+    optional *quality* values. The quality value indicates the strength
     of the preference where 1.0 is a strong preference and less than 0.001
     is outright rejection by the client.
 
-    .. note::
+    !!! note
+        Character sets are rejected if their quality value is less than
+        0.001. If a wildcard is included in the header, then it will
+        appear **BEFORE** any rejected values.
 
-       Character sets that are rejected by setting the quality value
-       to less than 0.001.  If a wildcard is included in the header,
-       then it will appear **BEFORE** values that are rejected.
-
-    .. _Accept-Charset: https://tools.ietf.org/html/rfc7231#section-5.3.3
+    :param header_value: header value to parse
+    :return: list of character sets sorted from highest to lowest
+        priority
 
     """
     return _parse_qualified_list(header_value)
 
 
 def parse_accept_encoding(header_value: str) -> list[str]:
-    """Parse the ``Accept-Encoding`` header into a sorted list.
+    """Parse an `Accept-Encoding` header into a sorted list.
 
-    :param header_value: header value to parse
-
-    :return: list of encodings sorted from highest to lowest priority
-
-    The `Accept-Encoding`_ header is a list of encodings with
-    optional *quality* values.  The quality value indicates the strength
+    The [HTTP-Accept-Encoding] header is a list of encodings with
+    optional *quality* values. The quality value indicates the strength
     of the preference where 1.0 is a strong preference and less than 0.001
     is outright rejection by the client.
 
-    .. note::
+    !!! note
+        Encodings are rejected if their quality value is less than
+        0.001. If a wildcard is included in the header, then it will
+        appear **BEFORE** any rejected values.
 
-       Encodings that are rejected by setting the quality value
-       to less than 0.001.  If a wildcard is included in the header,
-       then it will appear **BEFORE** values that are rejected.
-
-    .. _Accept-Encoding: https://tools.ietf.org/html/rfc7231#section-5.3.4
+    :param header_value: header value to parse
+    :return: list of encodings sorted from highest to lowest priority
 
     """
     return _parse_qualified_list(header_value)
 
 
 def parse_accept_language(header_value: str) -> list[str]:
-    """Parse the ``Accept-Language`` header into a sorted list.
+    """Parse an Accept-Language header into a sorted list.
 
-    :param header_value: header value to parse
-
-    :return: list of languages sorted from highest to lowest priority
-
-    The `Accept-Language`_ header is a list of languages with
-    optional *quality* values.  The quality value indicates the strength
+    The [HTTP-Accept-Language] header is a list of languages with
+    optional *quality* values. The quality value indicates the strength
     of the preference where 1.0 is a strong preference and less than 0.001
     is outright rejection by the client.
 
-    .. note::
+    !!! note
+        Languages are rejected if their quality value is less than
+        0.001. If a wildcard is included in the header, then it will
+        appear **BEFORE** any rejected values.
 
-       Languages that are rejected by setting the quality value
-       to less than 0.001.  If a wildcard is included in the header,
-       then it will appear **BEFORE** values that are rejected.
-
-    .. _Accept-Language: https://tools.ietf.org/html/rfc7231#section-5.3.5
+    :param header_value: header value to parse
+    :return: list of languages sorted from highest to lowest priority
 
     """
     return _parse_qualified_list(header_value)
@@ -185,16 +176,14 @@ def parse_accept_language(header_value: str) -> list[str]:
 def parse_cache_control(
     header_value: str,
 ) -> dict[str, str | int | bool | None]:
-    """Parse a `Cache-Control`_ header, returning a dict of key-value pairs.
+    """Parse a Cache-Control header, returning a dict of key-value pairs.
 
-    Any of the ``Cache-Control`` parameters that do not have directives, such
-    as ``public`` or ``no-cache`` will be returned with a value of ``True``
+    Any of the [HTTP-Cache-Control] parameters that do not have directives,
+    such as `public` or `no-cache` will be returned with a value of `True`
     if they are set in the header.
 
-    :param header_value: ``Cache-Control`` header value to parse
-    :return: the parsed ``Cache-Control`` header values
-
-    .. _Cache-Control: https://tools.ietf.org/html/rfc7234#section-5.2
+    :param header_value: the header value to parse
+    :return: the parsed Cache-Control directives
 
     """
     directives: dict[str, str | int | bool | None] = {}
@@ -224,12 +213,18 @@ def parse_content_type(
 ) -> datastructures.ContentType:
     """Parse a content type like header.
 
+    The [HTTP-Content-Type] header describes the format and semantics
+    of the enclosed entity. Though they look similar, this header
+    differs from the [HTTP-Accept] header which advertises the
+    client's preferred response types.
+
     :param content_type: the string to parse as a content type
     :param normalize_parameter_values:
-        setting this to ``False`` will enable strict RFC2045 compliance
-        in which content parameter values are case preserving.
-    :return: a :class:`~ietfparse.datastructures.ContentType` instance
-    :raises: :exc:`ValueError` if the content type cannot be reasonably
+        setting this to `False` will enable strict [RFC-2045]
+        compliance in which content parameter values are case
+        preserving.
+    :return: the parsed content type
+    :raises: [ValueError][] if the content type cannot be reasonably
         parsed (e.g., ``Content-Type: *``)
 
     """
@@ -256,21 +251,21 @@ def parse_content_type(
 def parse_forwarded(
     header_value: str, *, only_standard_parameters: bool = False
 ) -> list[dict[str, str]]:
-    """Parse RFC7239 Forwarded header.
+    """Parse an [RFC-7239] Forwarded header.
+
+    This function parses a [HTTP-Forwarded] header into a [list][]
+    of [dict][] instances with each instance containing the parameter
+    values.  The list is ordered as received from left to right and
+    the parameter names are folded to lower case strings.
 
     :param header_value: value to parse
-    :param only_standard_parameters: if this keyword is specified
-        and given a *truthy* value, then a non-standard parameter name
-        will result in :exc:`~ietfparse.errors.StrictHeaderParsingFailure`
-    :return: an ordered :class:`list` of :class:`dict` instances
-    :raises: :exc:`ietfparse.errors.StrictHeaderParsingFailure` is
-        raised if `only_standard_parameters` is enabled and a non-standard
+    :param only_standard_parameters: if specified and *truthy*, then a
+        non-standard parameter name will result in
+        a [ietfparse.errors.StrictHeaderParsingFailure][]
+    :return: an ordered [list][] of [dict][] instances
+    :raises: [ietfparse.errors.StrictHeaderParsingFailure][] if
+        `only_standard_parameters` is enabled and a non-standard
         parameter name is encountered
-
-    This function parses a :rfc:`7239` HTTP header into a :class:`list`
-    of :class:`dict` instances with each instance containing the param
-    values.  The list is ordered as received from left to right and the
-    parameter names are folded to lower case strings.
 
     """
     result = []
@@ -295,13 +290,16 @@ def parse_link(
 ) -> list[datastructures.LinkHeader]:
     """Parse a HTTP Link header.
 
-    :param str header_value: the header value to parse
-    :param bool strict: set this to ``False`` to disable semantic
-        checking.  Syntactical errors will still raise an exception.
-        Use this if you want to receive all parameters.
-    :return: a sequence of :class:`~ietfparse.datastructures.LinkHeader`
+    Parses the [HTTP-Link] header into a sequence of
+    [ietfparse.datastructures.LinkHeader][] instances.
+
+    :param header_value: the header value to parse
+    :param strict: set this to [False][] to disable semantic
+        checking.  Syntactical errors will still raise an
+        exception. Use this if you want to receive all parameters.
+    :return: a sequence of [ietfparse.datastructures.LinkHeader][]
         instances
-    :raises ietfparse.errors.MalformedLinkValue:
+    :raises: [ietfparse.errors.MalformedLinkValue][]
         if the specified `header_value` cannot be parsed
 
     """
