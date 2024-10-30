@@ -2,7 +2,7 @@
 name = "ietfparse"
 dynamic = ["version"]
 description = "Parse formats defined in IETF RFCs"
-readme = "README.rst"
+readme = "README.md"
 requires-python = ">=3.9"
 license = { file = "LICENSE" }
 authors = [ { name = "Dave Shawley", email = "daveshawley@gmail.com" } ]
@@ -33,13 +33,12 @@ Maintainability = "https://codeclimate.com/github/dave-shawley/ietfparse/"
 [project.optional-dependencies]
 dev = [
 	"coverage[toml]>=7.6",
+	"mkdocs-material>=9.5.42,<10",
+	"mkdocstrings[python]>=0.26.2,<0.27",
 	"mypy==0.910",
+	"pymdown-ietflinks==0.0.0; python_version >= '3.12'",
 	"pytest>=7.1.2,<8",
 	"ruff==0.6.9",
-	"sphinx==5.0.2",
-	"sphinxcontrib-httpdomain==1.8.0",
-	"sphinx-autodoc-typehints==1.18.3",
-	"sphinx-material==0.0.35",
 ]
 
 [build-system]
@@ -58,8 +57,8 @@ include = [
 	"/tests",
 	"/.codeclimate.yml",
 	"/.readthedocs.yml",
-	"/AUTHORS.rst",
-	"/CONTRIBUTING.rst",
+	"/AUTHORS.md",
+	"/CONTRIBUTING.md",
 	"/sonar-project.properties",
 ]
 
@@ -69,7 +68,7 @@ python = "3.12"
 
 [tool.hatch.envs.default.scripts]
 build-docs = [
-	"sphinx-build docs build/sphinx/html -aEW"
+	"mkdocs build --strict --site-dir build/docs"
 ]
 ci = [
 	"ruff format",
@@ -132,7 +131,6 @@ ignore = [
 	"EM102",	# Passing f-strings in raise is fine
 	"TRY003",	# Passing literal messages in raise is fine
 ]
-exclude = ["docs/conf.py"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [

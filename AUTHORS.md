@@ -1,5 +1,5 @@
-People that have contributed
-----------------------------
+# People that have contributed
+
 This library was brought to you by contributions from:
 
 - Dave Shawley <daveshawley@gmail.com> https://github.com/dave-shawley/

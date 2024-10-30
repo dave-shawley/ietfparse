@@ -9,6 +9,7 @@
 /dist/
 /env*/
 /htmlcov/
+/site/
 __pycache__/
 
 coverage.xml

@@ -1,0 +1,42 @@
+site_name: ietfparse
+site_url: https://ietfparse.rtfd.io/
+repo_url: https://github.com/dave-shawley/ietfparse
+theme:
+  name: material
+  features:
+    - navigation.indexes
+    - navigation.instant
+    - navigation.tabs
+    - navigation.top
+    - toc.follow
+    - toc.integrate
+nav:
+  - index.md
+  - contributing.md
+  - changelog.md
+markdown_extensions:
+  - admonition
+  - ietflinks
+  - pymdownx.details
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+
+plugins:
+  - mkdocstrings:
+      handlers:
+        python:
+          import:
+            - https://docs.python.org/3/objects.inv
+          paths:
+            - "."  # not needed ... but it will be when I switch to the "src" layout
+          options:
+            docstring_style: sphinx
+            heading_level: 3
+            separate_signature: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_signature_annotations: true
+            unwrap_annotated: true
+  - search
