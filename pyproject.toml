@@ -34,7 +34,7 @@ Maintainability = "https://codeclimate.com/github/dave-shawley/ietfparse/"
 dev = [
 	"coverage[toml]>=7.6",
 	"mypy==0.910",
-	"pytest==7.1.2",
+	"pytest>=7.1.2,<8",
 	"ruff==0.6.9",
 	"sphinx==5.0.2",
 	"sphinxcontrib-httpdomain==1.8.0",
