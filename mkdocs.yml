@@ -27,6 +27,7 @@ theme:
         name: Switch to light mode
 nav:
   - index.md
+  - algorithms.md
   - header-parsing.md
   - api-reference.md
   - contributing.md
