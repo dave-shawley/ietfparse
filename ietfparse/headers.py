@@ -68,9 +68,9 @@ def parse_accept(  # noqa: C901 -- overly complex
         instances in decreasing quality order.  Each instance is
         augmented with the associated quality as a ``float`` property
         named ``quality``.
-    :raise: :exc:`ValueError` if `strict` is *truthy* and at least
-        one value in `header_value` could not be parsed by
-        :func:`.parse_content_type`
+    :raise ValueError: if `strict` is *truthy* and at least one
+        value in `header_value` could not be parsed by
+        [ietfparse.headers.parse_content_type][]
 
     """
     if strict:
@@ -224,7 +224,7 @@ def parse_content_type(
         compliance in which content parameter values are case
         preserving.
     :return: the parsed content type
-    :raises: [ValueError][] if the content type cannot be reasonably
+    :raise ValueError: if the content type cannot be reasonably
         parsed (e.g., ``Content-Type: *``)
 
     """
@@ -263,8 +263,8 @@ def parse_forwarded(
         non-standard parameter name will result in
         a [ietfparse.errors.StrictHeaderParsingFailure][]
     :return: an ordered [list][] of [dict][] instances
-    :raises: [ietfparse.errors.StrictHeaderParsingFailure][] if
-        `only_standard_parameters` is enabled and a non-standard
+    :raises ietfparse.errors.StrictHeaderParsingFailure:
+        if `only_standard_parameters` is enabled and a non-standard
         parameter name is encountered
 
     """
@@ -299,7 +299,7 @@ def parse_link(
         exception. Use this if you want to receive all parameters.
     :return: a sequence of [ietfparse.datastructures.LinkHeader][]
         instances
-    :raises: [ietfparse.errors.MalformedLinkValue][]
+    :raise ietfparse.errors.MalformedLinkValue:
         if the specified `header_value` cannot be parsed
 
     """
