@@ -1,6 +1,12 @@
 site_name: ietfparse
-site_url: https://ietfparse.rtfd.io/
+site_url: ""
 repo_url: https://github.com/dave-shawley/ietfparse
+use_directory_urls: false
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
 theme:
   name: material
   features:
