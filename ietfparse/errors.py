@@ -26,7 +26,7 @@ class StrictHeaderParsingFailure(RootException, ValueError):
     header parsing function and a header value fails due to one
     of the "strict" rules.
 
-    See :func:`ietfparse.headers.parse_forwarded` for an example.
+    See [ietfparse.headers.parse_forwarded][] for an example.
 
     """
 

@@ -1,7 +1,7 @@
 """Implementations of algorithms from various specifications.
 
-- :func:`.select_content_type`: select the best match between a
-  HTTP ``Accept`` header and a list of available ``Content-Type`` s
+- select_content_type: select the best match between an
+  HTTP Accept header and a list of available Content-Type's
 
 This module implements some of the more interesting algorithms
 described in IETF RFCs.
@@ -38,26 +38,25 @@ def select_content_type(  # noqa: C901 -- overly complex
 ) -> tuple[datastructures.ContentType, datastructures.ContentType]:
     """Select the best content type.
 
-    :param requested: a sequence of :class:`.ContentType` instances
-    :param available: a sequence of :class:`.ContentType` instances
-        that the server is capable of producing
-
-    :returns: the selected content type (from ``available``) and the
-        pattern that it matched (from ``requested``)
-    :rtype: :class:`tuple` of :class:`.ContentType` instances
-    :raises: :class:`.NoMatch` when a suitable match was not found
-
     This function implements the *Proactive Content Negotiation*
-    algorithm as described in sections 3.4.1 and 5.3 of :rfc:`7231`.
-    The input is the `Accept`_ header as parsed by
-    :func:`.parse_http_accept_header` and a list of
-    parsed :class:`.ContentType` instances.  The ``available`` sequence
-    should be a sequence of content types that the server is capable of
-    producing.  The selected value should ultimately be used as the
-    `Content-Type`_ header in the generated response.
+    algorithm as described in [RFC-9110-name-proactive-negotiation].
+    The input is the [HTTP-Accept] header as parsed by
+    [ietfparse.headers.parse_accept][] and a list of parsed
+    [ietfparse.datastructures.ContentType][] instances.
+    The `available` sequence should be a sequence of content types
+    that the server is capable of producing.  The selected value
+    should ultimately be used as the [HTTP-Content-Type] header in
+    the generated response.
 
-    .. _Accept: https://tools.ietf.org/html/rfc7231#section-5.3.2
-    .. _Content-Type: https://tools.ietf.org/html/rfc7231#section-3.1.1.5
+    :param requested: a sequence of
+        [ietfparse.datastructures.ContentType][] instances
+    :param available: a sequence of
+        [ietfparse.datastructures.ContentType][] instances that the
+        server is capable of producing
+    :returns: the selected content type (from `available`) and the
+        pattern that it matched (from `requested`)
+
+    raises [ietfparse.errors.NoMatch][] when a suitable match was not found
 
     """
 
@@ -83,7 +82,7 @@ def select_content_type(  # noqa: C901 -- overly complex
         is done by carefully choosing values for ``match_type`` such
         that full matches bubble up to the front.  We also need a
         scheme of counting matching parameters that pushes stronger
-        matches to the front of the list.  The ``parameter_distance``
+        matches to the front of the list.  The `parameter_distance`
         attribute starts at the number of candidate parameters and
         decreases for each matching parameter - the lesser the value,
         the stronger the match.

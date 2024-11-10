@@ -15,7 +15,7 @@ jobs:
     steps:
       - checkout
       - run: |
-          pip install --user hatch
+          pip install --user 'hatch==1.13.0' 'hatchling<1.26'
           hatch run lint
 
   code-climate:
@@ -42,7 +42,7 @@ jobs:
           at: code-climate
       - run: |
           ./code-climate/test-reporter before-build
-          pip install --user hatch
+          pip install --user 'hatch==1.13.0' 'hatchling<1.26'
           hatch env run -i python=<< parameters.python-version >> -e all ci
           code-climate/test-reporter format-coverage -t coverage.py -o coverage/codeclimate.<< parameters.python-version >>.json
           mv .coverage coverage/data-<< parameters.python-version >>

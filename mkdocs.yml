@@ -1,0 +1,67 @@
+site_name: ietfparse
+site_url: ""
+repo_url: https://github.com/dave-shawley/ietfparse
+use_directory_urls: false
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+theme:
+  name: material
+  features:
+    - navigation.indexes
+    - navigation.instant
+    - navigation.tabs
+    - navigation.top
+    - toc.follow
+    - toc.integrate
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Toggle palette
+    - scheme: default
+      media: "(prefers-color-scheme: light)"
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      media: "(prefers-color-scheme: dark)"
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+nav:
+  - index.md
+  - algorithms.md
+  - header-parsing.md
+  - api-reference.md
+  - rfcs.md
+  - contributing.md
+  - changelog.md
+markdown_extensions:
+  - admonition
+  - ietflinks
+  - pymdownx.details
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+
+plugins:
+  - mkdocstrings:
+      handlers:
+        python:
+          import:
+            - https://docs.python.org/3/objects.inv
+          paths:
+            - "."  # not needed ... but it will be when I switch to the "src" layout
+          options:
+            docstring_style: sphinx
+            heading_level: 3
+            separate_signature: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_signature_annotations: true
+            unwrap_annotated: true
+  - search
