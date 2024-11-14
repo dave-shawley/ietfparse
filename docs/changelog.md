@@ -8,6 +8,9 @@
 
 ### Changed
 
+- `headers.parse_link` changed to honor the allow multiple `media` and `type`
+  parameters as described in [RFC-8288-section-3.4.1]. The first value is
+  retained.
 - replaced setuptools with [hatch](https://hatch.pypa.io/)
 - converted positional Boolean parameters to keyword-only parameters
 

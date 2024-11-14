@@ -82,32 +82,38 @@ class MalformedLinkHeaderTests(unittest.TestCase):
 
     def test_that_first_rel_parameter_is_used(self) -> None:
         # semantically malformed but handled appropriately
-        # see RFC5988 sec. 5.3
+        # see RFC-8288 sec. 3.3
         parsed = headers.parse_link('<>; rel=first; rel=ignored')
         self.assertIn(('rel', 'first'), parsed[0].parameters)
         self.assertNotIn(('rel', 'ignored'), parsed[0].parameters)
 
-    def test_that_multiple_media_parameters_are_rejected(self) -> None:
-        with self.assertRaises(errors.MalformedLinkValue):
-            headers.parse_link('<first-link>; media=1; media=2')
+    def test_that_first_media_parameters_is_used(self) -> None:
+        # semantically malformed but handled appropriately
+        # see RFC-8288 sec. 3.4.1
+        parsed = headers.parse_link('<>; media=first; media=ignored')
+        self.assertIn(('media', 'first'), parsed[0].parameters)
+        self.assertNotIn(('media', 'ignored'), parsed[0].parameters)
 
     def test_that_first_title_parameter_is_used(self) -> None:
         # semantically malformed but handled appropriately
-        # see RFC5988 sec. 5.4
+        # see RFC-8288 sec. 3.4.1
         parsed = headers.parse_link('<>; title=first; title=ignored')
         self.assertIn(('title', 'first'), parsed[0].parameters)
         self.assertNotIn(('title', 'ignored'), parsed[0].parameters)
 
     def test_that_first_title_star_parameter_is_used(self) -> None:
         # semantically malformed but handled appropriately
-        # see RFC5988 sec. 5.4
+        # see RFC-8288 sec. 3.4.1
         parsed = headers.parse_link('<>; title*=first; title*=ignored')
         self.assertIn(('title*', 'first'), parsed[0].parameters)
         self.assertNotIn(('title*', 'ignored'), parsed[0].parameters)
 
-    def test_that_multiple_type_parameters_are_rejected(self) -> None:
-        with self.assertRaises(errors.MalformedLinkValue):
-            headers.parse_link('<>; type=1; type=2')
+    def test_that_the_first_type_parameters_is_used(self) -> None:
+        # semantically malformed but handled appropriately
+        # see RFC-8288 sec. 3.4.1
+        parsed = headers.parse_link('<>; type=first; type=ignored')
+        self.assertIn(('type', 'first'), parsed[0].parameters)
+        self.assertNotIn(('type', 'ignored'), parsed[0].parameters)
 
     def test_that_semantic_tests_can_be_turned_off(self) -> None:
         parsed = headers.parse_link(
