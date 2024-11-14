@@ -13,6 +13,17 @@ Instead of inventing another list of *garbage-in -> garbage-out* exception
 types, I chose to simply let the underlying exception propagate.  This means
 that you should always guard against at least this set of exceptions.
 
+| Header                              | Represented as...                                    | Parsed by...                                |
+|-------------------------------------|------------------------------------------------------|---------------------------------------------|
+| [Accept](#accept)                   | sequence of [ietfparse.datastructures.ContentType][] | [ietfparse.headers.parse_accept][]          |
+| [Accept-Charset](#accept-charset)   | sequence of strings                                  | [ietfparse.headers.parse_accept_charset][]  |
+| [Accept-Encoding](#accept-encoding) | sequence of strings                                  | [ietfparse.headers.parse_accept_encoding][] |
+| [Accept-Language](#accept-language) | sequence of strings                                  | [ietfparse.headers.parse_accept_language][] |
+| [Cache-Control](#cache-control)     | mapping of parameter to value                        | [ietfparse.headers.parse_cache_control][]   |
+| [Content-Type](#content-type)       | [ietfparse.datastructures.ContentType][]             | [ietfparse.headers.parse_content_type][]    |
+| [Forwarded](#forwarded)             | sequence of mappings                                 | [ietfparse.headers.parse_forwarded][]       |
+| [Link](#link)                       | sequence of [ietfparse.datastructures.LinkHeader][]  | [ietfparse.headers.parse_link][]            |
+
 ## Accept
 
 [ietfparse.headers.parse_accept][] parses the [HTTP-Accept] header into a
