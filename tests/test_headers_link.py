@@ -123,6 +123,21 @@ class MalformedLinkHeaderTests(unittest.TestCase):
             strict=False,
         )
         self.assertEqual(len(parsed), 3)
+        self.assertEqual(
+            parsed[0].parameters,
+            [
+                ('title', 'one'),
+                ('title', 'two'),
+                ('title*', 'three'),
+                ('title*', 'four'),
+            ],
+        )
+        self.assertEqual(
+            parsed[1].parameters, [('rel', 'first'), ('rel', 'second')]
+        )
+        self.assertEqual(
+            parsed[2].parameters, [('media', 'one'), ('media', 'two')]
+        )
 
 
 class LinkHeaderFormattingTests(unittest.TestCase):
