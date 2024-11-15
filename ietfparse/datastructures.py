@@ -168,13 +168,10 @@ class LinkHeader:
                     ]
                 )
             )
-            rel = [
-                f'{name}="{value}"'
-                for name, value in self.parameters
-                if name == 'rel'
-            ]
+            rel = [value for name, value in self.parameters if name == 'rel']
             if rel:
-                formatted += '; ' + rel[0]
+                joined = ' '.join(rel)
+                formatted += f'; rel="{joined}"'
             if params:
                 formatted += '; ' + params
 

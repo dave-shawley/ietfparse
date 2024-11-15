@@ -11,6 +11,10 @@
 - `headers.parse_link` changed to honor the allow multiple `media` and `type`
   parameters as described in [RFC-8288-section-3.4.1]. The first value is
   retained.
+- `datastructures.LinkHeader` changed to combine multiple relationship type
+  (rel) parameters into a single space-separated parameter as described in
+  [RFC-8288-section-3]. Note that this is only relevant if you disable strict
+  mode parsing.
 - replaced setuptools with [hatch](https://hatch.pypa.io/)
 - converted positional Boolean parameters to keyword-only parameters
 

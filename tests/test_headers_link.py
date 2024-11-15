@@ -161,3 +161,9 @@ class LinkHeaderFormattingTests(unittest.TestCase):
     def test_that_parameters_are_sorted_without_rel(self) -> None:
         parsed = headers.parse_link('<>; title=foo; hreflang="en"')
         self.assertEqual(str(parsed[0]), '<>; hreflang="en"; title="foo"')
+
+    def test_that_rels_are_combined_in_non_strict_mode(self) -> None:
+        parsed = headers.parse_link(
+            '<>; rel=one; rel=two; rel=three', strict=False
+        )
+        self.assertEqual(str(parsed[0]), '<>; rel="one two three"')
