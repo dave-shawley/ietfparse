@@ -167,6 +167,16 @@ class LinkHeader:
             value.strip() for name, value in self.parameters if name == 'rel'
         ).strip()
 
+    def __getitem__(self, param_name: str) -> abc.Sequence[str]:
+        """Return the parameter values for `param_name` as a list.
+
+        If `param_name` is not present, then an empty sequence is returned.
+        """
+        return [value for name, value in self.parameters if name == param_name]
+
+    def __contains__(self, param_name: object) -> bool:
+        return param_name in {t[0] for t in self.parameters}
+
     def __str__(self) -> str:
         formatted = f'<{self.target}>'
         if self.parameters:

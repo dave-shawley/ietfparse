@@ -70,6 +70,27 @@ class LinkHeaderParsingTests(unittest.TestCase):
         self.assertEqual('two', dict(parsed[1].parameters)['rel'])
         self.assertEqual('<two>; rel="two"', str(parsed[1]))
 
+    def test_indexed_access(self) -> None:
+        parsed = headers.parse_link(
+            '<>; rel=one; single=one; double=two; double="three"'
+        )
+        self.assertEqual(1, len(parsed))
+        link = parsed[0]
+        self.assertEqual(link['rel'], ['one'])
+        self.assertEqual(link['single'], ['one'])
+        self.assertEqual(link['double'], ['two', 'three'])
+        self.assertEqual(link['missing'], [])
+
+    def test_containment_check(self) -> None:
+        parsed = headers.parse_link('<>; rel=one')
+        self.assertEqual(1, len(parsed))
+
+        # ensure that these work as well... they will never
+        # return in the naive implementation of __getitem__
+        link = parsed[0]
+        self.assertIn('rel', link)
+        self.assertNotIn('missing', link)
+
 
 class MalformedLinkHeaderTests(unittest.TestCase):
     def test_that_value_error_when_url_brackets_are_missing(self) -> None:
