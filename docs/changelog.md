@@ -5,6 +5,7 @@
 ### Added
 
 - [pre-commit](https://pre-commit.com/) utility usage
+- `datastructures.LinkHeader.rel` property
 
 ### Changed
 

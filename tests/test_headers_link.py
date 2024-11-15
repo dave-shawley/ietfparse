@@ -86,6 +86,7 @@ class MalformedLinkHeaderTests(unittest.TestCase):
         parsed = headers.parse_link('<>; rel=first; rel=ignored')
         self.assertIn(('rel', 'first'), parsed[0].parameters)
         self.assertNotIn(('rel', 'ignored'), parsed[0].parameters)
+        self.assertEqual('first', parsed[0].rel)
 
     def test_that_first_media_parameters_is_used(self) -> None:
         # semantically malformed but handled appropriately
@@ -135,6 +136,7 @@ class MalformedLinkHeaderTests(unittest.TestCase):
         self.assertEqual(
             parsed[1].parameters, [('rel', 'first'), ('rel', 'second')]
         )
+        self.assertEqual(parsed[1].rel, 'first second')
         self.assertEqual(
             parsed[2].parameters, [('media', 'one'), ('media', 'two')]
         )
@@ -153,10 +155,12 @@ class LinkHeaderFormattingTests(unittest.TestCase):
     def test_that_rel_is_not_required(self) -> None:
         parsed = headers.parse_link('<>')
         self.assertEqual(str(parsed[0]), '<>')
+        self.assertEqual(parsed[0].rel, '')
 
     def test_that_only_first_rel_is_used(self) -> None:
         parsed = headers.parse_link('<>; rel=used; rel=first; rel=one')
         self.assertEqual(str(parsed[0]), '<>; rel="used"')
+        self.assertEqual(parsed[0].rel, 'used')
 
     def test_that_parameters_are_sorted_without_rel(self) -> None:
         parsed = headers.parse_link('<>; title=foo; hreflang="en"')
@@ -167,3 +171,4 @@ class LinkHeaderFormattingTests(unittest.TestCase):
             '<>; rel=one; rel=two; rel=three', strict=False
         )
         self.assertEqual(str(parsed[0]), '<>; rel="one two three"')
+        self.assertEqual(parsed[0].rel, 'one two three')

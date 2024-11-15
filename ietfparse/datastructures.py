@@ -156,6 +156,17 @@ class LinkHeader:
         self.target = target
         self.parameters = [] if parameters is None else parameters
 
+    @functools.cached_property
+    def rel(self) -> str:
+        """Space-separated relationship parameter.
+
+        This will be the empty string if the `rel` parameter
+        was not included.
+        """
+        return ' '.join(
+            value.strip() for name, value in self.parameters if name == 'rel'
+        ).strip()
+
     def __str__(self) -> str:
         formatted = f'<{self.target}>'
         if self.parameters:
@@ -168,10 +179,8 @@ class LinkHeader:
                     ]
                 )
             )
-            rel = [value for name, value in self.parameters if name == 'rel']
-            if rel:
-                joined = ' '.join(rel)
-                formatted += f'; rel="{joined}"'
+            if self.rel:
+                formatted += f'; rel="{self.rel}"'
             if params:
                 formatted += '; ' + params
 
