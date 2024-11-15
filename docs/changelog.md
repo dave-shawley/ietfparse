@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- [pre-commit](https://pre-commit.com/) utility usage
+
 ### Changed
 
 - replaced setuptools with [hatch](https://hatch.pypa.io/)

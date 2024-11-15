@@ -36,6 +36,7 @@ dev = [
 	"mkdocs-material>=9.5.42,<10",
 	"mkdocstrings[python]>=0.26.2,<0.27",
 	"mypy==0.910",
+	"pre-commit>=4.0.1,<5",
 	"pymdown-ietflinks==0.0.0; python_version >= '3.12'",
 	"pytest>=7.1.2,<8",
 	"ruff==0.6.9",
@@ -71,8 +72,7 @@ build-docs = [
 	"mkdocs build --strict --site-dir build/docs"
 ]
 ci = [
-	"ruff format",
-	"ruff check",
+	"pre-commit run --all-files",
 	"mypy --strict --package ietfparse --package tests",
 	"python -m coverage run -m pytest --junit-xml=test-results/junit.xml tests",
 	"python -m coverage xml",
@@ -87,8 +87,7 @@ coverage-report = [
 	"python -m coverage report",
 ]
 lint = [
-	"ruff format",
-	"ruff check",
+	"pre-commit run --all-files",
 	"mypy --strict --package ietfparse --package tests",
 ]
 test = [
