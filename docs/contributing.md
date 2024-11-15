@@ -34,25 +34,14 @@ are included in the *extra* `.[dev]`:
 
 ```
 $ env/bin/pip install -qe '.[dev]'
-$ env/bin/pip freeze
-alabaster==0.7.12
-Babel==2.8.0
-certifi==2019.11.28
-chardet==3.0.4
-coverage==5.0.3
-docutils==0.16
-entrypoints==0.3
-filelock==3.0.12
-flake8==3.7.9
-idna==2.8
--e git+git@github.com:dave-shawley/ietfparse.git@...#egg=ietfparse
-imagesize==1.2.0
-Jinja2==2.10.3
-MarkupSafe==1.1.1
-mccabe==0.6.1
-mypy==0.761
-mypy-extensions==0.4.3
-packaging==20.1
+```
+
+THe last step is to install the git pre-commit hooks so you don't have to
+remember to run the style checks... _nothing is more annoying than pushing
+a PR only to have it fail for formatting differences._
+
+```
+$ env/bin/pre-commit install --install-hooks
 ```
 
 ## Running tests

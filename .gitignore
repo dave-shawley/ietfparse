@@ -2,6 +2,7 @@
 
 !/.circleci/
 !/.codeclimate.yml
+!/.pre-commit-config.yaml
 !/.readthedocs.yml
 
 /build/
