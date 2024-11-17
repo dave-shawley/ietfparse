@@ -12,11 +12,10 @@ fully fleshed out and ends up here.
 
 from __future__ import annotations
 
+import collections
 import functools
 import typing
-
-if typing.TYPE_CHECKING:
-    from collections import abc
+from collections import abc
 
 
 @functools.total_ordering
@@ -125,6 +124,64 @@ class ContentType:
         return self.content_type < other.content_type
 
 
+T = typing.TypeVar('T')
+
+
+class ImmutableSequence(abc.Sequence[T], typing.Generic[T]):
+    """Immutable sequence."""
+
+    def __init__(self, seq: abc.Iterable[T]) -> None:
+        self.__data = list(seq)
+
+    def __len__(self) -> int:
+        return len(self.__data)
+
+    def __repr__(self) -> str:
+        return repr(self.__data)
+
+    @typing.overload
+    def __getitem__(self, index: int) -> T: ...  # pragma: nocover
+
+    @typing.overload
+    def __getitem__(
+        self, index: slice
+    ) -> abc.Sequence[T]: ...  # pragma: nocover
+
+    def __getitem__(self, index: slice | int) -> abc.Sequence[T] | T:
+        return self.__data[index]
+
+    def index(self, value: T, start: int = 0, stop: int | None = None) -> int:
+        """Find `value` in the subsequence [`start`,`stop`)."""
+        return self.__data.index(
+            value, start, len(self.__data) if stop is None else stop
+        )
+
+    def count(self, value: T) -> int:
+        """Count the number of occurrences of `value`."""
+        return self.__data.count(value)
+
+    def __eq__(self, other: object) -> bool:
+        try:
+            return len(other) == len(self.__data) and all(  # type: ignore[arg-type]
+                a == b
+                for a, b in zip(self.__data, other)  # type: ignore[call-overload]
+            )
+        except TypeError:
+            return NotImplemented
+
+    def __contains__(self, item: object) -> bool:
+        return item in self.__data
+
+    def __iter__(self) -> abc.Iterator[T]:
+        return iter(self.__data)
+
+    def __reversed__(self) -> abc.Iterator[T]:
+        return reversed(self.__data)
+
+    def __setitem__(self, index: int, value: str) -> None:
+        raise TypeError('Cannot modify ImmutableSequence')
+
+
 class LinkHeader:
     """Represents a single link within a `Link` header.
 
@@ -133,28 +190,39 @@ class LinkHeader:
     HTTP resources.
     """
 
-    target: str
-    """The target URL of the link
-
-    This may be a relative URL so the caller may have to make the
-    link absolute by resolving it against a base URL as described
-    in [RFC-3986-section-5].
-    """
-
-    parameters: abc.Sequence[tuple[str, str]]
-    """Possibly empty sequence of name and value pairs
-
-    Parameters are represented as a sequence since a single
-    parameter may occur more than once.
-    """
-
     def __init__(
         self,
         target: str,
         parameters: abc.Sequence[tuple[str, str]] | None = None,
     ) -> None:
-        self.target = target
-        self.parameters = [] if parameters is None else parameters
+        self._target = target
+        param_dict = collections.defaultdict(list)
+        for name, value in parameters or []:
+            param_dict[name].append(value)
+        self._params = dict(param_dict.items())
+
+    @property
+    def target(self) -> str:
+        """The target URL of the link.
+
+        This may be a relative URL so the caller may have to make the
+        link absolute by resolving it against a base URL as described
+        in [RFC-3986-section-5].
+        """
+        return self._target
+
+    @functools.cached_property
+    def parameters(self) -> abc.Sequence[tuple[str, str]]:
+        """Possibly empty sequence of name and value pairs.
+
+        Parameters are represented as a sequence since a single
+        parameter may occur more than once.
+        """
+        return ImmutableSequence[tuple[str, str]](
+            (item, value)
+            for item, values in self._params.items()
+            for value in values
+        )
 
     @functools.cached_property
     def rel(self) -> str:
@@ -163,35 +231,28 @@ class LinkHeader:
         This will be the empty string if the `rel` parameter
         was not included.
         """
-        return ' '.join(
-            value.strip() for name, value in self.parameters if name == 'rel'
-        ).strip()
+        return ' '.join(self._params.get('rel', [])).strip()
 
     def __getitem__(self, param_name: str) -> abc.Sequence[str]:
         """Return the parameter values for `param_name` as a list.
 
         If `param_name` is not present, then an empty sequence is returned.
         """
-        return [value for name, value in self.parameters if name == param_name]
+        return ImmutableSequence[str](self._params.get(param_name, []))
 
     def __contains__(self, param_name: object) -> bool:
-        return param_name in {t[0] for t in self.parameters}
+        return param_name in self._params
 
     def __str__(self) -> str:
-        formatted = f'<{self.target}>'
-        if self.parameters:
-            params = '; '.join(
-                sorted(
-                    [
-                        f'{name}="{value}"'
-                        for name, value in self.parameters
-                        if name != 'rel'
-                    ]
-                )
+        formatted = [f'<{self.target}>']
+        if self.rel:
+            formatted.append(f'rel="{self.rel}"')
+        formatted.extend(
+            sorted(
+                f'{name}="{value}"'
+                for name in self._params
+                for value in self._params[name]
+                if name != 'rel'
             )
-            if self.rel:
-                formatted += f'; rel="{self.rel}"'
-            if params:
-                formatted += '; ' + params
-
-        return formatted
+        )
+        return '; '.join(formatted)

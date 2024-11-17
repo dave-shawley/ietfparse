@@ -1,6 +1,9 @@
+import contextlib
+import typing
 import unittest
+from collections import abc
 
-from ietfparse import errors, headers
+from ietfparse import datastructures, errors, headers
 
 
 class LinkHeaderParsingTests(unittest.TestCase):
@@ -193,3 +196,79 @@ class LinkHeaderFormattingTests(unittest.TestCase):
         )
         self.assertEqual(str(parsed[0]), '<>; rel="one two three"')
         self.assertEqual(parsed[0].rel, 'one two three')
+
+
+class ImmutableSequenceTests(unittest.TestCase):
+    def test_that_immutable_sequence_looks_like_sequence(self) -> None:
+        seq = ['one', 'two']
+        imm_seq = datastructures.ImmutableSequence[str](seq)
+        self.assertEqual(repr(imm_seq), repr(seq))
+        self.assertEqual(len(imm_seq), len(seq))
+        self.assertEqual(bool(imm_seq), bool(seq))
+        self.assertEqual(imm_seq, seq)
+        for a, b in zip(seq, imm_seq):
+            self.assertEqual(a, b)
+
+    def test_modifying_target(self) -> None:
+        parsed = headers.parse_link('<>; values=one; values=two')
+        self.assertEqual(len(parsed), 1)
+        with self.assert_raises_one_of(AttributeError, TypeError):
+            parsed[0].target = 'whatever'  # type: ignore[misc]
+
+    def test_modifying_link_parameters(self) -> None:
+        parsed = headers.parse_link('<>; values=one; values=two')
+        self.assertEqual(len(parsed), 1)
+        params = typing.cast(list[tuple[str, str]], parsed[0].parameters)
+        with self.assert_raises_one_of(AttributeError, TypeError):
+            params.append(('values', 'three'))
+        with self.assert_raises_one_of(AttributeError, TypeError):
+            params += [('values', 'four')]
+
+    def test_modifying_indexed_result(self) -> None:
+        parsed = headers.parse_link('<>; values=one; values=two')
+        self.assertEqual(len(parsed), 1)
+        params = typing.cast(list[str], parsed[0]['values'])
+        with self.assert_raises_one_of(AttributeError, TypeError):
+            params.append('three')
+        with self.assert_raises_one_of(AttributeError, TypeError):
+            params += ['three']
+        with self.assert_raises_one_of(AttributeError, TypeError):
+            params[0] = 'one'
+
+    def test_modifying_empty_indexed_result(self) -> None:
+        parsed = headers.parse_link('<>')
+        self.assertEqual(len(parsed), 1)
+        params = typing.cast(list[str], parsed[0]['non-existent'])
+        with self.assert_raises_one_of(AttributeError, TypeError):
+            params.append('value')
+        with self.assert_raises_one_of(AttributeError, TypeError):
+            params += ['value']
+
+    def test_sequence_expectations(self) -> None:
+        parsed = headers.parse_link('<>; param=one; param=two')
+        self.assertEqual(len(parsed), 1)
+        link = parsed[0]
+        self.assertEqual(len(link['param']), 2)
+        self.assertEqual(link['param'], ['one', 'two'])
+        self.assertEqual(link['param'][0], 'one')
+        self.assertEqual(link['param'][:2], ['one', 'two'])
+        self.assertEqual(link['param'].count('one'), 1)
+        self.assertEqual(link['param'].index('two'), 1)
+        self.assertNotEqual(link['param'], object())
+        self.assertEqual(list(reversed(link['param'])), ['two', 'one'])
+
+    @contextlib.contextmanager
+    def assert_raises_one_of(
+        self, *exc_cls: type[Exception]
+    ) -> abc.Iterator[None]:
+        try:
+            yield
+        except Exception as exc:
+            if isinstance(exc, exc_cls):
+                return
+            raise
+        else:
+            self.fail(
+                'Exception not raised, expected one of '
+                + ', '.join(cls.__name__ for cls in exc_cls)
+            )

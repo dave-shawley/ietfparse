@@ -2,11 +2,16 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- `datastructures.LinkHeader` is now immutable
+
 ### Added
 
 - [pre-commit](https://pre-commit.com/) utility usage
 - `datastructures.LinkHeader.rel` property
 - indexed parameter lookup in `datastructures.LinkHeader`
+- `datastructures.ImmutableSequence` helper class
 
 ### Changed
 
