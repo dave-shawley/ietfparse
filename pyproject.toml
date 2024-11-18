@@ -71,32 +71,38 @@ python = "3.12"
 build-docs = [
 	"mkdocs build --strict --site-dir build/docs"
 ]
-ci = [
-	"pre-commit run --all-files",
-	"mypy --strict --package ietfparse --package tests",
-	"python -m coverage run -m pytest --junit-xml=test-results/junit.xml tests",
-	"python -m coverage xml",
-	"mkdir -p coverage",
-	"cp .coverage coverage/raw-{matrix:python:3.12}",
-]
-coverage = [
-	"python -m coverage run -m pytest tests",
-	"python -m coverage report",
-]
-coverage-report = [
-	"python -m coverage combine",
-	"python -m coverage report",
+build-report = [
+	"python -m coverage combine --data-file coverage/data coverage/data-*",
+	"python -m coverage report --data-file coverage/data",
+	"python -m coverage xml --data-file coverage/data -o coverage/coverage.xml",
 ]
 lint = [
 	"pre-commit run --all-files",
-	"mypy --strict --package ietfparse --package tests",
+	"mypy -p ietfparse -p tests",
 ]
+serve-docs = ["mkdocs serve -w ietfparse -w docs"]
 test = [
+	"pre-commit run --all-files",
+	"mypy -p ietfparse -p tests",
 	"python -m coverage run -m pytest tests",
 	"python -m coverage report"
 ]
 
-[[tool.hatch.envs.all.matrix]]
+[tool.hatch.envs.ci]
+dependencies = [
+	"coverage[toml]>=7.6",
+	"pytest>=7.1.2,<8",
+]
+
+[tool.hatch.envs.ci.scripts]
+test = [
+	"python -m coverage run -m pytest --junit-xml=test-results/junit.xml tests",
+	"python -m coverage xml",
+	"mkdir -p coverage",
+	"cp .coverage coverage/data-{matrix:python:3.12}",
+]
+
+[[tool.hatch.envs.ci.matrix]]
 python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
 [tool.coverage.report]
@@ -106,6 +112,10 @@ show_missing = true
 [tool.coverage.run]
 branch = true
 source = ["ietfparse"]
+
+[tool.mypy]
+show_error_codes = true
+strict = true
 
 [tool.ruff]
 line-length = 79
