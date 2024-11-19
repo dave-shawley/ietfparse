@@ -224,8 +224,8 @@ def parse_content_type(
         compliance in which content parameter values are case
         preserving.
     :return: the parsed content type
-    :raise ValueError: if the content type cannot be reasonably
-        parsed (e.g., ``Content-Type: *``)
+    :raise ietfparse.errors.MalformedContentType:
+        if the content type cannot be parsed (eg, `Content-Type: *`)
 
     """
     parts = _remove_comments(content_type).split(';')
@@ -233,7 +233,7 @@ def parse_content_type(
     try:
         content_type, content_subtype = type_spec.split('/')
     except ValueError as error:
-        raise ValueError(f'Failed to parse {type_spec}') from error
+        raise errors.MalformedContentType(content_type) from error
 
     parameters = _parse_parameter_list(
         parts, normalize_parameter_values=normalize_parameter_values

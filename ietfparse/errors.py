@@ -1,7 +1,7 @@
 """Exceptions raised from within ietfparse.
 
-All exceptions are rooted at :class:`~ietfparse.errors.RootException` so
-so you can catch it to implement error handling behavior associated with
+All exceptions are rooted at [ietfparse.errors.RootException][], so
+you can catch it to implement error handling behavior associated with
 this library's functionality.
 
 """
@@ -34,3 +34,10 @@ class StrictHeaderParsingFailure(RootException, ValueError):
         super().__init__(header_name, header_value)
         self.header_name = header_name
         self.header_value = header_value
+
+
+class MalformedContentType(StrictHeaderParsingFailure):
+    """Attempted to parse a malformed [HTTP-Content-Type] header."""
+
+    def __init__(self, header_value: str) -> None:
+        super().__init__('content-type', header_value)
