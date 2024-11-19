@@ -1,6 +1,6 @@
 import unittest
 
-from ietfparse import datastructures, headers
+from ietfparse import datastructures, errors, headers
 
 
 class SimpleContentTypeParsingTests(unittest.TestCase):
@@ -49,7 +49,7 @@ class ParsingComplexContentTypeTests(unittest.TestCase):
 
 class ParsingBrokenContentTypes(unittest.TestCase):
     def test_that_missing_subtype_raises_value_error(self) -> None:
-        with self.assertRaises(ValueError):
+        with self.assertRaises(errors.MalformedContentType):
             headers.parse_content_type('*')
 
 

@@ -12,6 +12,8 @@
 - `datastructures.LinkHeader.rel` property
 - indexed parameter lookup in `datastructures.LinkHeader`
 - `datastructures.ImmutableSequence` helper class
+- `errors.MalformedContentType` exception explicitly identifies [HTTP-Content-Type]
+  parsing failures. It is a subclass of `ValueError` for the sake of compatability.
 
 ### Changed
 
@@ -33,6 +35,8 @@
   | parse_link         | strict                     |
 
 - switched from sphinx to mkdocs
+- `headers.parse_content_type` changed to raise `MalformedContentType` error
+  instead of `ValueError`.
 
 
 ### Removed
