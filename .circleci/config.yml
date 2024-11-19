@@ -15,7 +15,7 @@ jobs:
     steps:
       - checkout
       - run: |
-          pip install --user 'hatch==1.13.0' 'hatchling<1.26'
+          pip install --user hatch
           hatch run lint
 
   code-climate:
@@ -42,10 +42,9 @@ jobs:
           at: code-climate
       - run: |
           ./code-climate/test-reporter before-build
-          pip install --user 'hatch==1.13.0' 'hatchling<1.26'
-          hatch env run -i python=<< parameters.python-version >> -e all ci
+          pip install --user hatch
+          hatch env run -i python=<< parameters.python-version >> -e ci test
           code-climate/test-reporter format-coverage -t coverage.py -o coverage/codeclimate.<< parameters.python-version >>.json
-          mv .coverage coverage/data-<< parameters.python-version >>
       - persist_to_workspace:
           root: coverage
           paths:
@@ -63,11 +62,9 @@ jobs:
       - attach_workspace:
           at: coverage
       - run: |
-          pip install --user coverage
+          pip install --user hatch
           ./code-climate/test-reporter sum-coverage coverage/codeclimate.*.json
-          coverage combine --data-file coverage/data coverage/data-*
-          coverage report --data-file coverage/data
-          coverage xml --data-file coverage/data -o coverage/coverage.xml
+          hatch run build-report
       - persist_to_workspace:
           root: coverage
           paths:
@@ -102,8 +99,8 @@ jobs:
     steps:
       - checkout
       - run: |
-          pip install --user --upgrade build readme_renderer twine wheel
-          python -m build --sdist --wheel
+          pip install --user hatch twine
+          hatch build
           twine check dist/*
           twine upload --skip-existing dist/*
           curl -XPOST -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/ietfparse/28564/

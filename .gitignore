@@ -11,6 +11,7 @@
 /env*/
 /htmlcov/
 /site/
+/test-results/
 __pycache__/
 
 coverage.xml

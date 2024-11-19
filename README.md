@@ -1,7 +1,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/ietfparse)](https://pypi.org/project/ietfparse/)
 [![Documentation Status](https://readthedocs.org/projects/ietfparse/badge/?version=latest)](https://ietfparse.readthedocs.io/en/latest/?badge=latest)
 [![Circle-CI](https://circleci.com/gh/dave-shawley/ietfparse.svg?style=shield)](https://circleci.com/gh/dave-shawley/ietfparse)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=dave-shawley_ietfparse&metric=coverage)](https://sonarcloud.io/summary/overall?id=dave-shawley_ietfparse)
+![Code Climate coverage](https://img.shields.io/codeclimate/coverage/dave-shawley/ietfparse)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=dave-shawley_ietfparse&metric=alert_status)](https://sonarcloud.io/summary/overall?id=dave-shawley_ietfparse)
 
 This project is a gut reaction to the wealth of ways to parse URLs, MIME

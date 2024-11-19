@@ -1,38 +1,21 @@
 from __future__ import annotations
 
-from ietfparse import errors
-
 
 class ParameterParser:
     """Utility class to parse Link headers.
 
-    :param strict: controls whether parsing follows all of
-        the rules laid out in :rfc:`5988`
+    :param strict: controls whether parsing follows all
+        rules laid out in [RFC-8288-section-3]
 
-    This class parses the parameters for a single :mailheader:`Link`
+    This class parses the parameters for a single [HTTP-Link]
     value.  It is used from within the guts of
-    :function:`ietfparse.headers.parse_link_header` and not readily
-    suited for other uses.  If *strict mode* is enabled, then the
-    following rules from the RFC are obeyed:
+    [ietfparse.headers.parse_link_header][] and not readily
+    suited for other uses.
 
-    - section 5.3: when multiple "rel" attributes are present, then
-      the first one is chosen.  The remaining are omitted from the
-      value set.
-    - section 5.4: "there MUST NOT be more than one media parameter".
-      If more than one is present, then ``MalformedLinkValue`` is
-      raised.
-    - section 5.4: when multiple "type" attributes are present, then
-      the first one is chosen.  The remaining are omitted form the
-      value set.
-    - section 5.4: when multiple "title" attributes are present, then
-      the first one is chosen.  The remaining are omitted form the
-      value set.
-    - section 5.4: if both "title" and "title*" are present, then
-      "title*" is preferred.  The value of "title*" will be used
-      in all cases.
-    - section 5.4: "there MUST NOT be more than one type parameter".
-      If more than one is present, then ``MalformedLinkValue`` is
-      raised.
+    If *strict mode* is enabled, then the first value for the
+    `rel`, `media`, `type`, `title`, and `title*` parameters
+    is retained and additional values are ignored as described
+    in [RFC-8288-section-3].
 
     """
 
@@ -67,9 +50,6 @@ class ParameterParser:
             if self._rfc_values[name] is None:
                 self._rfc_values[name] = value
             elif self.strict:
-                if name in ('media', 'type'):
-                    msg = f'More than one {name} parameter present'
-                    raise errors.MalformedLinkValue(msg)
                 return
         except KeyError:
             pass
