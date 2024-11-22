@@ -38,6 +38,8 @@
 - `headers.parse_content_type` changed to raise `MalformedContentType` error
   instead of `ValueError`.
 - `datastructures.ContentType` instances can now be compared to strings
+- `algorithms.select_content_type` changed to accept strings as well as `ContentType`
+  instances
 
 
 ### Removed

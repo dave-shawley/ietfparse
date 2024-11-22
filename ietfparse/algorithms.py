@@ -13,7 +13,7 @@ from __future__ import annotations
 import typing
 from operator import attrgetter
 
-from ietfparse import datastructures, errors
+from ietfparse import _helpers, datastructures, errors
 
 if typing.TYPE_CHECKING:
     from collections import abc
@@ -33,8 +33,8 @@ def _content_type_matches(
 
 
 def select_content_type(  # noqa: C901 -- overly complex
-    requested: abc.Sequence[datastructures.ContentType],
-    available: abc.Sequence[datastructures.ContentType],
+    requested: abc.Sequence[datastructures.ContentType | str] | str,
+    available: abc.Sequence[datastructures.ContentType | str],
 ) -> tuple[datastructures.ContentType, datastructures.ContentType]:
     """Select the best content type.
 
@@ -119,9 +119,26 @@ def select_content_type(  # noqa: C901 -- overly complex
     def extract_quality(obj: datastructures.ContentType) -> float:
         return 1.0 if obj.quality is None else obj.quality
 
+    _requested: abc.Sequence[datastructures.ContentType]
+    if isinstance(requested, str):
+        _requested = _helpers.parse_header('parse_accept', requested)
+    else:
+        _requested = [
+            value
+            if isinstance(value, datastructures.ContentType)
+            else _helpers.parse_header('parse_content_type', value)
+            for value in requested
+        ]
+    _available = sorted(
+        value
+        if isinstance(value, datastructures.ContentType)
+        else _helpers.parse_header('parse_content_type', value)
+        for value in available
+    )
+
     matches = []
-    for pattern in sorted(requested, key=extract_quality, reverse=True):
-        for candidate in sorted(available):
+    for pattern in sorted(_requested, key=extract_quality, reverse=True):
+        for candidate in _available:
             if _content_type_matches(candidate, pattern):
                 if candidate == pattern:  # exact match!!!
                     if extract_quality(pattern) == 0.0:

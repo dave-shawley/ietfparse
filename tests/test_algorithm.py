@@ -131,7 +131,7 @@ class Rfc7231ExampleTests(ContentNegotiationTestCase):
         )
 
 
-class PriorizationTests(unittest.TestCase):
+class PrioritizationTests(unittest.TestCase):
     def test_that_explicit_priority_1_is_preferred(self) -> None:
         selected, matched = algorithms.select_content_type(
             headers.parse_accept(
@@ -175,3 +175,22 @@ class PriorizationTests(unittest.TestCase):
         self.assertEqual(
             str(selected), 'application/vnd.com.example+json; version=1'
         )
+
+
+class StringBasedTests(unittest.TestCase):
+    def test_that_select_content_type_parses_accept_header(self) -> None:
+        selected, _ = algorithms.select_content_type(
+            'text/html, text/plain;q=0.2',
+            [
+                headers.parse_content_type(value)
+                for value in ['text/html', 'text/plain']
+            ],
+        )
+        self.assertEqual(str(selected), 'text/html')
+
+    def test_that_select_content_type_parses_strings(self) -> None:
+        selected, _ = algorithms.select_content_type(
+            ['text/html', 'text/plain'],
+            ['application/json', 'text/html', 'text/plain'],
+        )
+        self.assertEqual(str(selected), 'text/html')
