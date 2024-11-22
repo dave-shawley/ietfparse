@@ -94,6 +94,23 @@ class ProactiveContentNegotiationTests(ContentNegotiationTestCase):
                 [headers.parse_content_type('image/png')],
             )
 
+    def test_that_default_is_returned_when_appropriate(self) -> None:
+        selected, matched = algorithms.select_content_type(
+            headers.parse_accept('text/html'),
+            ['application/json', 'application/msgpack'],
+            default='application/msgpack',
+        )
+        self.assertEqual(selected, 'application/msgpack')
+        self.assertEqual(matched, 'application/msgpack')
+
+    def test_that_default_is_required_to_be_available(self) -> None:
+        with self.assertRaises(ValueError):
+            algorithms.select_content_type(
+                'text/html',
+                ['application/json'],
+                default='application/msgpack',
+            )
+
 
 class Rfc7231ExampleTests(ContentNegotiationTestCase):
     @classmethod

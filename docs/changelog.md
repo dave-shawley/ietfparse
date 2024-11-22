@@ -23,6 +23,7 @@
 - `datastructures.ImmutableSequence` helper class
 - `errors.MalformedContentType` exception explicitly identifies [HTTP-Content-Type]
   parsing failures. It is a subclass of `ValueError` for the sake of compatability.
+- `default` parameter to `algorithms.select_content_type`
 
 ### Changed
 
