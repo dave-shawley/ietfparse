@@ -110,6 +110,12 @@ class ContentTypeComparisonTests(unittest.TestCase):
             ContentType('application', 'second', parameters={'1': 1}),
         )
 
+    def test_comparing_with_strings(self) -> None:
+        content_type = ContentType('text', 'plain')
+        self.assertEqual(content_type, 'text/plain')
+        self.assertGreater(content_type, 'application/json')
+        self.assertNotEqual(ContentType('text', 'plain'), 'text')
+
     def test_comparing_non_content_type_instances(self) -> None:
         self.assertNotEqual(ContentType('application', 'binary'), object())
         ct = ContentType('application', 'binary')
