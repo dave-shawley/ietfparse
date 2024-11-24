@@ -1,6 +1,9 @@
 import unittest
 
-from ietfparse import datastructures
+from ietfparse import (
+    constants,  # noqa: F401 -- imported for coverage
+    datastructures,
+)
 
 
 class ContentTypeCreationTests(unittest.TestCase):

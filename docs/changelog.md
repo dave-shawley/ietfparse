@@ -17,6 +17,7 @@
 
 ### Added
 
+- `ietfparse.constants` module -- _this contains constant ContentType instances_
 - [pre-commit](https://pre-commit.com/) utility usage
 - `datastructures.LinkHeader.rel` property
 - indexed parameter lookup in `datastructures.LinkHeader`
