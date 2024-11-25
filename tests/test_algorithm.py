@@ -194,7 +194,7 @@ class PrioritizationTests(unittest.TestCase):
         )
 
 
-class StringBasedTests(unittest.TestCase):
+class ParsingTests(unittest.TestCase):
     def test_that_select_content_type_parses_accept_header(self) -> None:
         selected, _ = algorithms.select_content_type(
             'text/html, text/plain;q=0.2',
@@ -211,3 +211,12 @@ class StringBasedTests(unittest.TestCase):
             ['application/json', 'text/html', 'text/plain'],
         )
         self.assertEqual(str(selected), 'text/html')
+
+    def test_select_content_type_with_no_accept_header(self) -> None:
+        selected, _ = algorithms.select_content_type(
+            None, ['application/json'], default='application/json'
+        )
+        self.assertEqual(str(selected), 'application/json')
+
+        with self.assertRaises(errors.NoMatch):
+            algorithms.select_content_type(None, ['application/json'])

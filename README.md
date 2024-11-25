@@ -32,8 +32,8 @@ supported = [constants.APPLICATION_JSON, constants.TEXT_HTML]
 def render_widget(request, widget):
     """Render `widget` based on the accept header"""
     selected, requested = algorithms.select_content_type(
-        request.headers.get('accept') or default_content_type,
-        supported, default=default_content_type)
+        request.headers.get('accept'), supported,
+        default=default_content_type)
     match selected:
         case constants.APPLICATION_JSON:
             body = json.dumps(widget)

@@ -33,7 +33,7 @@ def _content_type_matches(
 
 
 def select_content_type(  # noqa: C901 -- overly complex
-    requested: abc.Sequence[datastructures.ContentType | str] | str,
+    requested: abc.Sequence[datastructures.ContentType | str] | str | None,
     available: abc.Sequence[datastructures.ContentType | str],
     *,
     default: datastructures.ContentType | str | None = None,
@@ -151,7 +151,7 @@ def select_content_type(  # noqa: C901 -- overly complex
 
 
 def _normalize_parameters(
-    requested: abc.Sequence[datastructures.ContentType | str] | str,
+    requested: abc.Sequence[datastructures.ContentType | str] | str | None,
     available: abc.Sequence[datastructures.ContentType | str],
     default: datastructures.ContentType | str | None,
 ) -> tuple[
@@ -159,6 +159,8 @@ def _normalize_parameters(
     abc.Sequence[datastructures.ContentType],
     datastructures.ContentType | None,
 ]:
+    if requested is None:
+        requested = [default] if default is not None else []
     if isinstance(requested, str):
         _requested = _helpers.parse_header('parse_accept', requested)
     else:
