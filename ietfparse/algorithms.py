@@ -13,7 +13,7 @@ from __future__ import annotations
 import typing
 from operator import attrgetter
 
-from ietfparse import datastructures, errors
+from ietfparse import _helpers, datastructures, errors
 
 if typing.TYPE_CHECKING:
     from collections import abc
@@ -33,8 +33,10 @@ def _content_type_matches(
 
 
 def select_content_type(  # noqa: C901 -- overly complex
-    requested: abc.Sequence[datastructures.ContentType],
-    available: abc.Sequence[datastructures.ContentType],
+    requested: abc.Sequence[datastructures.ContentType | str] | str | None,
+    available: abc.Sequence[datastructures.ContentType | str],
+    *,
+    default: datastructures.ContentType | str | None = None,
 ) -> tuple[datastructures.ContentType, datastructures.ContentType]:
     """Select the best content type.
 
@@ -53,10 +55,14 @@ def select_content_type(  # noqa: C901 -- overly complex
     :param available: a sequence of
         [ietfparse.datastructures.ContentType][] instances that the
         server is capable of producing
+    :param default: optional default value to return if there is
+        no acceptable match
     :returns: the selected content type (from `available`) and the
         pattern that it matched (from `requested`)
 
-    raises [ietfparse.errors.NoMatch][] when a suitable match was not found
+    :raises ietfparse.errors.NoMatch: when a suitable match was not found
+    :raises ValueError: when `default` is specified and it is not in
+        `available`
 
     """
 
@@ -119,9 +125,13 @@ def select_content_type(  # noqa: C901 -- overly complex
     def extract_quality(obj: datastructures.ContentType) -> float:
         return 1.0 if obj.quality is None else obj.quality
 
+    _requested, _available, _default = _normalize_parameters(
+        requested, available, default
+    )
+
     matches = []
-    for pattern in sorted(requested, key=extract_quality, reverse=True):
-        for candidate in sorted(available):
+    for pattern in sorted(_requested, key=extract_quality, reverse=True):
+        for candidate in _available:
             if _content_type_matches(candidate, pattern):
                 if candidate == pattern:  # exact match!!!
                     if extract_quality(pattern) == 0.0:
@@ -130,9 +140,47 @@ def select_content_type(  # noqa: C901 -- overly complex
                 matches.append(Match(candidate, pattern))
 
     if not matches:
+        if _default is not None:
+            return _default, _default
         raise errors.NoMatch
 
     matches = sorted(
         matches, key=attrgetter('match_type', 'parameter_distance')
     )
     return matches[0].candidate, matches[0].pattern
+
+
+def _normalize_parameters(
+    requested: abc.Sequence[datastructures.ContentType | str] | str | None,
+    available: abc.Sequence[datastructures.ContentType | str],
+    default: datastructures.ContentType | str | None,
+) -> tuple[
+    abc.Sequence[datastructures.ContentType],
+    abc.Sequence[datastructures.ContentType],
+    datastructures.ContentType | None,
+]:
+    if requested is None:
+        requested = [default] if default is not None else []
+    if isinstance(requested, str):
+        _requested = _helpers.parse_header('parse_accept', requested)
+    else:
+        _requested = [
+            r
+            if isinstance(r, datastructures.ContentType)
+            else _helpers.parse_header('parse_content_type', r)
+            for r in requested
+        ]
+
+    _available = [
+        a
+        if isinstance(a, datastructures.ContentType)
+        else _helpers.parse_header('parse_content_type', a)
+        for a in available
+    ]
+
+    if isinstance(default, str):
+        default = _helpers.parse_header('parse_content_type', default)
+        if default not in _available:
+            raise ValueError('default content type not in available')
+
+    return _requested, sorted(_available), default

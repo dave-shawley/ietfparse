@@ -73,6 +73,7 @@ def parse_accept(  # noqa: C901 -- overly complex
         [ietfparse.headers.parse_content_type][]
 
     """
+    guard: contextlib.AbstractContextManager[None]
     if strict:
         guard = contextlib.nullcontext()
     else:

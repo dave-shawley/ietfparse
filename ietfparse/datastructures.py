@@ -17,6 +17,8 @@ import functools
 import typing
 from collections import abc
 
+from ietfparse import _helpers
+
 
 @functools.total_ordering
 class ContentType:
@@ -101,6 +103,8 @@ class ContentType:
         )
 
     def __eq__(self, other: object) -> bool:
+        if isinstance(other, str):
+            other = _helpers.parse_header('parse_content_type', other)
         if not isinstance(other, ContentType):
             return NotImplemented
         return (
@@ -111,6 +115,8 @@ class ContentType:
         )
 
     def __lt__(self, other: object) -> bool:
+        if isinstance(other, str):
+            other = _helpers.parse_header('parse_content_type', other)
         if not isinstance(other, ContentType):
             return NotImplemented
         if self.content_type == '*' and other.content_type != '*':

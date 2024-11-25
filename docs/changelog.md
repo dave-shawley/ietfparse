@@ -5,15 +5,26 @@
 ### Breaking Changes
 
 - `datastructures.LinkHeader` is now immutable
+- converted positional Boolean parameters to keyword-only parameters
+
+  | Function           | Parameter                  |
+  |--------------------|----------------------------|
+  | parse_accept       | strict                     |
+  | parse_content_type | normalize_parameter_values |
+  | parse_forwarded    | only_standard_parameters   |
+  | parse_link         | strict                     |
+
 
 ### Added
 
+- `ietfparse.constants` module -- _this contains constant ContentType instances_
 - [pre-commit](https://pre-commit.com/) utility usage
 - `datastructures.LinkHeader.rel` property
 - indexed parameter lookup in `datastructures.LinkHeader`
 - `datastructures.ImmutableSequence` helper class
 - `errors.MalformedContentType` exception explicitly identifies [HTTP-Content-Type]
   parsing failures. It is a subclass of `ValueError` for the sake of compatability.
+- `default` parameter to `algorithms.select_content_type`
 
 ### Changed
 
@@ -25,18 +36,12 @@
   [RFC-8288-section-3]. Note that this is only relevant if you disable strict
   mode parsing.
 - replaced setuptools with [hatch](https://hatch.pypa.io/)
-- converted positional Boolean parameters to keyword-only parameters
-
-  | Function           | Parameter                  |
-  |--------------------|----------------------------|
-  | parse_accept       | strict                     |
-  | parse_content_type | normalize_parameter_values |
-  | parse_forwarded    | only_standard_parameters   |
-  | parse_link         | strict                     |
-
 - switched from sphinx to mkdocs
 - `headers.parse_content_type` changed to raise `MalformedContentType` error
   instead of `ValueError`.
+- `datastructures.ContentType` instances can now be compared to strings
+- `algorithms.select_content_type` changed to accept strings as well as `ContentType`
+  instances
 
 
 ### Removed

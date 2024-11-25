@@ -94,6 +94,23 @@ class ProactiveContentNegotiationTests(ContentNegotiationTestCase):
                 [headers.parse_content_type('image/png')],
             )
 
+    def test_that_default_is_returned_when_appropriate(self) -> None:
+        selected, matched = algorithms.select_content_type(
+            headers.parse_accept('text/html'),
+            ['application/json', 'application/msgpack'],
+            default='application/msgpack',
+        )
+        self.assertEqual(selected, 'application/msgpack')
+        self.assertEqual(matched, 'application/msgpack')
+
+    def test_that_default_is_required_to_be_available(self) -> None:
+        with self.assertRaises(ValueError):
+            algorithms.select_content_type(
+                'text/html',
+                ['application/json'],
+                default='application/msgpack',
+            )
+
 
 class Rfc7231ExampleTests(ContentNegotiationTestCase):
     @classmethod
@@ -131,7 +148,7 @@ class Rfc7231ExampleTests(ContentNegotiationTestCase):
         )
 
 
-class PriorizationTests(unittest.TestCase):
+class PrioritizationTests(unittest.TestCase):
     def test_that_explicit_priority_1_is_preferred(self) -> None:
         selected, matched = algorithms.select_content_type(
             headers.parse_accept(
@@ -175,3 +192,31 @@ class PriorizationTests(unittest.TestCase):
         self.assertEqual(
             str(selected), 'application/vnd.com.example+json; version=1'
         )
+
+
+class ParsingTests(unittest.TestCase):
+    def test_that_select_content_type_parses_accept_header(self) -> None:
+        selected, _ = algorithms.select_content_type(
+            'text/html, text/plain;q=0.2',
+            [
+                headers.parse_content_type(value)
+                for value in ['text/html', 'text/plain']
+            ],
+        )
+        self.assertEqual(str(selected), 'text/html')
+
+    def test_that_select_content_type_parses_strings(self) -> None:
+        selected, _ = algorithms.select_content_type(
+            ['text/html', 'text/plain'],
+            ['application/json', 'text/html', 'text/plain'],
+        )
+        self.assertEqual(str(selected), 'text/html')
+
+    def test_select_content_type_with_no_accept_header(self) -> None:
+        selected, _ = algorithms.select_content_type(
+            None, ['application/json'], default='application/json'
+        )
+        self.assertEqual(str(selected), 'application/json')
+
+        with self.assertRaises(errors.NoMatch):
+            algorithms.select_content_type(None, ['application/json'])
