@@ -55,7 +55,7 @@ plugins:
           import:
             - https://docs.python.org/3/objects.inv
           paths:
-            - "."  # not needed ... but it will be when I switch to the "src" layout
+            - "src"
           options:
             docstring_style: sphinx
             heading_level: 3

@@ -35,21 +35,11 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
-path = "ietfparse/__init__.py"
+path = "src/ietfparse/__init__.py"
 pattern = "version = '(?P<version>[^']*)'"
 
-[tool.hatch.build.targets.sdist]
-include = [
-	"/.circleci",
-	"/docs",
-	"/ietfparse",
-	"/tests",
-	"/.codeclimate.yml",
-	"/.readthedocs.yml",
-	"/AUTHORS.md",
-	"/CONTRIBUTING.md",
-	"/sonar-project.properties",
-]
+[tool.hatch.build.targets]
+packages = ["src/ietfparse"]
 
 [tool.hatch.envs.default]
 python = "3.12"
@@ -77,7 +67,7 @@ lint = [
 	"pre-commit run --all-files",
 	"mypy -p ietfparse -p tests",
 ]
-serve-docs = ["mkdocs serve -w ietfparse -w docs"]
+serve-docs = ["mkdocs serve -w src -w docs"]
 test = [
 	"pre-commit run --all-files",
 	"mypy -p ietfparse -p tests",
@@ -111,7 +101,7 @@ show_missing = true
 
 [tool.coverage.run]
 branch = true
-source = ["ietfparse"]
+source = ["src/ietfparse"]
 
 [tool.mypy]
 show_error_codes = true

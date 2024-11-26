@@ -51,6 +51,7 @@
 
 - replaced setuptools with [hatch](https://hatch.pypa.io/)
 - switched from sphinx to mkdocs
+- switch to the [src layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/)
 
 ## [1.9.0] -- 2022-07-08
 
