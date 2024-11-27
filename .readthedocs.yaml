@@ -9,7 +9,6 @@ mkdocs:
   configuration: "mkdocs-rtd.yml"
 python:
   install:
+    - requirements: docs/requirements.txt
     - method: "pip"
       path: "."
-      extra_requirements:
-        - "dev"
