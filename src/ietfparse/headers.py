@@ -38,6 +38,9 @@ _COMMENT_RE = re.compile(r'\(.*\)')
 _QUOTED_SEGMENT_RE = re.compile(r'"([^"]*)"')
 _DEF_PARAM_VALUE = object()
 
+# This is *here* instead of constants.py to avoid a ciecular import
+_SMALLEST_QUALITY = 0.001
+
 
 def parse_accept(  # noqa: C901 -- overly complex
     header_value: str, *, strict: bool = False
@@ -89,7 +92,7 @@ def parse_accept(  # noqa: C901 -- overly complex
         q = header.parameters.pop('q', None)
         if q is None:
             header.quality = 1.0
-        elif float(q) == 1.0:
+        elif q == '1.0':
             header.quality = float(next_explicit_q)
             next_explicit_q = next_explicit_q.next_minus()
         else:
@@ -435,10 +438,11 @@ def _parse_qualified_list(value: str) -> list[str]:
             found_wildcard = True
             continue
         params = dict(_parse_parameter_list(parameter_str.split(';')))
+        actual_param = params.get('q')
         quality = float(params.pop('q', default))
-        if quality < 0.001:  # can't recall why this constant # noqa: PLR2004
+        if quality < _SMALLEST_QUALITY:
             rejected_values.append(charset)
-        elif quality == 1.0:
+        elif actual_param == '1.0':
             values.append((highest + default, charset))
         else:
             values.append((quality, charset))

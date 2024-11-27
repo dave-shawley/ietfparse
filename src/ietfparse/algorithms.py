@@ -13,7 +13,7 @@ from __future__ import annotations
 import typing
 from operator import attrgetter
 
-from ietfparse import _helpers, datastructures, errors
+from ietfparse import _helpers, constants, datastructures, errors
 
 if typing.TYPE_CHECKING:
     from collections import abc
@@ -134,7 +134,7 @@ def select_content_type(  # noqa: C901 -- overly complex
         for candidate in _available:
             if _content_type_matches(candidate, pattern):
                 if candidate == pattern:  # exact match!!!
-                    if extract_quality(pattern) == 0.0:
+                    if extract_quality(pattern) < constants.SMALLEST_QUALITY:
                         raise errors.NoMatch  # quality of 0 means NO
                     return candidate, pattern
                 matches.append(Match(candidate, pattern))
