@@ -28,19 +28,6 @@ Once you have hatch installed, you are ready to starting writing code.
 $ hatch shell
 (ietfparse) $
 ```
-
-### Manual virtual environments
-
-You are not required to use hatch. I find that it makes life a bit easier,
-but it is easy enough to create and manage your own virtual environments.
-
-```commandline
-$ python3 -m venv env
-$ . ./env/bin/activate
-(ietfparse) $ pip install '.[dev]'
-(ietfparse) $ pip install -e .
-```
-
 ## pre-commit hooks
 
 Before you start modifying things, install the pre-commit hooks so you
@@ -54,11 +41,12 @@ incorrectly formatted._
 
 ## Running tests
 
-I use [pytest] as my test runner of choice. However, I do not use it as
-a testing framework so please continue to use the assertions exposed by
+This project uses [pytest] as my test runner of choice. However, I do not use
+it as a testing framework so please continue to use the assertions exposed by
 the [unittest.UnitTest] class instead of raw `assert` statements.
 Running the test suite is as easy as `hatch run test`. The nice thing
-about hatch is that you do not need to manually activate the environment.
+about hatch is that you do not need to manually activate the environment or
+worry about out of date dependencies.
 
 ```commandline
 $ hatch run test
@@ -110,6 +98,8 @@ you should probably commit your work.  If you are not comfortable with
 rebasing in git or cleaning up a commit history, your best bet is to
 create small commits -- *commit early, commit often*.  The smaller the
 commit is, the easier it will be to squash and rearrange them.
+
+### Don't forget about docs
 
 When your change is written and tested, make sure to update and/or add
 documentation as needed.  The documentation suite is written using
