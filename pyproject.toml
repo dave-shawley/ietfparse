@@ -30,6 +30,19 @@ Documentation = "https://ietfparse.readthedocs.io/"
 Maintainability = "https://codeclimate.com/github/dave-shawley/ietfparse/"
 "Source Code" = "https://github.com/dave-shawley/ietfparse"
 
+[dependency-groups]
+dev = [
+  "coverage[toml]~=7.6",
+  "mkdocs-material~=9.5",
+  "mkdocstrings-python~=1.12",
+  "mkdocstrings[python]~=0.26",
+  "mypy~=1.13",
+  "pre-commit~=4.0",
+  "pymdown-ietflinks==0.0.0 ; python_full_version >= '3.12'",
+  "pytest~=8.3",
+  "ruff~=0.7",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
