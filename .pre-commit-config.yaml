@@ -16,3 +16,9 @@ repos:
       - id: ruff
         args: [ --fix ]
       - id: ruff-format
+  - repo: https://github.com/tombi-toml/tombi-pre-commit
+    rev: v0.9.17
+    hooks:
+      - id: tombi-format
+        exclude: uv.lock
+        args: [ --offline ]
