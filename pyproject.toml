@@ -1,10 +1,10 @@
 [project]
 name = "ietfparse"
-dynamic = ["version"]
 description = "Parse formats defined in IETF RFCs"
 readme = "README.md"
 requires-python = ">=3.9"
-license = { file = "LICENSE" }
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
 authors = [{ name = "Dave Shawley", email = "daveshawley@gmail.com" }]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -23,6 +23,7 @@ classifiers = [
   "Topic :: Text Processing",
   "Typing :: Typed"
 ]
+dynamic = ["version"]
 
 [project.urls]
 "Code Coverage" = "https://coveralls.io/github/dave-shawley/ietfparse"
