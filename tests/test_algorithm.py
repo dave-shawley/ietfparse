@@ -150,7 +150,7 @@ class Rfc7231ExampleTests(ContentNegotiationTestCase):
 
 class PrioritizationTests(unittest.TestCase):
     def test_that_explicit_priority_1_is_preferred(self) -> None:
-        selected, matched = algorithms.select_content_type(
+        selected, _ = algorithms.select_content_type(
             headers.parse_accept(
                 'application/vnd.com.example+json, '
                 'application/vnd.com.example+json;version=1;q=1.0, '
@@ -173,7 +173,7 @@ class PrioritizationTests(unittest.TestCase):
         self,
     ) -> None:
         # note that this also tests that duplicated values are acceptable
-        selected, matched = algorithms.select_content_type(
+        selected, _ = algorithms.select_content_type(
             headers.parse_accept(
                 'application/vnd.com.example+json;version=1, '
                 'application/vnd.com.example+json;version=1, '

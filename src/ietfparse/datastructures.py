@@ -102,6 +102,16 @@ class ContentType:
             len(self.parameters),
         )
 
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self.content_type,
+                self.content_subtype,
+                self.content_suffix,
+                self.parameters,
+            )
+        )
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, str):
             other = _helpers.parse_header('parse_content_type', other)
@@ -133,7 +143,7 @@ class ContentType:
 T = typing.TypeVar('T')
 
 
-class ImmutableSequence(abc.Sequence[T], typing.Generic[T]):
+class ImmutableSequence(abc.Sequence[T], typing.Generic[T]):  # noqa: PLW1641
     """Immutable sequence."""
 
     def __init__(self, seq: abc.Iterable[T]) -> None:
@@ -170,9 +180,9 @@ class ImmutableSequence(abc.Sequence[T], typing.Generic[T]):
         try:
             return len(other) == len(self.__data) and all(  # type: ignore[arg-type]
                 a == b
-                for a, b in zip(self.__data, other)  # type: ignore[call-overload]
+                for a, b in zip(self.__data, other, strict=True)  # type: ignore[call-overload]
             )
-        except TypeError:
+        except (ValueError, TypeError):
             return NotImplemented
 
     def __contains__(self, item: object) -> bool:

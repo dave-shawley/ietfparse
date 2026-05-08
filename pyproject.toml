@@ -40,7 +40,7 @@ dev = [
   "pre-commit~=4.0",
   "pymdown-ietflinks==0.0.0 ; python_full_version >= '3.12'",
   "pytest~=8.3",
-  "ruff~=0.7",
+  "ruff>=0.15",
 ]
 
 [build-system]
@@ -129,8 +129,6 @@ ignore = [
   "D213",  # need to select between D212 and D213 for formatter
   "ISC001",  # conflicts with ruff formatter
 
-  "ANN101",  # type annotation not required for `self`
-  "ANN102",  # type annotation not required for `cls`
   "D104",  # No need for docstring at the package level
   "D105",  # No need for docstrings in magic methods
   "D107",  # __init__ params are in the class docstring
