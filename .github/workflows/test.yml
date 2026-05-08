@@ -1,0 +1,47 @@
+name: "Run Tests"
+on:
+  push:
+    branches:
+      - main
+      - uvize
+  pull_request:
+    branches:
+      - main
+
+jobs:
+
+  style-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: tombi-toml/setup-tombi@v1
+        with:
+          version: "0.9.17"
+      - name: "Check toml files"
+        run: tombi lint pyproject.toml
+      - name: "Check format"
+        run: |
+          uv run --frozen ruff format --diff
+          uv run --frozen ruff check
+
+  type-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.1.0
+      - name: "Run mypy"
+        run: uv run --frozen mypy -p ietfparse -p tests
+
+  test:
+    runs-on: "ubuntu-latest"
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: "Test with ${{ matrix.python-version }}"
+        run: uv run --frozen coverage run -m pytest
