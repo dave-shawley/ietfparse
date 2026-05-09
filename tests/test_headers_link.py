@@ -206,7 +206,7 @@ class ImmutableSequenceTests(unittest.TestCase):
         self.assertEqual(len(imm_seq), len(seq))
         self.assertEqual(bool(imm_seq), bool(seq))
         self.assertEqual(imm_seq, seq)
-        for a, b in zip(seq, imm_seq):
+        for a, b in zip(seq, imm_seq, strict=True):
             self.assertEqual(a, b)
 
     def test_modifying_target(self) -> None:
@@ -218,7 +218,7 @@ class ImmutableSequenceTests(unittest.TestCase):
     def test_modifying_link_parameters(self) -> None:
         parsed = headers.parse_link('<>; values=one; values=two')
         self.assertEqual(len(parsed), 1)
-        params = typing.cast(list[tuple[str, str]], parsed[0].parameters)
+        params = typing.cast('list[tuple[str, str]]', parsed[0].parameters)
         with self.assert_raises_one_of(AttributeError, TypeError):
             params.append(('values', 'three'))
         with self.assert_raises_one_of(AttributeError, TypeError):
@@ -227,7 +227,7 @@ class ImmutableSequenceTests(unittest.TestCase):
     def test_modifying_indexed_result(self) -> None:
         parsed = headers.parse_link('<>; values=one; values=two')
         self.assertEqual(len(parsed), 1)
-        params = typing.cast(list[str], parsed[0]['values'])
+        params = typing.cast('list[str]', parsed[0]['values'])
         with self.assert_raises_one_of(AttributeError, TypeError):
             params.append('three')
         with self.assert_raises_one_of(AttributeError, TypeError):
@@ -238,7 +238,7 @@ class ImmutableSequenceTests(unittest.TestCase):
     def test_modifying_empty_indexed_result(self) -> None:
         parsed = headers.parse_link('<>')
         self.assertEqual(len(parsed), 1)
-        params = typing.cast(list[str], parsed[0]['non-existent'])
+        params = typing.cast('list[str]', parsed[0]['non-existent'])
         with self.assert_raises_one_of(AttributeError, TypeError):
             params.append('value')
         with self.assert_raises_one_of(AttributeError, TypeError):
@@ -260,7 +260,7 @@ class ImmutableSequenceTests(unittest.TestCase):
     @contextlib.contextmanager
     def assert_raises_one_of(
         self, *exc_cls: type[Exception]
-    ) -> abc.Iterator[None]:
+    ) -> abc.Generator[None]:
         try:
             yield
         except Exception as exc:

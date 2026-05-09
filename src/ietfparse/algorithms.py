@@ -129,7 +129,7 @@ def select_content_type(  # noqa: C901 -- overly complex
         requested, available, default
     )
 
-    matches = []
+    matches: list[Match] = []
     for pattern in sorted(_requested, key=extract_quality, reverse=True):
         for candidate in _available:
             if _content_type_matches(candidate, pattern):

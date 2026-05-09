@@ -131,3 +131,16 @@ class ContentTypeComparisonTests(unittest.TestCase):
                 NotImplemented,
                 f'{dunder} should return NotImplemented for other type',
             )
+
+    def test_hash_comparison(self) -> None:
+        ct1 = datastructures.ContentType(
+            'first', 'one', parameters={'1': 1, '2': 2}
+        )
+        ct2 = datastructures.ContentType('second', 'one', parameters={'1': 1})
+        ct3 = datastructures.ContentType(
+            'first', 'one', parameters={'2': 2, '1': 1}
+        )
+
+        self.assertEqual(hash(ct1), hash(ct1))
+        self.assertNotEqual(hash(ct1), hash(ct2))
+        self.assertEqual(hash(ct1), hash(ct3))

@@ -4,7 +4,7 @@
 
 ### Breaking Changes
 
-- removed support for Python versions before 3.9
+- removed support for Python versions before 3.10
 - `datastructures.LinkHeader` is now immutable
 - converted positional Boolean parameters to keyword-only parameters
 

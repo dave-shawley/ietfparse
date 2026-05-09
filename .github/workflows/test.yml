@@ -1,0 +1,70 @@
+name: "Run Tests"
+on:
+  push:
+    branches:
+      - main
+      - uvize
+  pull_request:
+    branches:
+      - main
+
+jobs:
+
+  style-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: tombi-toml/setup-tombi@v1
+        with:
+          version: "0.9.17"
+      - name: "Check toml files"
+        run: tombi lint pyproject.toml
+      - name: "Check format"
+        run: |
+          uv run --frozen ruff format --diff
+          uv run --frozen ruff check
+
+  type-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.1.0
+      - name: "pyrefly"
+        run: uv run --frozen pyrefly check --output-format github
+      - name: "ty (permissive)"
+        run: uv run --frozen ty check --output-format github --exit-zero
+
+  test:
+    runs-on: "ubuntu-latest"
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: "Test with ${{ matrix.python-version }}"
+        id: run-tests
+        continue-on-error: true
+        run: |
+          uv run --frozen pytest --cov \
+            --junit-xml=junit.xml -o junit-family=legacy \
+            "--cov-report=markdown:$GITHUB_STEP_SUMMARY" \
+            --cov-report=xml
+      - name: "Upload coverage data for ${{ matrix.python-version }}"
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          env_vars: PYTHON
+          verbose: 'true'
+          report_type: "coverage"
+      - name: "Upload test results for ${{ matrix.python-version }}"
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          env_vars: PYTHON
+          verbose: 'true'
+          report_type: "test_results"
