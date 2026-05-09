@@ -1,6 +1,6 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/ietfparse)](https://pypi.org/project/ietfparse/)
 [![Documentation Status](https://readthedocs.org/projects/ietfparse/badge/?version=latest)](https://ietfparse.readthedocs.io/en/latest/?badge=latest)
-[![Circle-CI](https://circleci.com/gh/dave-shawley/ietfparse.svg?style=shield)](https://circleci.com/gh/dave-shawley/ietfparse)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/dave-shawley/ietfparse/test.yml)
 ![Codecov](https://img.shields.io/codecov/c/github/dave-shawley/ietfparse)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=dave-shawley_ietfparse&metric=alert_status)](https://sonarcloud.io/summary/overall?id=dave-shawley_ietfparse)
 
