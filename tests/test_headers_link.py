@@ -260,7 +260,7 @@ class ImmutableSequenceTests(unittest.TestCase):
     @contextlib.contextmanager
     def assert_raises_one_of(
         self, *exc_cls: type[Exception]
-    ) -> abc.Iterator[None]:
+    ) -> abc.Generator[None]:
         try:
             yield
         except Exception as exc:

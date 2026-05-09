@@ -35,12 +35,13 @@ dev = [
   "mkdocs-material~=9.5",
   "mkdocstrings-python~=1.12",
   "mkdocstrings[python]~=0.26",
-  "mypy~=1.13",
   "pre-commit~=4.0",
   "pymdown-ietflinks==0.0.0 ; python_full_version >= '3.12'",
+  "pyrefly>=0.64.1",
   "pytest~=8.3",
   "pytest-cov~=7.1",
   "ruff>=0.15",
+  "ty>=0.0.34",
 ]
 
 [build-system]
@@ -68,7 +69,6 @@ dependencies = [
   "coverage[toml]>=7.6,<8",
   "mkdocs-material>=9.5.42,<10",
   "mkdocstrings[python]>=0.26.2,<0.27",
-  "mypy>=1.13,<2",
   "pre-commit>=4.0.1,<5",
   "pymdown-ietflinks==0.0.0; python_version >= '3.12'",
   "pytest>=8.3,<9",
@@ -111,9 +111,12 @@ test = [
 [[tool.hatch.envs.ci.matrix]]
 python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
-[tool.mypy]
-show_error_codes = true
-strict = true
+[tool.pyrefly]
+min-severity = "warn"
+preset = "strict"
+
+[tool.pyrefly.errors]
+missing-override-decorator = false
 
 [tool.ruff]
 line-length = 79

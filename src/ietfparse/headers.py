@@ -428,7 +428,8 @@ def _parse_qualified_list(value: str) -> list[str]:
 
     """
     found_wildcard = False
-    values, rejected_values = [], []
+    values: list[tuple[float, str]] = []
+    rejected_values: list[str] = []
     parsed = parse_list(value)
     default = float(len(parsed) + 1)
     highest = default + 1.0

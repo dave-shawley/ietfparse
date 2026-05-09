@@ -30,8 +30,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.1.0
-      - name: "Run mypy"
-        run: uv run --frozen mypy -p ietfparse -p tests
+      - name: "pyrefly"
+        run: uv run --frozen pyrefly check --output-format github
+      - name: "ty (permissive)"
+        run: uv run --frozen ty check --output-format github --exit-zero
 
   test:
     runs-on: "ubuntu-latest"
