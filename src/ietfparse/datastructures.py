@@ -108,7 +108,10 @@ class ContentType:
                 self.content_type,
                 self.content_subtype,
                 self.content_suffix,
-                self.parameters,
+                tuple(
+                    (k, self.parameters[k])
+                    for k in sorted(self.parameters.keys())
+                ),
             )
         )
 
