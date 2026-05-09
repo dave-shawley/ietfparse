@@ -56,60 +56,8 @@ show_missing = true
 branch = true
 source = ["src/ietfparse"]
 
-[tool.hatch.version]
-path = "src/ietfparse/__init__.py"
-pattern = "version = '(?P<version>[^']*)'"
-
 [tool.hatch.build.targets.wheel]
 packages = ["src/ietfparse"]
-
-[tool.hatch.envs.default]
-python = "3.12"
-dependencies = [
-  "coverage[toml]>=7.6,<8",
-  "mkdocs-material>=9.5.42,<10",
-  "mkdocstrings[python]>=0.26.2,<0.27",
-  "pre-commit>=4.0.1,<5",
-  "pymdown-ietflinks==0.0.0; python_version >= '3.12'",
-  "pytest>=8.3,<9",
-  "ruff>=0.7,<0.8",
-]
-
-[tool.hatch.envs.default.scripts]
-build-docs = ["mkdocs build --strict --site-dir build/docs"]
-build-report = [
-  "python -m coverage combine --data-file coverage/data coverage/data-*",
-  "python -m coverage report --data-file coverage/data",
-  "python -m coverage xml --data-file coverage/data -o coverage/coverage.xml",
-]
-lint = [
-  "pre-commit run --all-files",
-  "mypy -p ietfparse -p tests",
-]
-serve-docs = ["mkdocs serve -w src -w docs"]
-test = [
-  "pre-commit run --all-files",
-  "mypy -p ietfparse -p tests",
-  "python -m coverage run -m pytest tests",
-  "python -m coverage report"
-]
-
-[tool.hatch.envs.ci]
-dependencies = [
-  "coverage[toml]>=7.6,<8",
-  "pytest>=8.3,<9",
-]
-
-[tool.hatch.envs.ci.scripts]
-test = [
-  "python -m coverage run -m pytest --junit-xml=test-results/junit.xml tests",
-  "python -m coverage xml",
-  "mkdir -p coverage",
-  "cp .coverage coverage/data-{matrix:python:3.12}",
-]
-
-[[tool.hatch.envs.ci.matrix]]
-python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
 [tool.pyrefly]
 min-severity = "warn"
