@@ -365,6 +365,7 @@ wheels = [
 
 [[package]]
 name = "ietfparse"
+version = "2.0.0a1"
 source = { editable = "." }
 
 [package.dev-dependencies]

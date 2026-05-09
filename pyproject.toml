@@ -1,5 +1,6 @@
 [project]
 name = "ietfparse"
+version = "2.0.0a1"
 description = "Parse formats defined in IETF RFCs"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,7 +23,6 @@ classifiers = [
   "Topic :: Text Processing",
   "Typing :: Typed"
 ]
-dynamic = ["version"]
 
 [project.urls]
 "Code Coverage" = "https://app.codecov.io/gh/dave-shawley/ietfparse"
