@@ -38,7 +38,7 @@ dev = [
   "pre-commit~=4.0",
   "pymdown-ietflinks==0.0.0 ; python_full_version >= '3.12'",
   "pyrefly>=0.64.1",
-  "pytest~=8.3",
+  "pytest>=8.3,<10.0",
   "pytest-cov~=7.1",
   "ruff>=0.15",
   "ty>=0.0.34",
