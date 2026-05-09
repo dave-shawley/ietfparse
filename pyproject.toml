@@ -25,9 +25,8 @@ classifiers = [
 dynamic = ["version"]
 
 [project.urls]
-"Code Coverage" = "https://coveralls.io/github/dave-shawley/ietfparse"
+"Code Coverage" = "https://app.codecov.io/gh/dave-shawley/ietfparse"
 Documentation = "https://ietfparse.readthedocs.io/"
-Maintainability = "https://codeclimate.com/github/dave-shawley/ietfparse/"
 "Source Code" = "https://github.com/dave-shawley/ietfparse"
 
 [dependency-groups]
@@ -40,6 +39,7 @@ dev = [
   "pre-commit~=4.0",
   "pymdown-ietflinks==0.0.0 ; python_full_version >= '3.12'",
   "pytest~=8.3",
+  "pytest-cov~=7.1",
   "ruff>=0.15",
 ]
 

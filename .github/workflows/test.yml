@@ -48,56 +48,21 @@ jobs:
         id: run-tests
         continue-on-error: true
         run: |
-          mkdir -p coverage
-          uv run --frozen coverage run \
-            --data-file "coverage/coverage.${{ matrix.python-version }}" \
-            -m pytest
+          uv run --frozen pytest --cov \
+            --junit-xml=junit.xml -o junit-family=legacy \
+            "--cov-report=markdown:$GITHUB_STEP_SUMMARY" \
+            --cov-report=xml
       - name: "Upload coverage data for ${{ matrix.python-version }}"
-        if: always()
-        uses: actions/upload-artifact@v7
+        uses: codecov/codecov-action@v5
         with:
-          name: coverage-${{ matrix.python-version }}
-          path: coverage/coverage.${{ matrix.python-version }}
-          if-no-files-found: warn
-          retention-days: 7
-      - name: "Fail job if tests failed"
-        if: steps.run-tests.outcome == 'failure'
-        run: exit 1
-
-  coverage:
-    name: "Coverage Report"
-    if: always()
-    needs:
-      - test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v8.1.0
+          token: ${{ secrets.CODECOV_TOKEN }}
+          env_vars: PYTHON
+          verbose: 'true'
+          report_type: "coverage"
+      - name: "Upload test results for ${{ matrix.python-version }}"
+        uses: codecov/codecov-action@v5
         with:
-          python-version: '3.13'
-      - name: "Download coverage data"
-        uses: actions/download-artifact@v7
-        with:
-          path: coverage/artifacts
-      - name: "Combine coverage data"
-        run: |
-          find coverage/artifacts -name 'coverage.*' -exec cp {} coverage/ \;
-          uv run --frozen coverage combine --data-file coverage/coverage coverage
-          uv run --frozen coverage report --data-file coverage/coverage -m | tee coverage/report.txt
-          uv run --frozen coverage xml --data-file coverage/coverage -o coverage/coverage.xml
-          uv run --frozen coverage html --data-file coverage/coverage -d coverage/html
-      - name: "Publish coverage summary"
-        run: |
-          {
-            echo '## Combined Coverage'
-            echo
-            echo '```text'
-            cat coverage/report.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-      - name: "Upload combined coverage report"
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-report
-          path: coverage
-          retention-days: 7
+          token: ${{ secrets.CODECOV_TOKEN }}
+          env_vars: PYTHON
+          verbose: 'true'
+          report_type: "test_results"
