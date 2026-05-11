@@ -26,6 +26,7 @@ classifiers = [
 
 [project.urls]
 "Code Coverage" = "https://app.codecov.io/gh/dave-shawley/ietfparse"
+"Code Quality" = "https://sonarcloud.io/summary/overall?id=dave-shawley-github_ietfparse"
 Documentation = "https://ietfparse.readthedocs.io/"
 "Source Code" = "https://github.com/dave-shawley/ietfparse"
 
