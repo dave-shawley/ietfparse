@@ -1,8 +1,8 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/ietfparse)](https://pypi.org/project/ietfparse/)
 [![Documentation Status](https://readthedocs.org/projects/ietfparse/badge/?version=latest)](https://ietfparse.readthedocs.io/en/latest/?badge=latest)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/dave-shawley/ietfparse/test.yml)
-![Codecov](https://img.shields.io/codecov/c/github/dave-shawley/ietfparse)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=dave-shawley_ietfparse&metric=alert_status)](https://sonarcloud.io/summary/overall?id=dave-shawley_ietfparse)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/dave-shawley/ietfparse/test.yml)](https://github.com/dave-shawley/ietfparse/actions/workflows/test.yml)
+[![Codecov](https://img.shields.io/codecov/c/github/dave-shawley/ietfparse)](https://app.codecov.io/gh/dave-shawley/ietfparse/)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=dave-shawley-github_ietfparse&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=dave-shawley-github_ietfparse)
 
 This project is a gut reaction to the wealth of ways to parse URLs, MIME
 headers, HTTP messages and other things described by IETF RFCs. They range

@@ -31,14 +31,14 @@ Documentation = "https://ietfparse.readthedocs.io/"
 
 [dependency-groups]
 dev = [
-  "coverage[toml]~=7.6",
+  "coverage[toml]~=7.14",
   "mkdocs-material~=9.5",
   "mkdocstrings-python~=1.12",
   "mkdocstrings[python]~=0.26",
   "pre-commit~=4.0",
   "pymdown-ietflinks==0.0.0 ; python_full_version >= '3.12'",
   "pyrefly>=0.64.1",
-  "pytest>=8.3,<10.0",
+  "pytest~=9.0",
   "pytest-cov~=7.1",
   "ruff>=0.15",
   "ty>=0.0.34",
