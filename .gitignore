@@ -15,7 +15,8 @@
 /test-results/
 __pycache__/
 
-coverage.xml
+/coverage.xml
+/junit.xml
 *.pyc
 *.egg
 *.egg-info
