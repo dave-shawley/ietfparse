@@ -68,3 +68,21 @@ jobs:
           env_vars: PYTHON
           verbose: 'true'
           report_type: "test_results"
+
+  analysis:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v8.1.0
+        id: setup-uv
+      - name: "Test with ${{ steps.setup-uv.outputs.python-version }}"
+        run: |
+          uv run --frozen pytest --cov \
+            --junit-xml=junit.xml -o junit-family=legacy \
+            --cov-report=xml
+      - name: "SonarQube Scan"
+        uses: SonarSource/sonarqube-scan-action@v8
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
