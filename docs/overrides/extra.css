@@ -1,0 +1,12 @@
+/* We need to accommodate longish symbols in the sidebar of the API reference.
+ * I decided to use a wider sidebar instead of making using a wider nav or
+ * moving the ToC to the RHS in just the reference. It would work but it is
+ * truly jarring. Since I have the ToC integrated into the nav bar, we can
+ * widen it a bit without making the content too narrow.
+ */
+.md-sidebar {
+    width: 17rem
+}
+[dir=ltr] .md-sidebar__inner {
+    padding-right: calc(100% - 17rem)
+}

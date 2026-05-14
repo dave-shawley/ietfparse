@@ -27,7 +27,7 @@ classifiers = [
 [project.urls]
 "Code Coverage" = "https://app.codecov.io/gh/dave-shawley/ietfparse"
 "Code Quality" = "https://sonarcloud.io/summary/overall?id=dave-shawley-github_ietfparse"
-Documentation = "https://ietfparse.readthedocs.io/"
+Documentation = "https://dave-shawley.github.io/ietfparse/"
 "Source Code" = "https://github.com/dave-shawley/ietfparse"
 
 [dependency-groups]
@@ -43,6 +43,7 @@ dev = [
   "pytest-cov~=7.1",
   "ruff>=0.15",
   "ty>=0.0.34",
+  "zensical>=0.0.41",
 ]
 
 [build-system]
