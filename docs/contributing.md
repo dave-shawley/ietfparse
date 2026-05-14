@@ -13,21 +13,16 @@ you do not want to.  But if you do, they will be more than welcome.
 
 ## Set up a development environment
 
-This project uses the [hatch] project manager, so you should install it
-to make your life easier. I usually install it as a "user install".
-Make sure that you have the target directory in your path.
+This project uses [uv] to manage the project and [just] to run tasks,
+so you should install both to make your life easier. I recommend installing
+them as binaries instead of using the python package wrappers. Choose
+your favorite installation method from:
 
-```commandline
-$ python3 -m pip install --user hatch
-$ echo "Installed hatch into $(python3 -m site --user-base)/bin"
-```
+* https://just.systems/man/en/pre-built-binaries.html
+* https://docs.astral.sh/uv/getting-started/installation/
 
-Once you have hatch installed, you are ready to starting writing code.
+Once you have just & uv installed, you are ready to start writing code.
 
-```commandline
-$ hatch shell
-(ietfparse) $
-```
 ## pre-commit hooks
 
 Before you start modifying things, install the pre-commit hooks so you
@@ -36,45 +31,59 @@ more annoying than pushing a PR only to have it fail for something being
 incorrectly formatted._
 
 ```commandline
-(ietfparse) $ pre-commit install --install-hooks
+$ uv run --frozen pre-commit install --install-hooks --overwrite
 ```
 
 ## Running tests
 
 This project uses [pytest] as my test runner of choice. However, I do not use
 it as a testing framework so please continue to use the assertions exposed by
-the [unittest.UnitTest] class instead of raw `assert` statements.
-Running the test suite is as easy as `hatch run test`. The nice thing
-about hatch is that you do not need to manually activate the environment or
-worry about out of date dependencies.
+the [unittest.UnitTest] class instead of raw `assert` statements. Running the
+test suite is as easy as `just test`. The nice thing about just and uv is that
+you do not need to manually activate the environment or worry about out-of-date
+dependencies.
 
 ```commandline
-$ hatch run test
-cmd [1] | pre-commit run --all-files
-... lint & formatting checks omitted
-cmd [2] | mypy -p ietfparse -p tests
-Success: no issues found in 15 source files
-cmd [3] | python -m coverage run -m pytest tests
-========================== test session starts ==========================
-platform darwin -- Python 3.12.7, pytest-7.1.2, pluggy-1.5.0
-... pytest output omitted
-=================== 120 passed, 120 warnings in 0.10s ===================
-cmd [4] | python -m coverage report
-Name                          Stmts   Miss Branch BrPart  Cover   Missing
--------------------------------------------------------------------------
-ietfparse/__init__.py             4      0      0      0   100%
-ietfparse/_helpers.py            30      0     14      0   100%
-ietfparse/algorithms.py          42      0     22      0   100%
-ietfparse/datastructures.py     100      0     26      0   100%
-ietfparse/errors.py               8      0      0      0   100%
-ietfparse/headers.py            162      0     74      0   100%
--------------------------------------------------------------------------
-TOTAL                           346      0    136      0   100%
+$ just test
+=================================================================== test session starts ===================================================================
+platform darwin -- Python 3.12.7, pytest-9.0.3, pluggy-1.6.0
+rootdir: /Users/daveshawley/Source/python/ietfparse
+configfile: pyproject.toml
+plugins: cov-7.1.0
+collected 132 items
+run-last-failure: no previously failed tests, not deselecting items.
+
+tests/test_algorithm.py ....................                                                                                                        [ 15%]
+tests/test_datastructure.py ....................                                                                                                    [ 30%]
+tests/test_headers_cache_control.py ....                                                                                                            [ 33%]
+tests/test_headers_content_type.py ..............                                                                                                   [ 43%]
+tests/test_headers_forwarded.py ......                                                                                                              [ 48%]
+tests/test_headers_link.py .............................                                                                                            [ 70%]
+tests/test_headers_list.py ....                                                                                                                     [ 73%]
+tests/test_headers_parse_accept.py ..............................                                                                                   [ 96%]
+tests/test_helpers.py .....                                                                                                                         [100%]
+
+===================================================================== tests coverage ======================================================================
+____________________________________________________ coverage: platform darwin, python 3.12.7-final-0 _____________________________________________________
+
+Name                              Stmts   Miss Branch BrPart  Cover   Missing
+-----------------------------------------------------------------------------
+src/ietfparse/__init__.py             3      0      0      0   100%
+src/ietfparse/_helpers.py            39      0     14      0   100%
+src/ietfparse/algorithms.py          57      0     32      0   100%
+src/ietfparse/constants.py           20      0      0      0   100%
+src/ietfparse/datastructures.py     107      0     30      0   100%
+src/ietfparse/errors.py              11      0      0      0   100%
+src/ietfparse/headers.py            165      0     74      0   100%
+-----------------------------------------------------------------------------
+TOTAL                               402      0    150      0   100%
+=================================================================== 132 passed in 0.20s ===================================================================
 ```
 
-The "lint" script will run the pre-commit hooks that invoke [ruff] for style
-and format checks, followed by [mypy] for static type checks. It is a useful
-target when you are refactoring since it is a little faster.
+The "lint" recipe will run the pre-commit hooks that invoke [ruff] for style
+and format checks, followed by [pyrefly] and [ty] for static type checks. It
+is a useful target when you are refactoring since it is a little faster than
+running the entire test suite.
 
 ## Submitting a Pull Request
 
@@ -89,8 +98,8 @@ functionality to make the test pass.  Then, on to the next test.  This is
 *test driven development* at its core.  This actually is pretty important
 since **pull requests that are not tested will not be merged**.
 
-The easiest way to check coverage is to run `hatch run test` which runs
-the tests with coverage enabled and reports the coverage.  It will fail if
+The easiest way to check coverage is to run `just test` which runs the
+tests with coverage enabled and reports the coverage.  It will fail if
 you have less than 100% coverage.
 
 Once you have a few tests are written and some functionality is working,
@@ -103,17 +112,17 @@ commit is, the easier it will be to squash and rearrange them.
 
 When your change is written and tested, make sure to update and/or add
 documentation as needed.  The documentation suite is written using
-Markdown and the [mkdocs] utility.  If you don't think that documentation
+Markdown and the [zensical] utility.  If you don't think that documentation
 matters, read Kenneth Reitz's [Documentation is King] presentation.  Pull
 requests that are not simply bug fixes will almost always require some
 documentation... _updates to the changelog at the very least_.
 
-[mkdocs] makes it easy to write documentation by running a small
-development web server, rebuilding documentation when fiels change, and
+[zensical] makes it easy to write documentation by running a small
+development web server, rebuilding documentation when files change, and
 using a nifty web-socket to refresh the web browser as well.
 
 ```commandline
-$ hatch run serve-docs
+$ uv run --frozen zensical serve
 ...
 INFO    -  [08:01:22] Serving on http://127.0.0.1:8000/
 ```
@@ -122,10 +131,12 @@ After the tests are written, code is complete, and documents are up to
 date, it is time to push your code back to github.com and submit a pull
 request against the upstream repository.
 
-[hatch]: https://hatch.pypa.io/
-[mkdocs]: https://www.mkdocs.org/
-[mypy]: https://mypy.readthedocs.io/en/stable/
+[just]: https://just.systems
+[pyrefly]: https://pyrefly.org/
 [ruff]: https://docs.astral.sh/ruff/
+[ty]: https://docs.astral.sh/ty/
 [unittest.TestCase]: https://docs.python.org/3/library/unittest.html#unittest.TestCase
+[uv]: https://docs.astral.sh/uv/
+[zensical]: https://zensical.org/docs/get-started/
 
 [Documentation is King]: https://www.kennethreitz.org/documentation-is-king/
