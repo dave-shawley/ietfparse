@@ -1,8 +1,0 @@
-INHERIT: ./mkdocs.yml
-site_url: !ENV READTHEDOCS_CANONICAL_URL
-theme:
-  custom_dir: docs/overrides
-extra_css:
-  - stylesheets/readthedocs.css
-extra_javascript:
-  - javascripts/readthedocs.js
