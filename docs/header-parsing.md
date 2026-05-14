@@ -13,24 +13,24 @@ Instead of inventing another list of *garbage-in -> garbage-out* exception
 types, I chose to simply let the underlying exception propagate.  This means
 that you should always guard against at least this set of exceptions.
 
-| Header                              | Represented as...                                    | Parsed by...                                |
-|-------------------------------------|------------------------------------------------------|---------------------------------------------|
-| [Accept](#accept)                   | sequence of [ietfparse.datastructures.ContentType][] | [ietfparse.headers.parse_accept][]          |
-| [Accept-Charset](#accept-charset)   | sequence of strings                                  | [ietfparse.headers.parse_accept_charset][]  |
-| [Accept-Encoding](#accept-encoding) | sequence of strings                                  | [ietfparse.headers.parse_accept_encoding][] |
-| [Accept-Language](#accept-language) | sequence of strings                                  | [ietfparse.headers.parse_accept_language][] |
-| [Cache-Control](#cache-control)     | mapping of parameter to value                        | [ietfparse.headers.parse_cache_control][]   |
-| [Content-Type](#content-type)       | [ietfparse.datastructures.ContentType][]             | [ietfparse.headers.parse_content_type][]    |
-| [Forwarded](#forwarded)             | sequence of mappings                                 | [ietfparse.headers.parse_forwarded][]       |
-| [Link](#link)                       | sequence of [ietfparse.datastructures.LinkHeader][]  | [ietfparse.headers.parse_link][]            |
+| Header                              | Represented as...                                                              | Parsed by...                                                             |
+|-------------------------------------|--------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| [Accept](#accept)                   | sequence of [datastructures.ContentType][ietfparse.datastructures.ContentType] | [headers.parse_accept][ietfparse.headers.parse_accept]                   |
+| [Accept-Charset](#accept-charset)   | sequence of strings                                                            | [headers.parse_accept_charset][ietfparse.headers.parse_accept_charset]   |
+| [Accept-Encoding](#accept-encoding) | sequence of strings                                                            | [headers.parse_accept_encoding][ietfparse.headers.parse_accept_encoding] |
+| [Accept-Language](#accept-language) | sequence of strings                                                            | [headers.parse_accept_language][ietfparse.headers.parse_accept_language] |
+| [Cache-Control](#cache-control)     | mapping of parameter to value                                                  | [headers.parse_cache_control][ietfparse.headers.parse_cache_control]     |
+| [Content-Type](#content-type)       | [datastructures.ContentType][ietfparse.datastructures.ContentType]             | [headers.parse_content_type][ietfparse.headers.parse_content_type]       |
+| [Forwarded](#forwarded)             | sequence of mappings                                                           | [headers.parse_forwarded][ietfparse.headers.parse_forwarded]             |
+| [Link](#link)                       | sequence of [datastructures.LinkHeader][ietfparse.datastructures.LinkHeader]   | [headers.parse_link][ietfparse.headers.parse_link]                       |
 
 ## Accept
 
-[ietfparse.headers.parse_accept][] parses the [HTTP-Accept] header into a
-sorted list of [ietfparse.datastructures.ContentType][] instances. The list is
-sorted according to the specified quality values. Elements with the same quality
-value are ordered with the *most-specific* value first. The following is a good
-example of this is from
+[headers.parse_accept][ietfparse.headers.parse_accept] parses the [HTTP-Accept]
+header into a sorted list of [datastructures.ContentType][ietfparse.datastructures.ContentType]
+instances. The list is sorted according to the specified quality values. Elements
+with the same quality value are ordered with the *most-specific* value first. The
+following is a good example of this is from
 [section 12.5.1 of RFC-9110](https://www.rfc-editor.org/rfc/rfc9110#section-12.5.1-11).
 
 ```pycon
@@ -46,16 +46,16 @@ are sorted purely by specificity. Though the result is sorted according to
 quality and specificity, selecting a matching content type is not as easy as
 traversing the list in order. The full algorithm for selecting the most
 appropriate content type is described in [RFC-9110] and is fully implemented by
-[ietfparse.algorithms.select_content_type][].
+[algorithms.select_content_type][ietfparse.algorithms.select_content_type].
 
 ## Accept-Charset
 
-[ietfparse.headers.parse_accept_charset][] parses the [HTTP-Accept-Charset]
-header into a sorted sequence of character set identifiers. Character set
-identifiers are simple tokens with an optional quality value that is the
-strength of the preference from most preferred (1.0) to rejection (0.0).
-After the header is parsed and sorted, the quality values are removed and
-the token list is returned.
+[headers.parse_accept_charset][ietfparse.headers.parse_accept_charset]
+parses the [HTTP-Accept-Charset] header into a sorted sequence of character set
+identifiers. Character set identifiers are simple tokens with an optional
+quality value that is the strength of the preference from most preferred (1.0)
+to rejection (0.0). After the header is parsed and sorted, the quality values
+are removed and the token list is returned.
 
 ```pycon
 >>> from ietfparse import headers
@@ -82,11 +82,12 @@ will occur *before* the rejected values.
 
 ## Accept-Encoding
 
-[ietfparse.headers.parse_accept_encoding][] parses the [HTTP-Accept-Encoding]
-header into a sorted sequence of encodings. Encodings are simple tokens with
-an optional quality value that is the strength of the preference from most
-preferred (1.0) to rejection (0.0). After the header is parsed and sorted,
-the quality values are removed and the token list is returned.
+[headers.parse_accept_encoding][ietfparse.headers.parse_accept_encoding] parses
+the [HTTP-Accept-Encoding] header into a sorted sequence of encodings. Encodings
+are simple tokens with an optional quality value that is the strength of the
+preference from most preferred (1.0) to rejection (0.0). After the header is
+parsed and sorted, the quality values are removed and the token list is
+returned.
 
 ```pycon
 >>> from ietfparse import headers
@@ -112,11 +113,12 @@ will occur *before* the rejected values.
 
 ## Accept-Language
 
-[ietfparse.headers.parse_accept_language][] parses the [HTTP-Accept-Language]
-header into a sorted sequence of languages. Languages are simple tokens with an
-optional quality value that is the strength of the preference from most
-preferred (1.0) to rejection (0.0). After the header is parsed and sorted,
-the quality values are removed and the token list is returned.
+[headers.parse_accept_language][ietfparse.headers.parse_accept_language] parses
+the [HTTP-Accept-Language] header into a sorted sequence of languages. Languages
+are simple tokens with an optional quality value that is the strength of the
+preference from most preferred (1.0) to rejection (0.0). After the header is
+parsed and sorted, the quality values are removed and the token list is
+returned.
 
 ```pycon
 >>> from ietfparse import headers
@@ -125,8 +127,8 @@ the quality values are removed and the token list is returned.
 ```
 
 The wildcard character set if present, will be sorted towards the end of the
-list. If both a wildcard and rejected values are present, then the wildcard
-will occur *before* the rejected values.
+list. If both a wildcard and rejected values are present, then the wildcard will
+occur *before* the rejected values.
 
 ```pycon
 >>> from ietfparse import headers
@@ -142,8 +144,8 @@ will occur *before* the rejected values.
 
 ## Cache-Control
 
-[ietfparse.headers.parse_cache_control][] parses the [HTTP-Cache-Control]
-header as described into a dictionary of directives.
+[headers.parse_cache_control][ietfparse.headers.parse_cache_control] parses the
+[HTTP-Cache-Control] header as described into a dictionary of directives.
 
 Directives without a value such as `public` and `no-cache` will be returned
 in the dictionary with a value of `True` if set.
@@ -156,9 +158,9 @@ in the dictionary with a value of `True` if set.
 
 ## Content-Type
 
-[ietfparse.headers.parse_content_type][] parses a MIME or [HTTP-Content-Type]
-header into a [ietfparse.datastructures.ContentType] instance that exposes the
-structured data.
+[headers.parse_content_type][ietfparse.headers.parse_content_type] parses a MIME
+or [HTTP-Content-Type] header into an [datastructurs.ContentType][ietfparse.datastructures.ContentType]
+instance that exposes the structured data.
 
 ```pycon
 >>> from ietfparse import headers
@@ -188,8 +190,8 @@ was discarded and the `msgtype` parameter name was normalized as well.
 
 ## Forwarded
 
-[ietfparse.headers.parse_forwarded][] parses the [HTTP-Forwarded] header into
-a sequence of [dict][] instances.
+[headers.parse_forwarded][ietfparse.headers.parse_forwarded] parses the
+[HTTP-Forwarded] header into a sequence of [dict][] instances.
 
 ```pycon
 >>> from ietfparse import headers
@@ -213,8 +215,9 @@ recommendation in [RFC-7239-section-4].
 
 ## Link
 
-[ietfparse.headers.parse_link][] parses an [HTTP-Link] header into a sequence
-of [ietfparse.datastructures.LinkHeader][] instances.
+[headers.parse_link][ietfparse.headers.parse_link] parses an [HTTP-Link] header
+into a sequence of [datastructures.LinkHeader][ietfparse.datastructures.LinkHeader]
+instances.
 
 ```pycon
 >>> from ietfparse import headers
@@ -242,5 +245,5 @@ tuples.  This is by design and required by the RFC to support the
     value indicate that multiple languages are available from the
     indicated resource.
 
-Also note that you can cast a [ietfparse.datastructures.LinkHeader][]
+Also note that you can cast a [datastructures.LinkHeader][ietfparse.datastructures.LinkHeader]
 instance to a string to get a correctly formatted representation of it.

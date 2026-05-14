@@ -9,9 +9,10 @@ from the requesting client.
 
 [RFC-9110-name-content-negotiation] describes how *Content Negotiation* can
 be implemented along various content dimensions (e.g., content type, language,
-character encoding, etc.). [ietfparse.algorithms.select_content_type][]
+character encoding, etc.).
+[algorithms.select_content_type][ietfparse.algorithms.select_content_type]
 implements *Proactive Negotiation* of the content type dimension. It takes a
-list of requested content types (e.g., from [ietfparse.headers.parse_accept][])
+list of requested content types (e.g., from [headers.parse_accept][ietfparse.headers.parse_accept])
 along with a list of content types that the server is capable of producing
 and returns the content type that is the *best match*. The algorithm is
 loosely described in Section 12.5.1 of [RFC-7231-name-accept].

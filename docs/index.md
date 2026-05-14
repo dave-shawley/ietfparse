@@ -1,8 +1,5 @@
 ---
 title: Home
-hide:
-  - navigation
-  - toc
 ---
 # ietfparse
 [![PyPI - Version](https://img.shields.io/pypi/v/ietfparse)](https://pypi.org/project/ietfparse/)
