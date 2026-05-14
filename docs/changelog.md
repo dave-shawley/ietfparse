@@ -49,8 +49,9 @@
 
 ### Development environment changes
 
-- replaced setuptools with [hatch](https://hatch.pypa.io/)
-- switched from sphinx to mkdocs
+- replaced setuptools with [uv](https://docs.astral.sh/uv/)
+- introduced [just](https://just.systems/)
+- switched from sphinx to [zensical](https://zensical.org/)
 - switch to the [src layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/)
 
 ## [1.9.0] -- 2022-07-08
