@@ -46,6 +46,64 @@ class ContentTypeStringificationTests(unittest.TestCase):
         self.assertEqual('a/b+xml; foo=bar', str(ct))
 
 
+class ContentTypeQualityTests(unittest.TestCase):
+    def test_that_quality_defaults_to_highest(self) -> None:
+        self.assertEqual(1.0, datastructures.ContentType('a', 'b').quality)
+
+    def test_that_quality_is_derived_from_q_parameter(self) -> None:
+        content_type = datastructures.ContentType(
+            'a', 'b', parameters={'q': '0.1236'}
+        )
+        self.assertEqual(0.124, content_type.quality)
+
+    def test_that_quality_below_minimum_is_rejected(self) -> None:
+        content_type = datastructures.ContentType(
+            'a', 'b', parameters={'q': '0.0009'}
+        )
+        self.assertEqual(0.0, content_type.quality)
+
+    def test_that_quality_above_maximum_is_treated_as_highest(self) -> None:
+        content_type = datastructures.ContentType(
+            'a', 'b', parameters={'q': '0.9994'}
+        )
+        self.assertEqual(1.0, content_type.quality)
+
+    def test_that_setting_quality_overrides_parameter_value(self) -> None:
+        content_type = datastructures.ContentType(
+            'a', 'b', parameters={'q': '0.1'}
+        )
+        content_type.quality = 0.9876
+        self.assertEqual(0.988, content_type.quality)
+
+    def test_clearing_quality_override(self) -> None:
+        content_type = datastructures.ContentType(
+            'a', 'b', parameters={'q': '0.11111'}
+        )
+        self.assertEqual(0.111, content_type.quality)
+
+        content_type.quality = 0.999999
+        self.assertEqual(1.0, content_type.quality)
+
+        content_type.quality = None
+        self.assertEqual(0.111, content_type.quality)
+
+    def test_that_invalid_quality_raises_value_error(self) -> None:
+        content_type = datastructures.ContentType(
+            'a', 'b', parameters={'q': '0.1'}
+        )
+        with self.assertRaises(ValueError):
+            content_type.quality = 'something else'
+
+    def test_that_non_number_quality_is_rejected(self) -> None:
+        content_type = datastructures.ContentType(
+            'a', 'b', parameters={'q': '0.1'}
+        )
+        with self.assertRaises(ValueError):
+            content_type.quality = 'nan'
+        with self.assertRaises(ValueError):
+            content_type.quality = 'inf'
+
+
 class ContentTypeComparisonTests(unittest.TestCase):
     def test_type_equals_itself(self) -> None:
         ct1 = datastructures.ContentType('a', 'b')

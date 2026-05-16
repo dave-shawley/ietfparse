@@ -122,19 +122,16 @@ def select_content_type(  # noqa: C901 -- overly complex
                     else:
                         self.parameter_distance += 1
 
-    def extract_quality(obj: datastructures.ContentType) -> float:
-        return 1.0 if obj.quality is None else obj.quality
-
     _requested, _available, _default = _normalize_parameters(
         requested, available, default
     )
 
     matches: list[Match] = []
-    for pattern in sorted(_requested, key=extract_quality, reverse=True):
+    for pattern in sorted(_requested, key=attrgetter('quality'), reverse=True):
         for candidate in _available:
             if _content_type_matches(candidate, pattern):
                 if candidate == pattern:  # exact match!!!
-                    if extract_quality(pattern) < constants.SMALLEST_QUALITY:
+                    if pattern.quality < constants.SMALLEST_QUALITY:
                         raise errors.NoMatch  # quality of 0 means NO
                     return candidate, pattern
                 matches.append(Match(candidate, pattern))

@@ -17,7 +17,7 @@ import functools
 import typing
 from collections import abc
 
-from ietfparse import _helpers
+from ietfparse import _helpers, _quality
 
 
 @functools.total_ordering
@@ -54,7 +54,7 @@ class ContentType:
     content_subtype: str
     parameters: abc.MutableMapping[str, str]
     content_suffix: str | None
-    quality: float | None
+    _quality_override: float | None
 
     def __init__(
         self,
@@ -65,7 +65,7 @@ class ContentType:
     ) -> None:
         self.content_type = content_type.strip().lower()
         self.content_subtype = content_subtype.strip().lower()
-        self.quality = None
+        self._quality_override = None
         if content_suffix is not None:
             self.content_suffix = content_suffix.strip().lower()
         else:
@@ -114,6 +114,23 @@ class ContentType:
                 ),
             )
         )
+
+    @property
+    def quality(self) -> float:
+        """The normalized quality metadata associated with this value."""
+        if self._quality_override is not None:
+            return self._quality_override
+        q = self.parameters.get('q')
+        if q is None:
+            return 1.0
+        return _quality.normalize_quality(q)
+
+    @quality.setter
+    def quality(self, value: float | str | None) -> None:
+        if value is None:
+            self._quality_override = None
+            return
+        self._quality_override = _quality.normalize_quality(value)
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, str):

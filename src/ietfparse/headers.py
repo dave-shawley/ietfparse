@@ -14,12 +14,11 @@
 from __future__ import annotations
 
 import contextlib
-import decimal
-import functools
+import dataclasses
 import re
 import typing
 
-from ietfparse import _helpers, datastructures, errors
+from ietfparse import _helpers, _quality, datastructures, errors
 
 if typing.TYPE_CHECKING:
     from collections import abc
@@ -38,12 +37,38 @@ _COMMENT_RE = re.compile(r'\(.*\)')
 _QUOTED_SEGMENT_RE = re.compile(r'"([^"]*)"')
 _DEF_PARAM_VALUE = object()
 
-# This is *here* instead of constants.py to avoid a ciecular import
-_SMALLEST_QUALITY = 0.001
-_LARGEST_NONMAXIMAL_QUALITY = 0.999
+T = typing.TypeVar('T')
 
 
-def parse_accept(  # noqa: C901 -- overly complex
+@dataclasses.dataclass(frozen=True)
+class _QualifiedItem(typing.Generic[T]):
+    value: T
+    quality: float
+    explicit_quality: bool
+    index: int
+
+    @property
+    def is_explicit_max(self) -> bool:
+        return self.explicit_quality and self.quality == 1.0
+
+    @property
+    def is_rejected(self) -> bool:
+        return self.quality < _quality.SMALLEST_QUALITY
+
+
+def _qualified_item(
+    value: T, *, q: str | None, index: int
+) -> _QualifiedItem[T]:
+    quality = 1.0 if q is None else _quality.normalize_quality(q)
+    return _QualifiedItem(
+        value=value,
+        quality=quality,
+        explicit_quality=q is not None,
+        index=index,
+    )
+
+
+def parse_accept(
     header_value: str, *, strict: bool = False
 ) -> list[datastructures.ContentType]:
     """Parse an HTTP Accept header.
@@ -83,41 +108,25 @@ def parse_accept(  # noqa: C901 -- overly complex
     else:
         guard = contextlib.suppress(ValueError)
 
-    next_explicit_q = decimal.ExtendedContext.next_plus(decimal.Decimal('5.0'))
-    headers: list[datastructures.ContentType] = []
-    for content_type in parse_list(header_value):
+    decorated: list[_QualifiedItem[datastructures.ContentType]] = []
+    for index, content_type in enumerate(parse_list(header_value)):
+        header: datastructures.ContentType | None = None
         with guard:
-            headers.append(parse_content_type(content_type))
-
-    for header in headers:
-        q = header.parameters.pop('q', None)
-        if q is None:
-            header.quality = 1.0
+            header = parse_content_type(content_type)
+        if header is None:
             continue
+        q = header.parameters.pop('q', None)
+        item = _qualified_item(header, q=q, index=index)
+        header.quality = item.quality
+        decorated.append(item)
 
-        quality = float(q)
-        if quality > _LARGEST_NONMAXIMAL_QUALITY:
-            header.quality = float(next_explicit_q)
-            next_explicit_q = next_explicit_q.next_minus()
-        else:
-            header.quality = quality
-
-    def ordering(
-        left: datastructures.ContentType, right: datastructures.ContentType
-    ) -> int:
-        assert left.quality is not None  # appease mypy  # noqa: S101
-        assert right.quality is not None  # appease mypy  # noqa: S101
-        if left.quality == right.quality:
-            if left == right:
-                return 0
-            if left > right:
-                return -1
-            return 1
-        if left.quality > right.quality:
-            return -1
-        return 1
-
-    return sorted(headers, key=functools.cmp_to_key(ordering))
+    explicit_max = [item.value for item in decorated if item.is_explicit_max]
+    remaining = sorted(
+        [item for item in decorated if not item.is_explicit_max],
+        key=lambda item: (item.quality, item.value),
+        reverse=True,
+    )
+    return explicit_max + [item.value for item in remaining]
 
 
 def parse_accept_charset(header_value: str) -> list[str]:
@@ -431,35 +440,37 @@ def _parse_qualified_list(value: str) -> list[str]:
     :param value: The value to parse into a list
 
     """
-    found_wildcard = False
-    values: list[tuple[float, str]] = []
+    accepted: list[_QualifiedItem[str]] = []
+    wildcards: list[str] = []
     rejected_values: list[str] = []
-    parsed = parse_list(value)
-    default = float(len(parsed) + 1)
-    highest = default + 1.0
-    for raw_str in parsed:
-        charset, _, parameter_str = raw_str.replace(' ', '').partition(';')
-        if charset == '*':
-            found_wildcard = True
-            continue
+    for index, raw_str in enumerate(parse_list(value)):
+        charset, _, parameter_str = raw_str.partition(';')
+        charset = charset.strip()
         params = dict(
             _parse_parameter_list(
                 parameter_str.split(';'),
                 normalize_parameter_names=True,
             )
         )
-        q = params.pop('q', None)
-        quality = default if q is None else float(q)
-        if quality < _SMALLEST_QUALITY:
+        item = _qualified_item(charset, q=params.get('q'), index=index)
+        if charset == '*':
+            if item.is_rejected:
+                rejected_values.append(charset)
+            else:
+                wildcards.append(charset)
+        elif item.is_rejected:
             rejected_values.append(charset)
-        elif q is not None and quality > _LARGEST_NONMAXIMAL_QUALITY:
-            values.append((highest + default, charset))
         else:
-            values.append((quality, charset))
-        default -= 1.0
-    parsed = [value[1] for value in sorted(values, reverse=True)]
-    if found_wildcard:
-        parsed.append('*')
+            accepted.append(item)
+
+    explicit_max = [item.value for item in accepted if item.is_explicit_max]
+    remaining = sorted(
+        [item for item in accepted if not item.is_explicit_max],
+        key=lambda item: item.quality,
+        reverse=True,
+    )
+    parsed = explicit_max + [item.value for item in remaining]
+    parsed.extend(wildcards)
     parsed.extend(rejected_values)
     return parsed
 

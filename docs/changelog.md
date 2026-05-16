@@ -38,6 +38,11 @@
 - `headers.parse_content_type` changed to raise `MalformedContentType` error
   instead of `ValueError`.
 - `datastructures.ContentType` instances can now be compared to strings
+- `datastructures.ContentType.quality` is now normalized metadata. Missing and
+  effectively maximal values normalize to `1.0`, rejected values normalize to
+  `0.0`, intermediate values are rounded to three decimal places, and the
+  `Accept*` parsers now share the same quality-handling rules while preserving
+  the preference for explicitly declared maximum quality values.
 - `algorithms.select_content_type` changed to accept strings as well as `ContentType`
   instances
 

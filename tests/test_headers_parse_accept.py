@@ -31,6 +31,7 @@ class ParseAcceptHeaderTests(unittest.TestCase):
         self,
     ) -> None:
         parsed = headers.parse_accept('text/plain, application/json;q=1')
+        self.assertEqual(1.0, parsed[0].quality)
         self.assertEqual(
             parsed[0], datastructures.ContentType('application', 'json')
         )
@@ -39,6 +40,7 @@ class ParseAcceptHeaderTests(unittest.TestCase):
         self,
     ) -> None:
         parsed = headers.parse_accept('text/plain, application/json;q=1.000')
+        self.assertEqual(1.0, parsed[0].quality)
         self.assertEqual(
             parsed[0], datastructures.ContentType('application', 'json')
         )
@@ -50,6 +52,10 @@ class ParseAcceptHeaderTests(unittest.TestCase):
         self.assertEqual(
             parsed[0], datastructures.ContentType('application', 'json')
         )
+
+    def test_that_quality_is_normalized_on_parsed_content_types(self) -> None:
+        parsed = headers.parse_accept('application/json;q=0.1236')
+        self.assertEqual(0.124, parsed[0].quality)
 
     # Final example in https://tools.ietf.org/html/rfc7231#section-5.3.2
 
@@ -166,6 +172,14 @@ class ParseAcceptCharsetHeaderTests(unittest.TestCase):
         self.assertEqual(
             headers.parse_accept_charset('acceptable, rejected;q=0.0009, *'),
             ['acceptable', '*', 'rejected'],
+        )
+
+    def test_that_explicitly_rejected_wildcard_is_treated_as_rejected(
+        self,
+    ) -> None:
+        self.assertEqual(
+            headers.parse_accept_charset('acceptable, rejected;q=0, *;q=0'),
+            ['acceptable', 'rejected', '*'],
         )
 
 
@@ -290,4 +304,10 @@ class ParseAcceptLanguageTests(unittest.TestCase):
                 'de-Latn-DE,de-Latf-DE;q=1.0,de-Latn-DE-1996;q=1.0'
             ),
             ['de-Latf-DE', 'de-Latn-DE-1996', 'de-Latn-DE'],
+        )
+
+    def test_that_equal_explicit_quality_retains_input_order(self) -> None:
+        self.assertEqual(
+            headers.parse_accept_language('de;q=0.8,en;q=0.8,fr;q=0.8'),
+            ['de', 'en', 'fr'],
         )
