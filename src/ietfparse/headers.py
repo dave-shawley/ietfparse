@@ -40,6 +40,7 @@ _DEF_PARAM_VALUE = object()
 
 # This is *here* instead of constants.py to avoid a ciecular import
 _SMALLEST_QUALITY = 0.001
+_LARGEST_NONMAXIMAL_QUALITY = 0.999
 
 
 def parse_accept(  # noqa: C901 -- overly complex
@@ -92,11 +93,14 @@ def parse_accept(  # noqa: C901 -- overly complex
         q = header.parameters.pop('q', None)
         if q is None:
             header.quality = 1.0
-        elif q == '1.0':
+            continue
+
+        quality = float(q)
+        if quality > _LARGEST_NONMAXIMAL_QUALITY:
             header.quality = float(next_explicit_q)
             next_explicit_q = next_explicit_q.next_minus()
         else:
-            header.quality = float(q)
+            header.quality = quality
 
     def ordering(
         left: datastructures.ContentType, right: datastructures.ContentType
@@ -444,11 +448,11 @@ def _parse_qualified_list(value: str) -> list[str]:
                 normalize_parameter_names=True,
             )
         )
-        actual_param = params.get('q')
-        quality = float(params.pop('q', default))
+        q = params.pop('q', None)
+        quality = default if q is None else float(q)
         if quality < _SMALLEST_QUALITY:
             rejected_values.append(charset)
-        elif actual_param == '1.0':
+        elif q is not None and quality > _LARGEST_NONMAXIMAL_QUALITY:
             values.append((highest + default, charset))
         else:
             values.append((quality, charset))

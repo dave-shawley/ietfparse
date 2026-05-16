@@ -27,6 +27,30 @@ class ParseAcceptHeaderTests(unittest.TestCase):
         for value in parsed:
             self.assertNotIn('q', value.parameters)
 
+    def test_that_quality_value_of_one_is_treated_as_explicit_highest(
+        self,
+    ) -> None:
+        parsed = headers.parse_accept('text/plain, application/json;q=1')
+        self.assertEqual(
+            parsed[0], datastructures.ContentType('application', 'json')
+        )
+
+    def test_that_quality_value_of_1_000_is_treated_as_explicit_highest(
+        self,
+    ) -> None:
+        parsed = headers.parse_accept('text/plain, application/json;q=1.000')
+        self.assertEqual(
+            parsed[0], datastructures.ContentType('application', 'json')
+        )
+
+    def test_that_0_999_is_not_treated_as_explicit_highest(self) -> None:
+        parsed = headers.parse_accept(
+            'text/plain;q=0.999, application/json;q=1'
+        )
+        self.assertEqual(
+            parsed[0], datastructures.ContentType('application', 'json')
+        )
+
     # Final example in https://tools.ietf.org/html/rfc7231#section-5.3.2
 
     def test_that_most_specific_value_is_first(self) -> None:
@@ -236,6 +260,28 @@ class ParseAcceptLanguageTests(unittest.TestCase):
                 'de-Latn-DE,de-Latf-DE,de-Latn-DE-1996;q=1.0'
             ),
             ['de-Latn-DE-1996', 'de-Latn-DE', 'de-Latf-DE'],
+        )
+
+    def test_that_quality_value_of_one_is_treated_as_highest(self) -> None:
+        self.assertEqual(
+            headers.parse_accept_language(
+                'de-Latn-DE,de-Latf-DE,de-Latn-DE-1996;q=1'
+            ),
+            ['de-Latn-DE-1996', 'de-Latn-DE', 'de-Latf-DE'],
+        )
+
+    def test_that_quality_value_of_1_000_is_treated_as_highest(self) -> None:
+        self.assertEqual(
+            headers.parse_accept_language(
+                'de-Latn-DE,de-Latf-DE,de-Latn-DE-1996;q=1.000'
+            ),
+            ['de-Latn-DE-1996', 'de-Latn-DE', 'de-Latf-DE'],
+        )
+
+    def test_that_0_999_is_not_treated_as_highest(self) -> None:
+        self.assertEqual(
+            headers.parse_accept_language('de-Latn-DE;q=0.999,de-Latf-DE;q=1'),
+            ['de-Latf-DE', 'de-Latn-DE'],
         )
 
     def test_that_order_is_retained_for_explicit_highest_quality(self) -> None:
