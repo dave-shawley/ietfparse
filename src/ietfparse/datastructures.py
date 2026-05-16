@@ -146,7 +146,7 @@ class ContentType:
 T = typing.TypeVar('T')
 
 
-class ImmutableSequence(abc.Sequence[T], typing.Generic[T]):  # noqa: PLW1641
+class ImmutableSequence(abc.Sequence[T], typing.Generic[T]):
     """Immutable sequence."""
 
     def __init__(self, seq: abc.Iterable[T]) -> None:
@@ -188,8 +188,11 @@ class ImmutableSequence(abc.Sequence[T], typing.Generic[T]):  # noqa: PLW1641
         except (ValueError, TypeError):
             return NotImplemented
 
-    def __contains__(self, item: object) -> bool:
-        return item in self.__data
+    # explicitly disable hashing since `T` may not be hashable
+    __hash__: None = None
+
+    def __contains__(self, value: object) -> bool:
+        return value in self.__data
 
     def __iter__(self) -> abc.Iterator[T]:
         return iter(self.__data)
