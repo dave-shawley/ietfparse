@@ -438,7 +438,12 @@ def _parse_qualified_list(value: str) -> list[str]:
         if charset == '*':
             found_wildcard = True
             continue
-        params = dict(_parse_parameter_list(parameter_str.split(';')))
+        params = dict(
+            _parse_parameter_list(
+                parameter_str.split(';'),
+                normalize_parameter_names=True,
+            )
+        )
         actual_param = params.get('q')
         quality = float(params.pop('q', default))
         if quality < _SMALLEST_QUALITY:

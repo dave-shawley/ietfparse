@@ -124,6 +124,12 @@ class ParseAcceptCharsetHeaderTests(unittest.TestCase):
             ['utf-8', 'latin1', 'us-ascii'],
         )
 
+    def test_that_quality_parameter_name_is_case_insensitive(self) -> None:
+        self.assertEqual(
+            headers.parse_accept_charset('us-ascii;Q=0.1,utf-8,latin1;Q=0.8'),
+            ['utf-8', 'latin1', 'us-ascii'],
+        )
+
     def test_that_wildcard_sorts_before_rejected_character_sets(self) -> None:
         self.assertEqual(
             headers.parse_accept_charset(
@@ -157,6 +163,12 @@ class ParseAcceptEncodingTests(unittest.TestCase):
             ['gzip', 'bzip', 'snappy'],
         )
 
+    def test_that_quality_parameter_name_is_case_insensitive(self) -> None:
+        self.assertEqual(
+            headers.parse_accept_encoding('snappy;Q=0.1,gzip,bzip;Q=0.8'),
+            ['gzip', 'bzip', 'snappy'],
+        )
+
     def test_that_wildcard_sorts_before_rejected_character_sets(self) -> None:
         self.assertEqual(
             headers.parse_accept_encoding(
@@ -187,6 +199,12 @@ class ParseAcceptLanguageTests(unittest.TestCase):
     def test_that_unspecified_quality_is_treated_as_highest(self) -> None:
         self.assertEqual(
             headers.parse_accept_language('en-gb;q=0.1,de,en;q=0.8'),
+            ['de', 'en', 'en-gb'],
+        )
+
+    def test_that_quality_parameter_name_is_case_insensitive(self) -> None:
+        self.assertEqual(
+            headers.parse_accept_language('en-gb;Q=0.1,de,en;Q=0.8'),
             ['de', 'en', 'en-gb'],
         )
 
