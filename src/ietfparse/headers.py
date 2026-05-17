@@ -18,7 +18,7 @@ import dataclasses
 import re
 import typing
 
-from ietfparse import _helpers, _quality, datastructures, errors
+from ietfparse import _links, _quality, datastructures, errors
 
 if typing.TYPE_CHECKING:
     from collections import abc
@@ -305,7 +305,7 @@ def parse_forwarded(
 def parse_link(
     header_value: str, *, strict: bool = True
 ) -> list[datastructures.LinkHeader]:
-    """Parse a HTTP Link header.
+    """Parse an HTTP Link header.
 
     Parses the [HTTP-Link] header into a sequence of
     [ietfparse.datastructures.LinkHeader][] instances.
@@ -320,55 +320,11 @@ def parse_link(
         if the specified `header_value` cannot be parsed
 
     """
-    sanitized = _remove_comments(header_value)
     links = []
 
-    def parse_links(
-        buf: str,
-    ) -> abc.Generator[tuple[str, list[str]], None, None]:
-        r"""Parse links from `buf`.
-
-        Find quoted parts, these are allowed to contain commas
-        however, it is much easier to parse if they do not so
-        replace them with \000.  Since the NUL byte is not allowed
-        to be there, we can replace it with a comma later on.
-        A similar trick is performed on semicolons with \001.
-        """
-        quoted = re.findall('"([^"]*)"', buf)
-        for segment in quoted:
-            left, match, right = buf.partition(segment)
-            match = match.replace(',', '\000')
-            match = match.replace(';', '\001')
-            buf = f'{left}{match}{right}'
-
-        while buf:
-            matched = re.match(r'<(?P<link>[^>]*)>\s*(?P<params>.*)', buf)
-            if matched:
-                groups = matched.groupdict()
-                params, _, buf = groups['params'].partition(',')
-                params = params.replace('\000', ',')  # undo comma hackery
-                if params and not params.startswith(';'):
-                    raise errors.MalformedLinkValue(
-                        'Param list missing opening semicolon'
-                    )
-
-                yield (
-                    groups['link'].strip(),
-                    [
-                        p.replace('\001', ';').strip()
-                        for p in params[1:].split(';')
-                        if p
-                    ],
-                )
-                buf = buf.strip()
-            else:
-                raise errors.MalformedLinkValue('Malformed link header', buf)
-
-    for target, param_list in parse_links(sanitized):
-        parser = _helpers.ParameterParser(strict=strict)
-        for name, value in _parse_parameter_list(
-            param_list, strip_interior_whitespace=True
-        ):
+    for target, param_list in _links.parse_values(header_value):
+        parser = _links.ParameterParser(strict=strict)
+        for name, value in param_list:
             parser.add_value(name, value)
 
         links.append(
@@ -397,7 +353,6 @@ def _parse_parameter_list(
     *,
     normalize_parameter_names: bool = False,
     normalize_parameter_values: bool = True,
-    strip_interior_whitespace: bool = False,
 ) -> list[tuple[str, str]]:
     """Parse a named parameter list in the "common" format.
 
@@ -406,8 +361,6 @@ def _parse_parameter_list(
         then parameter names will be case-folded to lower case
     :keyword normalize_parameter_values: if omitted or specified
         as *truthy*, then parameter values are case-folded to lower case
-    :keyword strip_interior_whitespace: remove whitespace between
-        name and values surrounding the ``=``
     :return: a sequence containing the name to value pairs
 
     The parsed values are normalized according to the keyword parameters
@@ -421,8 +374,6 @@ def _parse_parameter_list(
         param = param.strip()  # noqa: PLW2901 -- overridden for simplicity
         if param:
             name, value = param.split('=')
-            if strip_interior_whitespace:
-                name, value = name.strip(), value.strip()
             if normalize_parameter_names:
                 name = name.lower()
             if normalize_parameter_values:

@@ -51,6 +51,42 @@ class LinkHeaderParsingTests(unittest.TestCase):
             parsed[0].parameters, [('rel', 'quoted; with semicolon')]
         )
 
+    def test_that_targets_can_contain_parentheses(self) -> None:
+        parsed = headers.parse_link('<https://example.com/foo(bar)>; rel=next')
+        self.assertEqual(parsed[0].target, 'https://example.com/foo(bar)')
+
+    def test_that_quoted_parameters_can_contain_parentheses(self) -> None:
+        parsed = headers.parse_link('<>; title="foo(bar)"')
+        self.assertEqual(parsed[0].parameters, [('title', 'foo(bar)')])
+
+    def test_that_quoted_parameters_can_contain_escaped_quotes(self) -> None:
+        parsed = headers.parse_link('<>; title="a\\"b,c"; rel=next, <1>')
+        self.assertEqual(
+            parsed[0].parameters, [('rel', 'next'), ('title', 'a"b,c')]
+        )
+        self.assertEqual(parsed[1].target, '1')
+
+    def test_that_quoted_parameters_can_contain_equals_signs(self) -> None:
+        parsed = headers.parse_link('<>; title="a=b"')
+        self.assertEqual(parsed[0].parameters, [('title', 'a=b')])
+
+    def test_that_parameter_values_preserve_case(self) -> None:
+        parsed = headers.parse_link(
+            '<>; foo="BarBaz"; title="Previous Chapter"; '
+            "title*=UTF-8'en'MixedCase"
+        )
+        self.assertIn(('foo', 'BarBaz'), parsed[0].parameters)
+        self.assertIn(('title*', "UTF-8'en'MixedCase"), parsed[0].parameters)
+        self.assertIn(('title', "UTF-8'en'MixedCase"), parsed[0].parameters)
+
+    def test_that_empty_parameter_segments_are_ignored(self) -> None:
+        parsed = headers.parse_link('<>; ; rel=next')
+        self.assertEqual(parsed[0].parameters, [('rel', 'next')])
+
+    def test_that_valueless_parameters_are_preserved(self) -> None:
+        parsed = headers.parse_link('<>; flag')
+        self.assertEqual(parsed[0].parameters, [('flag', '')])
+
     def test_that_title_star_overrides_title_parameter(self) -> None:
         parsed = headers.parse_link('<>; title=title; title*=title*')
         self.assertEqual(
@@ -103,6 +139,36 @@ class MalformedLinkHeaderTests(unittest.TestCase):
     def test_that_first_semicolon_is_required(self) -> None:
         with self.assertRaises(errors.MalformedLinkValue):
             headers.parse_link('<https://example.com> rel="still wrong"')
+
+    def test_that_closing_angle_bracket_is_required(self) -> None:
+        with self.assertRaises(errors.MalformedLinkValue):
+            headers.parse_link('<https://example.com; rel=next')
+
+    def test_that_malformed_parameter_values_raise_malformed_link(
+        self,
+    ) -> None:
+        with self.assertRaises(errors.MalformedLinkValue):
+            headers.parse_link('<>; weird=a=b')
+
+    def test_that_parameter_names_must_start_with_a_token_character(
+        self,
+    ) -> None:
+        with self.assertRaises(errors.MalformedLinkValue):
+            headers.parse_link('<>; =value')
+
+    def test_that_parameter_values_are_required_after_equals(self) -> None:
+        with self.assertRaises(errors.MalformedLinkValue):
+            headers.parse_link('<>; flag=')
+
+    def test_that_dangling_quoted_pair_raises_malformed_link(self) -> None:
+        with self.assertRaises(errors.MalformedLinkValue):
+            headers.parse_link('<>; title="value\\')
+
+    def test_that_unterminated_quoted_string_raises_malformed_link(
+        self,
+    ) -> None:
+        with self.assertRaises(errors.MalformedLinkValue):
+            headers.parse_link('<>; title="value')
 
     def test_that_first_rel_parameter_is_used(self) -> None:
         # semantically malformed but handled appropriately

@@ -31,6 +31,10 @@
 
 - `headers.parse_link` changed to honor the allow multiple `media` and `type`
   parameters as described in [RFC-8288-section-3.4.1].
+- `headers.parse_link` now preserves parentheses and escaped delimiters inside
+  link targets and quoted parameter values, preserves valueless parameters, and
+  raises `MalformedLinkValue` for malformed parameter syntax instead of
+  misparsing the remainder of the header.
 - `datastructures.LinkHeader` changed to combine multiple relationship type
   (rel) parameters into a single space-separated parameter as described in
   [RFC-8288-section-3]. Note that this is only relevant if you disable strict
