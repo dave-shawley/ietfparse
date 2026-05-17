@@ -1,37 +1,21 @@
 """Helpers for parsing HTTP Link headers."""
 
+from __future__ import annotations
+
 import typing
-from collections import abc
 
-from ietfparse import errors
-
-_OWS = ' \t'
-_TOKEN_CHARS = frozenset(
-    "!#$%&'*+-.^_`|~"
-    '0123456789'
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    'abcdefghijklmnopqrstuvwxyz'
-)
-
+from ietfparse import _parser, errors
 
 LinkTarget: typing.TypeAlias = str
-QuotedString: typing.TypeAlias = str
-Token: typing.TypeAlias = str
-ParamValue: typing.TypeAlias = QuotedString | Token
-Parameter: typing.TypeAlias = tuple[Token, ParamValue]
-ParseOffset: typing.TypeAlias = int
+Parameter: typing.TypeAlias = tuple[str, str]
 
 
-class ParameterParser:
-    """Apply RFC 8288 parameter semantics to a parsed link value.
+class ParameterParser(_parser.CursorParser):
+    """Parse a Link header and apply RFC 8288 parameter semantics.
 
+    :param value: the raw Link header value to parse
     :param strict: controls whether parsing follows all
         rules laid out in [RFC-8288-section-3]
-
-    This class processes the parameters for a single [HTTP-Link]
-    value after its syntax has already been parsed. It is used from
-    within the guts of [ietfparse.headers.parse_link][] and not
-    readily suited for other uses.
 
     If *strict mode* is enabled, then the first value for the
     `rel`, `media`, `type`, `title`, and `title*` parameters
@@ -40,16 +24,19 @@ class ParameterParser:
 
     """
 
-    def __init__(self, *, strict: bool = True) -> None:
+    def __init__(self, value: str, *, strict: bool = True) -> None:
+        super().__init__(value)
         self.strict = strict
-        self._values: list[tuple[str, str]] = []
-        self._rfc_values: dict[str, str | None] = {
-            'rel': None,
-            'media': None,
-            'type': None,
-            'title': None,
-            'title*': None,
-        }
+        self._reset_parameter_state()
+
+    def parse(self) -> list[tuple[LinkTarget, list[Parameter]]]:
+        """Parse the Link header into a sequence of target/parameter pairs."""
+        links = []
+        self._skip_ows()
+        while self.index < len(self.value):
+            target = self._parse_target()
+            links.append((target, self._parse_parameters()))
+        return links
 
     def add_value(self, name: str, value: str) -> None:
         """Add a new parameter to the parsed value list."""
@@ -81,125 +68,66 @@ class ParameterParser:
                 values.append(('title', fallback_title))
         return values
 
+    def _error_message(self) -> str:
+        return 'Malformed link header'
 
-def parse_values(
-    value: str,
-) -> abc.Iterable[tuple[LinkTarget, list[Parameter]]]:
-    """Parse an HTTP Link header.
+    def _raise(self, message: str) -> typing.NoReturn:
+        raise errors.MalformedLinkValue(message, self.value)
 
-    Parses the [HTTP-Link] header into a sequence of
-    (target, parameters) tuples.
-    """
-    index = _skip_ows(value, ParseOffset(0))
-    while index < len(value):
-        target, index = _parse_link_target(value, index)
-        parameters, index = _parse_link_parameters(value, index)
-        yield target, parameters
+    def _parse_target(self) -> LinkTarget:
+        if self.value[self.index] != '<':
+            self._raise(self._error_message())
 
+        self.index = self.index + 1
+        target_start = self.index
+        while self.index < len(self.value) and self.value[self.index] != '>':
+            self.index = self.index + 1
+        if self.index >= len(self.value):
+            self._raise(self._error_message())
 
-def _parse_link_target(
-    value: str, index: ParseOffset
-) -> tuple[LinkTarget, ParseOffset]:
-    if value[index] != '<':
-        raise errors.MalformedLinkValue('Malformed link header', value[index:])
+        target = self.value[target_start : self.index].strip()
+        self.index = self.index + 1
+        return target
 
-    index = index + 1
-    target_start = index
-    while index < len(value) and value[index] != '>':
-        index = index + 1
-    if index >= len(value):
-        raise errors.MalformedLinkValue('Malformed link header', value)
+    def _parse_parameters(self) -> list[Parameter]:
+        self._reset_parameter_state()
 
-    return value[target_start:index].strip(), index + 1
+        while True:
+            self._skip_ows()
+            if self.index >= len(self.value):
+                return self.values
+            if self.value[self.index] == ',':
+                self.index = self.index + 1
+                self._skip_ows()
+                return self.values
 
+            self._parse_parameter()
 
-def _parse_link_parameters(
-    value: str, index: ParseOffset
-) -> tuple[list[Parameter], ParseOffset]:
-    parameters = []
+    def _parse_parameter(self) -> None:
+        if self.value[self.index] != ';':
+            self._raise('Param list missing opening semicolon')
 
-    while True:
-        index = _skip_ows(value, index)
-        if index >= len(value):
-            return parameters, index
-        if value[index] == ',':
-            return parameters, _skip_ows(value, index + 1)
+        self.index = self.index + 1
+        self._skip_ows()
+        if self.index >= len(self.value) or self.value[self.index] in ',;':
+            return
 
-        parameter, index = _parse_link_parameter(value, index)
-        if parameter is not None:
-            parameters.append(parameter)
+        name = self._parse_token().lower()
+        self._skip_ows()
 
+        if self.index >= len(self.value) or self.value[self.index] != '=':
+            self.add_value(name, '')
+            return
 
-def _parse_link_parameter(
-    value: str, index: ParseOffset
-) -> tuple[Parameter | None, ParseOffset]:
-    if value[index] != ';':
-        raise errors.MalformedLinkValue('Param list missing opening semicolon')
+        self.index = self.index + 1
+        self.add_value(name, self._parse_parameter_value())
 
-    index = index + 1
-    index = _skip_ows(value, index)
-    if index >= len(value) or value[index] in ',;':
-        return None, index
-
-    param_name, index = _parse_link_token(value, index)
-    index = _skip_ows(value, index)
-
-    if index >= len(value) or value[index] != '=':
-        return (param_name.lower(), ''), index
-
-    index = index + 1
-    param_value, index = _parse_link_parameter_value(value, index)
-    return (param_name.lower(), param_value), index
-
-
-def _parse_link_parameter_value(
-    value: str, index: ParseOffset
-) -> tuple[ParamValue, ParseOffset]:
-    index = _skip_ows(value, index)
-    if index >= len(value):
-        raise errors.MalformedLinkValue('Malformed link header', value)
-    if value[index] == '"':
-        return _parse_link_quoted_string(value, index)
-    return _parse_link_token(value, index)
-
-
-def _skip_ows(value: str, index: ParseOffset) -> ParseOffset:
-    while index < len(value) and value[index] in _OWS:
-        index = index + 1
-    return index
-
-
-def _parse_link_token(
-    value: str, index: ParseOffset
-) -> tuple[Token, ParseOffset]:
-    """Consume characters from the `token' production starting at index."""
-    start = index
-    while index < len(value) and value[index] in _TOKEN_CHARS:
-        index = index + 1
-    if start == index:
-        raise errors.MalformedLinkValue('Malformed link header', value[index:])
-    return value[start:index], index
-
-
-def _parse_link_quoted_string(
-    value: str, index: ParseOffset
-) -> tuple[QuotedString, ParseOffset]:
-    """Parse the remainder of a quoted string from value.
-
-    Assumes that the first quote character has already been consumed.
-    """
-    parsed = []
-    index = index + 1
-    while index < len(value):
-        if value[index] == '\\':
-            index = index + 1
-            if index >= len(value):
-                raise errors.MalformedLinkValue('Malformed link header', value)
-            parsed.append(value[index])
-        elif value[index] == '"':
-            return ''.join(parsed), index + 1
-        else:
-            parsed.append(value[index])
-        index = index + 1
-
-    raise errors.MalformedLinkValue('Malformed link header', value)
+    def _reset_parameter_state(self) -> None:
+        self._values: list[Parameter] = []
+        self._rfc_values: dict[str, str | None] = {
+            'rel': None,
+            'media': None,
+            'type': None,
+            'title': None,
+            'title*': None,
+        }

@@ -108,6 +108,37 @@ class ParseAcceptHeaderTests(unittest.TestCase):
             ],
         )
 
+    def test_that_quoted_extension_parameters_can_contain_semicolons(
+        self,
+    ) -> None:
+        parsed = headers.parse_accept('text/plain; note="a;b"; q=0.8')
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(
+            parsed[0],
+            datastructures.ContentType('text', 'plain', {'note': 'a;b'}),
+        )
+        self.assertEqual(parsed[0].quality, 0.8)
+
+    def test_that_quoted_extension_parameters_can_contain_equals_signs(
+        self,
+    ) -> None:
+        parsed = headers.parse_accept('text/plain; note="a=b"')
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(
+            parsed[0],
+            datastructures.ContentType('text', 'plain', {'note': 'a=b'}),
+        )
+
+    def test_that_quoted_extension_parameters_unescape_quoted_pairs(
+        self,
+    ) -> None:
+        parsed = headers.parse_accept('text/plain; note="a\\"b"')
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(
+            parsed[0],
+            datastructures.ContentType('text', 'plain', {'note': 'a"b'}),
+        )
+
     def test_that_invalid_parts_are_skipped(self) -> None:
         parsed = headers.parse_accept(
             'text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2'

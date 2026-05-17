@@ -49,3 +49,50 @@ class ForwardedHeaderParsingTests(unittest.TestCase):
             )
         self.assertEqual(context.exception.header_name, 'Forwarded')
         self.assertEqual(context.exception.header_value, 'for=127.0.0.1;one=2')
+
+
+class QuotedForwardedParameterParsingTests(unittest.TestCase):
+    def test_that_quoted_parameters_can_contain_semicolons(self) -> None:
+        parsed = headers.parse_forwarded(
+            'for=192.0.2.60;host="api;backend.example";proto=https'
+        )
+        self.assertEqual(
+            parsed,
+            [
+                {
+                    'for': '192.0.2.60',
+                    'host': 'api;backend.example',
+                    'proto': 'https',
+                }
+            ],
+        )
+
+    def test_that_quoted_parameters_can_contain_equals_signs(self) -> None:
+        parsed = headers.parse_forwarded(
+            'for=192.0.2.60;host="api=backend.example";proto=https'
+        )
+        self.assertEqual(
+            parsed,
+            [
+                {
+                    'for': '192.0.2.60',
+                    'host': 'api=backend.example',
+                    'proto': 'https',
+                }
+            ],
+        )
+
+    def test_that_quoted_pairs_are_unescaped(self) -> None:
+        parsed = headers.parse_forwarded(
+            'for=192.0.2.60;host="api\\"backend.example";proto=https'
+        )
+        self.assertEqual(
+            parsed,
+            [
+                {
+                    'for': '192.0.2.60',
+                    'host': 'api"backend.example',
+                    'proto': 'https',
+                }
+            ],
+        )

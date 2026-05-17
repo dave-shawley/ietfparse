@@ -18,10 +18,7 @@ import dataclasses
 import re
 import typing
 
-from ietfparse import _links, _quality, datastructures, errors
-
-if typing.TYPE_CHECKING:
-    from collections import abc
+from ietfparse import _links, _parser, _quality, datastructures, errors
 
 _CACHE_CONTROL_BOOL_DIRECTIVES = (
     'must-revalidate',
@@ -35,7 +32,6 @@ _CACHE_CONTROL_BOOL_DIRECTIVES = (
 )
 _COMMENT_RE = re.compile(r'\(.*\)')
 _QUOTED_SEGMENT_RE = re.compile(r'"([^"]*)"')
-_DEF_PARAM_VALUE = object()
 
 T = typing.TypeVar('T')
 
@@ -245,15 +241,15 @@ def parse_content_type(
         if the content type cannot be parsed (eg, `Content-Type: *`)
 
     """
-    parts = _remove_comments(content_type).split(';')
-    type_spec = parts.pop(0)
+    type_spec, _, parameter_str = _remove_comments(content_type).partition(';')
     try:
         content_type, content_subtype = type_spec.split('/')
     except ValueError as error:
         raise errors.MalformedContentType(content_type) from error
 
     parameters = _parse_parameter_list(
-        parts, normalize_parameter_values=normalize_parameter_values
+        parameter_str,
+        normalize_parameter_values=normalize_parameter_values,
     )
     if '+' in content_subtype:
         content_subtype, content_suffix = content_subtype.split('+')
@@ -288,7 +284,7 @@ def parse_forwarded(
     result = []
     for entry in parse_list(header_value):
         param_tuples = _parse_parameter_list(
-            entry.split(';'),
+            entry,
             normalize_parameter_names=True,
             normalize_parameter_values=False,
         )
@@ -322,13 +318,11 @@ def parse_link(
     """
     links = []
 
-    for target, param_list in _links.parse_values(header_value):
-        parser = _links.ParameterParser(strict=strict)
-        for name, value in param_list:
-            parser.add_value(name, value)
-
+    for target, param_list in _links.ParameterParser(
+        header_value, strict=strict
+    ).parse():
         links.append(
-            datastructures.LinkHeader(target=target, parameters=parser.values)
+            datastructures.LinkHeader(target=target, parameters=param_list)
         )
 
     return links
@@ -349,14 +343,14 @@ def parse_list(value: str) -> list[str]:
 
 
 def _parse_parameter_list(
-    parameter_list: abc.Iterable[str],
+    parameter_list: str,
     *,
     normalize_parameter_names: bool = False,
     normalize_parameter_values: bool = True,
 ) -> list[tuple[str, str]]:
     """Parse a named parameter list in the "common" format.
 
-    :param parameter_list: sequence of string values to parse
+    :param parameter_list: semicolon-delimited parameter string
     :keyword normalize_parameter_names: if specified and *truthy*
         then parameter names will be case-folded to lower case
     :keyword normalize_parameter_values: if omitted or specified
@@ -365,21 +359,15 @@ def _parse_parameter_list(
 
     The parsed values are normalized according to the keyword parameters
     and returned as :class:`tuple` of name to value pairs preserving the
-    ordering from `parameter_list`.  The values will have quotes removed
-    if they were present.
+    ordering from `parameter_list`. Quoted strings are unescaped while
+    being tokenized.
 
     """
-    parameters = []
-    for param in parameter_list:
-        param = param.strip()  # noqa: PLW2901 -- overridden for simplicity
-        if param:
-            name, value = param.split('=')
-            if normalize_parameter_names:
-                name = name.lower()
-            if normalize_parameter_values:
-                value = value.lower()
-            parameters.append((name, _dequote(value.strip())))
-    return parameters
+    return _parser.ParameterTokenizer(
+        parameter_list,
+        normalize_parameter_names=normalize_parameter_names,
+        normalize_parameter_values=normalize_parameter_values,
+    ).parse()
 
 
 def _parse_qualified_list(value: str) -> list[str]:
@@ -399,7 +387,7 @@ def _parse_qualified_list(value: str) -> list[str]:
         charset = charset.strip()
         params = dict(
             _parse_parameter_list(
-                parameter_str.split(';'),
+                parameter_str,
                 normalize_parameter_names=True,
             )
         )

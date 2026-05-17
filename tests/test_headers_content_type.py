@@ -47,6 +47,31 @@ class ParsingComplexContentTypeTests(unittest.TestCase):
         self.assertEqual(self.parsed.parameters['msgtype'], 'Request')
 
 
+class QuotedContentTypeParameterParsingTests(unittest.TestCase):
+    def test_that_quoted_parameters_can_contain_semicolons(self) -> None:
+        parsed = headers.parse_content_type(
+            'text/plain; note="a;b"; charset=utf-8',
+            normalize_parameter_values=False,
+        )
+        self.assertEqual(parsed.parameters['note'], 'a;b')
+        self.assertEqual(parsed.parameters['charset'], 'utf-8')
+
+    def test_that_quoted_parameters_can_contain_equals_signs(self) -> None:
+        parsed = headers.parse_content_type(
+            'text/plain; note="a=b"; charset=utf-8',
+            normalize_parameter_values=False,
+        )
+        self.assertEqual(parsed.parameters['note'], 'a=b')
+        self.assertEqual(parsed.parameters['charset'], 'utf-8')
+
+    def test_that_quoted_pairs_are_unescaped(self) -> None:
+        parsed = headers.parse_content_type(
+            'text/plain; note="a\\"b"',
+            normalize_parameter_values=False,
+        )
+        self.assertEqual(parsed.parameters['note'], 'a"b')
+
+
 class ParsingBrokenContentTypes(unittest.TestCase):
     def test_that_missing_subtype_raises_value_error(self) -> None:
         with self.assertRaises(errors.MalformedContentType):
