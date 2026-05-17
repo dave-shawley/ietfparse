@@ -5,6 +5,14 @@ export UV_FROZEN := "1"
 @help:
     just --list
 
+[doc("Run lint & test disabling PYTEST_ADDOPTS")]
+ci:
+    #!/bin/sh
+    unset PYTEST_ADDOPTS
+    set -e
+    just lint
+    just test
+
 [doc("Format one or more files; defaults to all files")]
 format *FILES:
     uv run ruff format {{ FILES }}
