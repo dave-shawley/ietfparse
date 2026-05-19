@@ -167,6 +167,7 @@ class ImmutableSequence(abc.Sequence[T], typing.Generic[T]):
     """Immutable sequence."""
 
     def __init__(self, seq: abc.Iterable[T]) -> None:
+        super().__init__()
         self.__data = list(seq)
 
     def __len__(self) -> int:
@@ -197,13 +198,11 @@ class ImmutableSequence(abc.Sequence[T], typing.Generic[T]):
         return self.__data.count(value)
 
     def __eq__(self, other: object) -> bool:
-        try:
-            return len(other) == len(self.__data) and all(  # type: ignore[arg-type]
-                a == b
-                for a, b in zip(self.__data, other, strict=True)  # type: ignore[call-overload]
-            )
-        except (ValueError, TypeError):
+        if not isinstance(other, abc.Sequence):
             return NotImplemented
+        return len(other) == len(self.__data) and all(
+            a == b for a, b in zip(self.__data, other, strict=True)
+        )
 
     # explicitly disable hashing since `T` may not be hashable
     __hash__: None = None
@@ -235,7 +234,7 @@ class LinkHeader:
         parameters: abc.Sequence[tuple[str, str]] | None = None,
     ) -> None:
         self._target = target
-        param_dict = collections.defaultdict(list)
+        param_dict = collections.defaultdict(list[str])
         for name, value in parameters or []:
             param_dict[name].append(value)
         self._params = dict(param_dict.items())

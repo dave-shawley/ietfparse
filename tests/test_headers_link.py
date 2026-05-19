@@ -279,7 +279,7 @@ class ImmutableSequenceTests(unittest.TestCase):
         parsed = headers.parse_link('<>; values=one; values=two')
         self.assertEqual(len(parsed), 1)
         with self.assert_raises_one_of(AttributeError, TypeError):
-            parsed[0].target = 'whatever'  # type: ignore[misc]
+            parsed[0].target = 'whatever'  # ty: ignore[invalid-assignment]
 
     def test_modifying_link_parameters(self) -> None:
         parsed = headers.parse_link('<>; values=one; values=two')

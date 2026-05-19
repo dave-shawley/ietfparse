@@ -31,7 +31,7 @@ class ParseHeaderTests(unittest.TestCase):
 
     def test_unknown_parser_raises_error(self) -> None:
         with self.assertRaises(NotImplementedError):
-            _helpers.parse_header('unknown_parser', 'some value')  # type: ignore[call-overload]
+            _helpers.parse_header('unknown_parser', 'some value')  # ty: ignore[no-matching-overload]
 
     def test_invalid_value_returns_original(self) -> None:
         result = _helpers.parse_header('parse_content_type', 'invalid value')
