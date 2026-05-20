@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 import contextlib
-import dataclasses
+import operator
 import re
 import typing
 
@@ -36,12 +36,14 @@ _QUOTED_SEGMENT_RE = re.compile(r'"([^"]*)"')
 T = typing.TypeVar('T')
 
 
-@dataclasses.dataclass(frozen=True)
 class _QualifiedItem(typing.Generic[T]):
-    value: T
-    quality: float
-    explicit_quality: bool
-    index: int
+    def __init__(self, value: T, quality: str | None, index: int) -> None:
+        self.value = value
+        self.quality = (
+            1.0 if quality is None else _quality.normalize_quality(quality)
+        )
+        self.explicit_quality = quality is not None
+        self.index = index
 
     @property
     def is_explicit_max(self) -> bool:
@@ -50,18 +52,6 @@ class _QualifiedItem(typing.Generic[T]):
     @property
     def is_rejected(self) -> bool:
         return self.quality < _quality.SMALLEST_QUALITY
-
-
-def _qualified_item(
-    value: T, *, q: str | None, index: int
-) -> _QualifiedItem[T]:
-    quality = 1.0 if q is None else _quality.normalize_quality(q)
-    return _QualifiedItem(
-        value=value,
-        quality=quality,
-        explicit_quality=q is not None,
-        index=index,
-    )
 
 
 def parse_accept(
@@ -111,10 +101,10 @@ def parse_accept(
             header = parse_content_type(content_type)
         if header is None:
             continue
-        q = header.parameters.pop('q', None)
-        item = _qualified_item(header, q=q, index=index)
-        header.quality = item.quality
-        decorated.append(item)
+        decorated.append(
+            _QualifiedItem(header, header.parameters.pop('q', None), index)
+        )
+        header.quality = decorated[-1].quality
 
     explicit_max = [item.value for item in decorated if item.is_explicit_max]
     remaining = sorted(
@@ -281,6 +271,7 @@ def parse_forwarded(
         parameter name is encountered
 
     """
+    standard_parameters = {'for', 'proto', 'by', 'host'}
     result = []
     for entry in parse_list(header_value):
         param_tuples = _parse_parameter_list(
@@ -288,12 +279,10 @@ def parse_forwarded(
             normalize_parameter_names=True,
             normalize_parameter_values=False,
         )
-        if only_standard_parameters:
-            for name, _ in param_tuples:
-                if name not in ('for', 'proto', 'by', 'host'):
-                    raise errors.StrictHeaderParsingFailure(
-                        'Forwarded', header_value
-                    )
+        if only_standard_parameters and any(
+            name not in standard_parameters for name, _ in param_tuples
+        ):
+            raise errors.StrictHeaderParsingFailure('Forwarded', header_value)
         result.append(dict(param_tuples))
     return result
 
@@ -316,16 +305,12 @@ def parse_link(
         if the specified `header_value` cannot be parsed
 
     """
-    links = []
-
-    for target, param_list in _links.ParameterParser(
-        header_value, strict=strict
-    ).parse():
-        links.append(
-            datastructures.LinkHeader(target=target, parameters=param_list)
+    return [
+        datastructures.LinkHeader(target, params)
+        for target, params in _links.parse_link_header(
+            header_value, strict=strict
         )
-
-    return links
+    ]
 
 
 def parse_list(value: str) -> list[str]:
@@ -363,11 +348,11 @@ def _parse_parameter_list(
     being tokenized.
 
     """
-    return _parser.ParameterTokenizer(
+    return _parser.parse_http_parameters(
         parameter_list,
         normalize_parameter_names=normalize_parameter_names,
         normalize_parameter_values=normalize_parameter_values,
-    ).parse()
+    )
 
 
 def _parse_qualified_list(value: str) -> list[str]:
@@ -391,7 +376,7 @@ def _parse_qualified_list(value: str) -> list[str]:
                 normalize_parameter_names=True,
             )
         )
-        item = _qualified_item(charset, q=params.get('q'), index=index)
+        item = _QualifiedItem(charset, params.get('q'), index)
         if charset == '*':
             if item.is_rejected:
                 rejected_values.append(charset)
@@ -404,11 +389,12 @@ def _parse_qualified_list(value: str) -> list[str]:
 
     explicit_max = [item.value for item in accepted if item.is_explicit_max]
     remaining = sorted(
-        [item for item in accepted if not item.is_explicit_max],
-        key=lambda item: item.quality,
+        (item for item in accepted if not item.is_explicit_max),
+        key=operator.attrgetter('quality'),
         reverse=True,
     )
-    parsed = explicit_max + [item.value for item in remaining]
+    parsed = explicit_max
+    parsed.extend(item.value for item in remaining)
     parsed.extend(wildcards)
     parsed.extend(rejected_values)
     return parsed

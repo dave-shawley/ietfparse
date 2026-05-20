@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import typing
-
 _OWS = ' \t'
 _TOKEN_CHARS = frozenset(
     "!#$%&'*+-.^_`|~"
@@ -13,6 +11,10 @@ _TOKEN_CHARS = frozenset(
 )
 
 
+class ParseError(RuntimeError):
+    """Raised internally when cursor-based parsing fails."""
+
+
 class CursorParser:
     """Walk a string value with reusable token and quoted-string parsers."""
 
@@ -20,27 +22,19 @@ class CursorParser:
         self.value = value
         self.index = 0
 
-    def _error_message(self) -> str:
-        """Override to customize the error message."""
-        return f'malformed parser input: {self.value!r}'
-
-    def _raise(self, message: str) -> typing.NoReturn:
-        """Override to customize the raised exception."""
-        raise ValueError(message)
-
-    def _skip_ows(self) -> None:
+    def skip_ows(self) -> None:
         while self.index < len(self.value) and self.value[self.index] in _OWS:
             self.index = self.index + 1
 
-    def _parse_parameter_value(self) -> str:
-        self._skip_ows()
+    def parse_parameter_value(self) -> str:
+        self.skip_ows()
         if self.index >= len(self.value):
-            self._raise(self._error_message())
+            raise ParseError(f'malformed parser input: {self.value!r}')
         if self.value[self.index] == '"':
-            return self._parse_quoted_string()
-        return self._parse_token()
+            return self.parse_quoted_string()
+        return self.parse_token()
 
-    def _parse_token(self) -> str:
+    def parse_token(self) -> str:
         start = self.index
         while (
             self.index < len(self.value)
@@ -48,17 +42,17 @@ class CursorParser:
         ):
             self.index = self.index + 1
         if start == self.index:
-            self._raise(self._error_message())
+            raise ParseError(f'malformed parser input: {self.value!r}')
         return self.value[start : self.index]
 
-    def _parse_quoted_string(self) -> str:
+    def parse_quoted_string(self) -> str:
         parsed = []
         self.index = self.index + 1
         while self.index < len(self.value):
             if self.value[self.index] == '\\':
                 self.index = self.index + 1
                 if self.index >= len(self.value):
-                    self._raise(self._error_message())
+                    raise ParseError(f'malformed parser input: {self.value!r}')
                 parsed.append(self.value[self.index])
             elif self.value[self.index] == '"':
                 self.index = self.index + 1
@@ -67,54 +61,72 @@ class CursorParser:
                 parsed.append(self.value[self.index])
             self.index = self.index + 1
 
-        self._raise(self._error_message())
-        raise AssertionError('unreachable')
+        raise ParseError(f'malformed parser input: {self.value!r}')
 
 
-class ParameterTokenizer(CursorParser):
+class ParameterTokenizer:
     """Tokenize semicolon-delimited HTTP parameter strings."""
 
     def __init__(
         self,
-        value: str,
         *,
         normalize_parameter_names: bool = False,
         normalize_parameter_values: bool = True,
     ) -> None:
-        super().__init__(value)
         self.normalize_parameter_names = normalize_parameter_names
         self.normalize_parameter_values = normalize_parameter_values
 
-    def parse(self) -> list[tuple[str, str]]:
+    def parse(self, value: str) -> list[tuple[str, str]]:
+        cursor = CursorParser(value)
         parameters = []
-        while True:
-            self._skip_ows()
-            if self.index >= len(self.value):
-                return parameters
-            if self.value[self.index] == ';':
-                self.index = self.index + 1
-                continue
-            parameters.append(self._parse_parameter())
-            self._skip_ows()
-            if self.index >= len(self.value):
-                return parameters
-            if self.value[self.index] != ';':
-                self._raise(self._error_message())
-            self.index = self.index + 1
+        try:
+            while True:
+                cursor.skip_ows()
+                if cursor.index >= len(cursor.value):
+                    return parameters
+                if cursor.value[cursor.index] == ';':
+                    cursor.index = cursor.index + 1
+                    continue
+                parameters.append(self._parse_parameter(cursor))
+                cursor.skip_ows()
+                if cursor.index >= len(cursor.value):
+                    return parameters
+                if cursor.value[cursor.index] != ';':
+                    raise ValueError(self._error_message(cursor))
+                cursor.index = cursor.index + 1
+        except ParseError as exc:
+            raise ValueError(self._error_message(cursor)) from exc
 
-    def _error_message(self) -> str:
-        return f'malformed parameter list: {self.value!r}'
+    @staticmethod
+    def _error_message(cursor: CursorParser) -> str:
+        return f'malformed parameter list: {cursor.value!r}'
 
-    def _parse_parameter(self) -> tuple[str, str]:
-        name = self._parse_token()
-        self._skip_ows()
-        if self.index >= len(self.value) or self.value[self.index] != '=':
-            self._raise(self._error_message())
+    def _parse_parameter(self, cursor: CursorParser) -> tuple[str, str]:
+        name = cursor.parse_token()
+        cursor.skip_ows()
+        if (
+            cursor.index >= len(cursor.value)
+            or cursor.value[cursor.index] != '='
+        ):
+            raise ParseError(self._error_message(cursor))
 
-        self.index = self.index + 1
-        value = self._parse_parameter_value()
+        cursor.index = cursor.index + 1
+        value = cursor.parse_parameter_value()
         if self.normalize_parameter_names:
             name = name.lower()
         if self.normalize_parameter_values:
             value = value.lower()
         return name, value
+
+
+def parse_http_parameters(
+    value: str,
+    *,
+    normalize_parameter_names: bool = False,
+    normalize_parameter_values: bool = True,
+) -> list[tuple[str, str]]:
+    """Parse semicolon-delimited HTTP parameters."""
+    return ParameterTokenizer(
+        normalize_parameter_names=normalize_parameter_names,
+        normalize_parameter_values=normalize_parameter_values,
+    ).parse(value)
