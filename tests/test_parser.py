@@ -47,6 +47,37 @@ class CursorParserTests(unittest.TestCase):
         ):
             parser.parse_quoted_string()
 
+    def test_that_nested_comments_can_be_skipped(self) -> None:
+        parser = _parser.CursorParser('(outer(inner\\)value))')
+        parser.skip_comment()
+        self.assertEqual(parser.index, len(parser.value))
+
+    def test_that_skip_comment_requires_an_opening_parenthesis(self) -> None:
+        parser = _parser.CursorParser('not-a-comment')
+        with self.assertRaisesRegex(
+            _parser.ParseError,
+            r"malformed parser input: 'not-a-comment'",
+        ):
+            parser.skip_comment()
+
+    def test_that_dangling_escaped_comment_characters_raise_parse_error(
+        self,
+    ) -> None:
+        parser = _parser.CursorParser('(dangling\\')
+        with self.assertRaisesRegex(
+            _parser.ParseError,
+            r"malformed parser input: '\(dangling\\\\'",
+        ):
+            parser.skip_comment()
+
+    def test_that_unterminated_comments_raise_parse_error(self) -> None:
+        parser = _parser.CursorParser('(unterminated')
+        with self.assertRaisesRegex(
+            _parser.ParseError,
+            r"malformed parser input: '\(unterminated'",
+        ):
+            parser.skip_comment()
+
 
 class ParameterTokenizerTests(unittest.TestCase):
     def test_that_parse_http_parameters_uses_the_tokenizer(self) -> None:
@@ -93,6 +124,36 @@ class ParameterTokenizerTests(unittest.TestCase):
         parser = _parser.ParameterTokenizer(normalize_parameter_values=False)
         self.assertEqual(parser.parse('foo=bar'), [('foo', 'bar')])
         self.assertEqual(parser.parse('baz=qux'), [('baz', 'qux')])
+
+
+class ListItemParserTests(unittest.TestCase):
+    def test_that_unterminated_quoted_items_raise_index_error(self) -> None:
+        with self.assertRaises(IndexError):
+            _parser.parse_list_items('first, "unterminated, last')
+
+    def test_that_dangling_quoted_pairs_raise_index_error(self) -> None:
+        with self.assertRaises(IndexError):
+            _parser.parse_list_items('first, "dangling\\, last')
+
+
+class CommentRemovalTests(unittest.TestCase):
+    def test_that_nested_comments_are_removed(self) -> None:
+        self.assertEqual(
+            _parser.remove_http_comments(
+                'text/plain (outer(inner\\)value)); charset=utf-8'
+            ),
+            'text/plain ; charset=utf-8',
+        )
+
+    def test_that_parentheses_inside_quoted_strings_are_preserved(
+        self,
+    ) -> None:
+        self.assertEqual(
+            _parser.remove_http_comments(
+                'text/plain; note="(kept)" (discard)'
+            ),
+            'text/plain; note="(kept)" ',
+        )
 
 
 class LinkParserTests(unittest.TestCase):

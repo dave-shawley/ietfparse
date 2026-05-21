@@ -63,6 +63,28 @@ class CursorParser:
 
         raise ParseError(f'malformed parser input: {self.value!r}')
 
+    def skip_comment(self) -> None:
+        if self.index >= len(self.value) or self.value[self.index] != '(':
+            raise ParseError(f'malformed parser input: {self.value!r}')
+
+        depth = 1
+        self.index = self.index + 1
+        while self.index < len(self.value):
+            if self.value[self.index] == '\\':
+                self.index = self.index + 1
+                if self.index >= len(self.value):
+                    raise ParseError(f'malformed parser input: {self.value!r}')
+            elif self.value[self.index] == '(':
+                depth = depth + 1
+            elif self.value[self.index] == ')':
+                depth = depth - 1
+                if depth == 0:
+                    self.index = self.index + 1
+                    return
+            self.index = self.index + 1
+
+        raise ParseError(f'malformed parser input: {self.value!r}')
+
 
 class ParameterTokenizer:
     """Tokenize semicolon-delimited HTTP parameter strings."""
@@ -161,3 +183,25 @@ def parse_list_items(value: str) -> list[str]:
 
     parsed.append(''.join(current).strip())
     return parsed
+
+
+def remove_http_comments(value: str) -> str:
+    """Strip HTTP comments while preserving quoted strings."""
+    cursor = CursorParser(value)
+    parsed = []
+
+    while cursor.index < len(cursor.value):
+        if cursor.value[cursor.index] == '"':
+            start = cursor.index
+            cursor.parse_quoted_string()
+            parsed.append(cursor.value[start : cursor.index])
+            continue
+
+        if cursor.value[cursor.index] == '(':
+            cursor.skip_comment()
+            continue
+
+        parsed.append(cursor.value[cursor.index])
+        cursor.index = cursor.index + 1
+
+    return ''.join(parsed)

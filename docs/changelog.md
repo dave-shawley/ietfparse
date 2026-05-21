@@ -41,6 +41,8 @@
   mode parsing.
 - `headers.parse_content_type` changed to raise `MalformedContentType` error
   instead of `ValueError`.
+- `headers.parse_content_type` now strips nested HTTP comments without treating
+  parentheses inside quoted parameter values as comments.
 - `datastructures.ContentType` instances can now be compared to strings
 - `datastructures.ContentType.quality` is now normalized metadata. Missing and
   effectively maximal values normalize to `1.0`, rejected values normalize to

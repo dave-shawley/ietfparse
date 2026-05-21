@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import contextlib
 import operator
-import re
 import typing
 
 from ietfparse import _links, _parser, _quality, datastructures, errors
@@ -30,8 +29,6 @@ _CACHE_CONTROL_BOOL_DIRECTIVES = (
     'private',
     'proxy-revalidate',
 )
-_COMMENT_RE = re.compile(r'\(.*\)')
-
 T = typing.TypeVar('T')
 
 
@@ -230,7 +227,9 @@ def parse_content_type(
         if the content type cannot be parsed (eg, `Content-Type: *`)
 
     """
-    type_spec, _, parameter_str = _remove_comments(content_type).partition(';')
+    type_spec, _, parameter_str = _parser.remove_http_comments(
+        content_type
+    ).partition(';')
     try:
         content_type, content_subtype = type_spec.split('/')
     except ValueError as error:
@@ -393,10 +392,6 @@ def _parse_qualified_list(value: str) -> list[str]:
     parsed.extend(wildcards)
     parsed.extend(rejected_values)
     return parsed
-
-
-def _remove_comments(value: str) -> str:
-    return _COMMENT_RE.sub('', value)
 
 
 def _dequote(value: str) -> str:

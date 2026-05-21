@@ -71,6 +71,25 @@ class QuotedContentTypeParameterParsingTests(unittest.TestCase):
         )
         self.assertEqual(parsed.parameters['note'], 'a"b')
 
+    def test_that_comments_with_nesting_and_escapes_are_ignored(self) -> None:
+        parsed = headers.parse_content_type(
+            'text/plain (outer(inner\\)value)); charset=utf-8',
+            normalize_parameter_values=False,
+        )
+        self.assertEqual(parsed.content_type, 'text')
+        self.assertEqual(parsed.content_subtype, 'plain')
+        self.assertEqual(parsed.parameters['charset'], 'utf-8')
+
+    def test_that_parentheses_inside_quoted_parameters_are_not_comments(
+        self,
+    ) -> None:
+        parsed = headers.parse_content_type(
+            'text/plain; note="(kept)"; charset=utf-8 (discard)',
+            normalize_parameter_values=False,
+        )
+        self.assertEqual(parsed.parameters['note'], '(kept)')
+        self.assertEqual(parsed.parameters['charset'], 'utf-8')
+
 
 class ParsingBrokenContentTypes(unittest.TestCase):
     def test_that_missing_subtype_raises_value_error(self) -> None:
