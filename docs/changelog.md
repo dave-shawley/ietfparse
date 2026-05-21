@@ -47,6 +47,9 @@
   `0.0`, intermediate values are rounded to three decimal places, and the
   `Accept*` parsers now share the same quality-handling rules while preserving
   the preference for explicitly declared maximum quality values.
+- list-style header parsing now preserves escaped quotes and commas inside
+  quoted values for `headers.parse_list`, `headers.parse_cache_control`,
+  `headers.parse_forwarded`, and `headers.parse_accept`.
 - `algorithms.select_content_type` changed to accept strings as well as `ContentType`
   instances
 

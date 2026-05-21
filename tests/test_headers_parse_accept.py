@@ -139,6 +139,16 @@ class ParseAcceptHeaderTests(unittest.TestCase):
             datastructures.ContentType('text', 'plain', {'note': 'a"b'}),
         )
 
+    def test_that_quoted_extension_parameters_can_contain_commas_after_escapes(
+        self,
+    ) -> None:
+        parsed = headers.parse_accept('text/plain; note="a\\"b,c"')
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(
+            parsed[0],
+            datastructures.ContentType('text', 'plain', {'note': 'a"b,c'}),
+        )
+
     def test_that_invalid_parts_are_skipped(self) -> None:
         parsed = headers.parse_accept(
             'text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2'

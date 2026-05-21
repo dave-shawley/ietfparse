@@ -31,7 +31,6 @@ _CACHE_CONTROL_BOOL_DIRECTIVES = (
     'proxy-revalidate',
 )
 _COMMENT_RE = re.compile(r'\(.*\)')
-_QUOTED_SEGMENT_RE = re.compile(r'"([^"]*)"')
 
 T = typing.TypeVar('T')
 
@@ -320,11 +319,7 @@ def parse_list(value: str) -> list[str]:
     :return: list of header elements as strings
 
     """
-    segments = _QUOTED_SEGMENT_RE.findall(value)
-    for segment in segments:
-        left, match, right = value.partition(segment)
-        value = ''.join([left, match.replace(',', '\000'), right])
-    return [_dequote(x.strip()).replace('\000', ',') for x in value.split(',')]
+    return [_dequote(segment) for segment in _parser.parse_list_items(value)]
 
 
 def _parse_parameter_list(

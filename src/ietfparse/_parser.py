@@ -130,3 +130,34 @@ def parse_http_parameters(
         normalize_parameter_names=normalize_parameter_names,
         normalize_parameter_values=normalize_parameter_values,
     ).parse(value)
+
+
+def parse_list_items(value: str) -> list[str]:
+    """Parse a comma-delimited list while respecting quoted strings."""
+    cursor = CursorParser(value)
+    parsed = []
+    current = []
+
+    while cursor.index < len(cursor.value):
+        if cursor.value[cursor.index] == '"':
+            start = cursor.index
+            try:
+                cursor.parse_quoted_string()
+            except ParseError:
+                current.append(cursor.value[cursor.index])
+                cursor.index = cursor.index + 1
+            else:
+                current.append(cursor.value[start : cursor.index])
+            continue
+
+        if cursor.value[cursor.index] == ',':
+            parsed.append(''.join(current).strip())
+            current = []
+            cursor.index = cursor.index + 1
+            continue
+
+        current.append(cursor.value[cursor.index])
+        cursor.index = cursor.index + 1
+
+    parsed.append(''.join(current).strip())
+    return parsed

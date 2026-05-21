@@ -31,6 +31,12 @@ class CacheControlParsingTests(unittest.TestCase):
         self.assertEqual('UCI', parsed['community'])
         self.assertEqual(' foo bar ', parsed['x-token'])
 
+    def test_that_escaped_quotes_do_not_split_quoted_directive_values(
+        self,
+    ) -> None:
+        parsed = headers.parse_cache_control('x-token="a\\"b,c"')
+        self.assertEqual('a\\"b,c', parsed['x-token'])
+
     def test_that_empty_parameter_values_are_ignored(self) -> None:
         parsed = headers.parse_cache_control('x-should-be-ignored=')
         self.assertNotIn('x-should-be-ignored', parsed)

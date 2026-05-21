@@ -96,3 +96,20 @@ class QuotedForwardedParameterParsingTests(unittest.TestCase):
                 }
             ],
         )
+
+    def test_that_escaped_quotes_do_not_split_forwarded_elements(
+        self,
+    ) -> None:
+        parsed = headers.parse_forwarded(
+            'for=192.0.2.60;host="api\\"backend.example,edge";proto=https'
+        )
+        self.assertEqual(
+            parsed,
+            [
+                {
+                    'for': '192.0.2.60',
+                    'host': 'api"backend.example,edge',
+                    'proto': 'https',
+                }
+            ],
+        )
