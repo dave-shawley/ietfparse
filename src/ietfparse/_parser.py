@@ -163,13 +163,8 @@ def parse_list_items(value: str) -> list[str]:
     while cursor.index < len(cursor.value):
         if cursor.value[cursor.index] == '"':
             start = cursor.index
-            try:
-                cursor.parse_quoted_string()
-            except ParseError:
-                current.append(cursor.value[cursor.index])
-                cursor.index = cursor.index + 1
-            else:
-                current.append(cursor.value[start : cursor.index])
+            cursor.parse_quoted_string()
+            current.append(cursor.value[start : cursor.index])
             continue
 
         if cursor.value[cursor.index] == ',':

@@ -127,12 +127,18 @@ class ParameterTokenizerTests(unittest.TestCase):
 
 
 class ListItemParserTests(unittest.TestCase):
-    def test_that_unterminated_quoted_items_raise_index_error(self) -> None:
-        with self.assertRaises(IndexError):
+    def test_that_unterminated_quoted_items_raise_parse_error(self) -> None:
+        with self.assertRaisesRegex(
+            _parser.ParseError,
+            r'malformed parser input: \'first, "unterminated, last\'',
+        ):
             _parser.parse_list_items('first, "unterminated, last')
 
-    def test_that_dangling_quoted_pairs_raise_index_error(self) -> None:
-        with self.assertRaises(IndexError):
+    def test_that_dangling_quoted_pairs_raise_parse_error(self) -> None:
+        with self.assertRaisesRegex(
+            _parser.ParseError,
+            r'malformed parser input: \'first, "dangling\\\\, last\'',
+        ):
             _parser.parse_list_items('first, "dangling\\, last')
 
 
