@@ -96,6 +96,10 @@ class ParsingBrokenContentTypes(unittest.TestCase):
         with self.assertRaises(errors.MalformedContentType):
             headers.parse_content_type('*')
 
+    def test_that_multiple_suffix_delimiters_raise_value_error(self) -> None:
+        with self.assertRaises(errors.MalformedContentType):
+            headers.parse_content_type('application/example+json+xml')
+
 
 class Rfc7231ExampleTests(unittest.TestCase):
     """Test cases from RFC7231, Section 3.1.1.1"""

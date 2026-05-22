@@ -240,7 +240,10 @@ def parse_content_type(
         normalize_parameter_values=normalize_parameter_values,
     )
     if '+' in content_subtype:
-        content_subtype, content_suffix = content_subtype.split('+')
+        try:
+            content_subtype, content_suffix = content_subtype.split('+')
+        except ValueError as error:
+            raise errors.MalformedContentType(content_type) from error
         return datastructures.ContentType(
             content_type, content_subtype, dict(parameters), content_suffix
         )
