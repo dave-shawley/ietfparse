@@ -92,6 +92,10 @@ def parse_accept(
 
     decorated: list[_QualifiedItem[datastructures.ContentType]] = []
     for index, content_type in enumerate(parse_list(header_value)):
+        if not content_type.strip():
+            if strict:
+                raise errors.MalformedContentType(content_type)
+            continue
         header: datastructures.ContentType | None = None
         with guard:
             header = parse_content_type(content_type)
@@ -188,7 +192,11 @@ def parse_cache_control(
     directives: dict[str, str | int | bool | None] = {}
 
     for segment in parse_list(header_value):
+        if not segment.strip():
+            continue
         name, sep, value = segment.partition('=')
+        if not name.strip():
+            continue
         if sep != '=':
             directives[name] = None
         elif sep and value:
@@ -275,6 +283,8 @@ def parse_forwarded(
     standard_parameters = {'for', 'proto', 'by', 'host'}
     result = []
     for entry in parse_list(header_value):
+        if not entry.strip():
+            continue
         param_tuples = _parse_parameter_list(
             entry,
             normalize_parameter_names=True,
@@ -365,6 +375,8 @@ def _parse_qualified_list(value: str) -> list[str]:
     wildcards: list[str] = []
     rejected_values: list[str] = []
     for index, raw_str in enumerate(parse_list(value)):
+        if not raw_str.strip():
+            continue
         charset, _, parameter_str = raw_str.partition(';')
         charset = charset.strip()
         params = dict(
@@ -414,6 +426,6 @@ def _dequote(value: str) -> str:
     ' with spaces '
 
     """
-    if value[0] == '"' and value[-1] == '"':
+    if value[:1] == '"' and value[-1:] == '"':
         return value[1:-1]
     return value

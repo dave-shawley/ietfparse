@@ -40,3 +40,23 @@ class CacheControlParsingTests(unittest.TestCase):
     def test_that_empty_parameter_values_are_ignored(self) -> None:
         parsed = headers.parse_cache_control('x-should-be-ignored=')
         self.assertNotIn('x-should-be-ignored', parsed)
+
+    def test_that_trailing_empty_items_are_ignored(self) -> None:
+        self.assertEqual(
+            headers.parse_cache_control('max-age=100,'),
+            {'max-age': 100},
+        )
+
+    def test_parsing_leniency(self) -> None:
+        self.assertEqual(
+            headers.parse_cache_control(',,'),
+            {},
+        )
+        self.assertEqual(
+            headers.parse_cache_control('""'),
+            {},
+        )
+        self.assertEqual(
+            headers.parse_cache_control('="",max-age=100'),
+            {'max-age': 100},
+        )

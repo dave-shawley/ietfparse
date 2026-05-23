@@ -49,6 +49,9 @@
   `0.0`, intermediate values are rounded to three decimal places, and the
   `Accept*` parsers now share the same quality-handling rules while preserving
   the preference for explicitly declared maximum quality values.
+- list-based header parsers now ignore stray empty items produced by extra
+  commas, while `headers.parse_list` preserves those empty items and
+  `headers.parse_accept(..., strict=True)` treats them as malformed.
 - list-style header parsing now preserves escaped quotes and commas inside
   quoted values for `headers.parse_list`, `headers.parse_cache_control`,
   `headers.parse_forwarded`, and `headers.parse_accept`.

@@ -170,6 +170,18 @@ class ParseAcceptHeaderTests(unittest.TestCase):
                 strict=True,
             )
 
+    def test_that_trailing_empty_items_are_ignored(self) -> None:
+        self.assertEqual(
+            headers.parse_accept('text/plain,'),
+            [datastructures.ContentType('text', 'plain')],
+        )
+
+    def test_that_trailing_empty_items_raise_error_when_strict_is_enabled(
+        self,
+    ) -> None:
+        with self.assertRaises(ValueError):
+            headers.parse_accept('text/plain,', strict=True)
+
     def test_the_invalid_header_returns_empty_list(self) -> None:
         parsed = headers.parse_accept('*')
         self.assertEqual(len(parsed), 0)
@@ -223,6 +235,9 @@ class ParseAcceptCharsetHeaderTests(unittest.TestCase):
             ['acceptable', 'rejected', '*'],
         )
 
+    def test_that_trailing_empty_items_are_ignored(self) -> None:
+        self.assertEqual(headers.parse_accept_charset('utf-8,'), ['utf-8'])
+
 
 class ParseAcceptEncodingTests(unittest.TestCase):
     # Final example in https://tools.ietf.org/html/rfc7231#section-5.3.4
@@ -261,6 +276,9 @@ class ParseAcceptEncodingTests(unittest.TestCase):
             headers.parse_accept_encoding('bzip, gzip;q=0.0009, *'),
             ['bzip', '*', 'gzip'],
         )
+
+    def test_that_trailing_empty_items_are_ignored(self) -> None:
+        self.assertEqual(headers.parse_accept_encoding('gzip,'), ['gzip'])
 
 
 class ParseAcceptLanguageTests(unittest.TestCase):
@@ -352,3 +370,6 @@ class ParseAcceptLanguageTests(unittest.TestCase):
             headers.parse_accept_language('de;q=0.8,en;q=0.8,fr;q=0.8'),
             ['de', 'en', 'fr'],
         )
+
+    def test_that_trailing_empty_items_are_ignored(self) -> None:
+        self.assertEqual(headers.parse_accept_language('de,'), ['de'])

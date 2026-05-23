@@ -28,6 +28,12 @@ class ForwardedHeaderParsingTests(unittest.TestCase):
         parsed = headers.parse_forwarded('For="[2001:db8:cafe::17]:4711"')
         self.assertEqual(parsed, [{'for': '[2001:db8:cafe::17]:4711'}])
 
+    def test_that_trailing_empty_items_are_ignored(self) -> None:
+        self.assertEqual(
+            headers.parse_forwarded('for=192.0.2.43,'),
+            [{'for': '192.0.2.43'}],
+        )
+
     def test_parsing_full_header(self) -> None:
         parsed = headers.parse_forwarded(
             'for=192.0.2.60;proto=http;by=203.0.113.43;host=example.com',

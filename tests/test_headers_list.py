@@ -32,3 +32,6 @@ class ListHeaderParsingTests(unittest.TestCase):
             headers.parse_list('first, "a\\"b,c", last'),
             ['first', 'a\\"b,c', 'last'],
         )
+
+    def test_that_trailing_empty_items_are_preserved(self) -> None:
+        self.assertEqual(headers.parse_list('first,'), ['first', ''])
