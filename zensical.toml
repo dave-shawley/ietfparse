@@ -6,17 +6,15 @@ repo_url = "https://github.com/dave-shawley/ietfparse"
 copyright = "&copy; 2014-2026, Dave Shawley"
 nav = [
   { "Home" = "index.md" },
-  { "Learning" = [
-    "algorithms.md",
-    "header-parsing.md",
-  ] },
+  { "Learning" = ["algorithms.md", "header-parsing.md", "benchmarks.md"] },
   { "Reference" = [
     { "API Reference" = [
       "api/algorithms.md",
       "api/constants.md",
       "api/datastructures.md",
       "api/errors.md",
-      "api/headers.md"
+      "api/headers.md",
+      "api/test.md"
     ] },
     { "RFCs" = "rfcs.md" },
     { "Contributing" = "contributing.md" },

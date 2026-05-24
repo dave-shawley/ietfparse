@@ -1,0 +1,135 @@
+import unittest
+
+from ietfparse import headers
+from ietfparse.test import data, runner
+
+
+class BenchmarkDatasetTests(unittest.TestCase):
+    def test_loading_packaged_dataset(self) -> None:
+        dataset = data.load_dataset()
+        self.assertEqual(dataset.header_ids(), data.SUPPORTED_HEADERS)
+
+    def test_every_supported_header_has_every_workload(self) -> None:
+        dataset = data.load_dataset()
+        for header_id in data.SUPPORTED_HEADERS:
+            benchmark = dataset.headers[header_id]
+            self.assertEqual(
+                tuple(benchmark.workloads),
+                data.SUPPORTED_WORKLOADS,
+            )
+
+    def test_large_samples_are_bounded(self) -> None:
+        dataset = data.load_dataset()
+        for benchmark in dataset.headers.values():
+            for sample in benchmark.samples_for('large'):
+                self.assertLessEqual(len(sample.encode()), 8192)
+
+    def test_fixture_validation_succeeds_against_public_parsers(self) -> None:
+        dataset = data.load_dataset()
+        runner.validate_dataset(dataset)
+
+    def test_parser_names_match_public_header_surface(self) -> None:
+        dataset = data.load_dataset()
+        for benchmark in dataset.headers.values():
+            self.assertTrue(hasattr(headers, benchmark.parser_name))
+
+
+class BenchmarkDatasetValidationTests(unittest.TestCase):
+    def test_header_benchmark_reports_byte_count(self) -> None:
+        dataset = data.load_dataset()
+        benchmark = dataset.headers['accept']
+        expected = sum(
+            len(sample.encode())
+            for sample in benchmark.samples_for('realistic')
+        )
+        self.assertEqual(benchmark.byte_count('realistic'), expected)
+
+    def test_headers_section_requires_mapping(self) -> None:
+        headers_section = vars(data)['_headers_section']
+        with self.assertRaises(TypeError):
+            headers_section({})
+
+    def test_validate_header_ids_rejects_unexpected_headers(self) -> None:
+        validate_header_ids = vars(data)['_validate_header_ids']
+        with self.assertRaisesRegex(ValueError, 'unexpected header ids'):
+            validate_header_ids({'accept': object(), 'bogus': object()})
+
+    def test_validate_header_ids_rejects_missing_headers(self) -> None:
+        validate_header_ids = vars(data)['_validate_header_ids']
+        with self.assertRaisesRegex(ValueError, 'missing header ids'):
+            validate_header_ids({'accept': object()})
+
+    def test_parse_header_benchmark_requires_table_payload(self) -> None:
+        parse_header_benchmark = vars(data)['_parse_header_benchmark']
+        with self.assertRaises(TypeError):
+            parse_header_benchmark(header_id='accept', payload='bad')
+
+    def test_required_string_rejects_missing_values(self) -> None:
+        required_string = vars(data)['_required_string']
+        with self.assertRaisesRegex(ValueError, 'must define parser'):
+            required_string(None, 'accept', 'parser')
+
+    def test_parse_workload_samples_requires_table_payload(self) -> None:
+        parse_workload_samples = vars(data)['_parse_workload_samples']
+        with self.assertRaises(TypeError):
+            parse_workload_samples(
+                header_id='accept',
+                workload='realistic',
+                payload='bad',
+            )
+
+    def test_parse_workload_samples_requires_non_empty_samples(self) -> None:
+        parse_workload_samples = vars(data)['_parse_workload_samples']
+        with self.assertRaisesRegex(ValueError, 'must define samples'):
+            parse_workload_samples(
+                header_id='accept',
+                workload='realistic',
+                payload={'samples': []},
+            )
+
+    def test_parse_workload_samples_requires_string_samples(self) -> None:
+        parse_workload_samples = vars(data)['_parse_workload_samples']
+        with self.assertRaisesRegex(ValueError, 'samples must be strings'):
+            parse_workload_samples(
+                header_id='accept',
+                workload='realistic',
+                payload={'samples': ['ok', 3]},
+            )
+
+    def test_validate_large_samples_rejects_oversized_sample(self) -> None:
+        validate_large_samples = vars(data)['_validate_large_samples']
+        with self.assertRaisesRegex(ValueError, 'oversized samples'):
+            validate_large_samples(
+                header_id='accept',
+                samples=['x' * (data.MAX_LARGE_SAMPLE_BYTES + 1)],
+            )
+
+
+class BenchmarkRunnerTests(unittest.TestCase):
+    def test_sample_error_returns_exception_for_invalid_value(self) -> None:
+        sample_error = vars(runner)['_sample_error']
+        error = sample_error(
+            lambda _: (_ for _ in ()).throw(ValueError('bad')),
+            'value',
+        )
+        self.assertIsInstance(error, ValueError)
+
+    def test_validate_samples_raises_for_invalid_fixture(self) -> None:
+        validate_samples = vars(runner)['_validate_samples']
+        with self.assertRaisesRegex(ValueError, 'invalid benchmark fixture'):
+            validate_samples(
+                header_id='accept',
+                workload='realistic',
+                samples=('bad',),
+                parser=lambda _: (_ for _ in ()).throw(ValueError('bad')),
+            )
+
+    def test_run_once_returns_elapsed_time_and_checksum(self) -> None:
+        run_once = vars(runner)['_run_once']
+        elapsed_ns, checksum = run_once(
+            samples=('a', 'bb'),
+            parser=lambda value: value.upper(),
+            iterations=2,
+        )
+        self.assertGreaterEqual(elapsed_ns, 0)
+        self.assertGreater(checksum, 0)
