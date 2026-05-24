@@ -18,6 +18,7 @@ import operator
 import typing
 
 from ietfparse import _links, _parser, _quality, datastructures, errors
+from ietfparse._quality import LARGEST_NONMAXIMAL_QUALITY
 
 _CACHE_CONTROL_BOOL_DIRECTIVES = (
     'must-revalidate',
@@ -43,7 +44,9 @@ class _QualifiedItem(typing.Generic[T]):
 
     @property
     def is_explicit_max(self) -> bool:
-        return self.explicit_quality and self.quality == 1.0
+        return (
+            self.explicit_quality and self.quality > LARGEST_NONMAXIMAL_QUALITY
+        )
 
     @property
     def is_rejected(self) -> bool:
