@@ -336,7 +336,7 @@ def parse_list(value: str) -> list[str]:
     """
     parsed = []
     for segment in _parser.parse_list_items(value):
-        if segment[:1] == '"' and segment[-1:] == '"':
+        if segment.startswith('"') and segment.endswith('"'):
             cursor = _parser.CursorParser(segment)
             parsed.append(cursor.parse_quoted_string())
         else:
@@ -436,6 +436,6 @@ def _dequote(value: str) -> str:
     ' with spaces '
 
     """
-    if value[:1] == '"' and value[-1:] == '"':
-        return value[1:-1]
-    return value
+    return (
+        value[1:-1] if value.startswith('"') and value.endswith('"') else value
+    )
