@@ -1,6 +1,6 @@
 import unittest
 
-from ietfparse import datastructures, errors, headers
+from ietfparse import _parser, datastructures, errors, headers
 
 
 class SimpleContentTypeParsingTests(unittest.TestCase):
@@ -95,6 +95,16 @@ class ParsingBrokenContentTypes(unittest.TestCase):
     def test_that_missing_subtype_raises_value_error(self) -> None:
         with self.assertRaises(errors.MalformedContentType):
             headers.parse_content_type('*')
+
+    def test_that_comment_parse_errors_raise_malformed_content_type(
+        self,
+    ) -> None:
+        value = 'text/plain (unterminated'
+        with self.assertRaises(errors.MalformedContentType) as raised:
+            headers.parse_content_type(value)
+
+        self.assertEqual(raised.exception.header_value, value)
+        self.assertIsInstance(raised.exception.__cause__, _parser.ParseError)
 
     def test_that_multiple_suffix_delimiters_raise_value_error(self) -> None:
         with self.assertRaises(errors.MalformedContentType):

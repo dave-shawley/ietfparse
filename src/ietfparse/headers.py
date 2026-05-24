@@ -235,9 +235,12 @@ def parse_content_type(
         if the content type cannot be parsed (eg, `Content-Type: *`)
 
     """
-    type_spec, _, parameter_str = _parser.remove_http_comments(
-        content_type
-    ).partition(';')
+    try:
+        type_spec, _, parameter_str = _parser.remove_http_comments(
+            content_type
+        ).partition(';')
+    except _parser.ParseError as error:
+        raise errors.MalformedContentType(content_type) from error
     try:
         content_type, content_subtype = type_spec.split('/')
     except ValueError as error:
