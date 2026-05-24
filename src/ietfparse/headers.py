@@ -334,7 +334,14 @@ def parse_list(value: str) -> list[str]:
     :return: list of header elements as strings
 
     """
-    return [_dequote(segment) for segment in _parser.parse_list_items(value)]
+    parsed = []
+    for segment in _parser.parse_list_items(value):
+        if segment[:1] == '"' and segment[-1:] == '"':
+            cursor = _parser.CursorParser(segment)
+            parsed.append(cursor.parse_quoted_string())
+        else:
+            parsed.append(segment)
+    return parsed
 
 
 def _parse_parameter_list(

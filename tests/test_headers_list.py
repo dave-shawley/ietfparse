@@ -30,7 +30,7 @@ class ListHeaderParsingTests(unittest.TestCase):
     def test_that_escaped_quotes_do_not_end_quoted_list_items(self) -> None:
         self.assertEqual(
             headers.parse_list('first, "a\\"b,c", last'),
-            ['first', 'a\\"b,c', 'last'],
+            ['first', 'a"b,c', 'last'],
         )
 
     def test_that_trailing_empty_items_are_preserved(self) -> None:
