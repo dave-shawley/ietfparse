@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 _OWS = ' \t'
 _TOKEN_CHARS = frozenset(
     "!#$%&'*+-.^_`|~"
@@ -9,6 +11,9 @@ _TOKEN_CHARS = frozenset(
     'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     'abcdefghijklmnopqrstuvwxyz'
 )
+_QUOTED_COMMA_PATTERN = re.compile(r'"[^"]*,[^"]*"')
+_QUOTED_SEMICOLON_PATTERN = re.compile(r'"[^"]*;[^"]*"')
+_TOKEN_PATTERN = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$")
 
 
 class ParseError(RuntimeError):
@@ -141,6 +146,19 @@ class ParameterTokenizer:
         return name, value
 
 
+_PARAMETER_TOKENIZERS = {
+    (False, False): ParameterTokenizer(
+        normalize_parameter_values=False,
+    ),
+    (False, True): ParameterTokenizer(),
+    (True, False): ParameterTokenizer(
+        normalize_parameter_names=True,
+        normalize_parameter_values=False,
+    ),
+    (True, True): ParameterTokenizer(normalize_parameter_names=True),
+}
+
+
 def parse_http_parameters(
     value: str,
     *,
@@ -148,14 +166,35 @@ def parse_http_parameters(
     normalize_parameter_values: bool = True,
 ) -> list[tuple[str, str]]:
     """Parse semicolon-delimited HTTP parameters."""
-    return ParameterTokenizer(
-        normalize_parameter_names=normalize_parameter_names,
-        normalize_parameter_values=normalize_parameter_values,
-    ).parse(value)
+    if '\\' not in value and (
+        '"' not in value
+        or (
+            value.count('"') % 2 == 0
+            and _QUOTED_SEMICOLON_PATTERN.search(value) is None
+        )
+    ):
+        return _fast_parse_http_parameters(
+            value,
+            normalize_parameter_names=normalize_parameter_names,
+            normalize_parameter_values=normalize_parameter_values,
+        )
+
+    return _PARAMETER_TOKENIZERS[
+        (normalize_parameter_names, normalize_parameter_values)
+    ].parse(value)
 
 
 def parse_list_items(value: str) -> list[str]:
     """Parse a comma-delimited list while respecting quoted strings."""
+    if '\\' not in value and (
+        '"' not in value
+        or (
+            value.count('"') % 2 == 0
+            and _QUOTED_COMMA_PATTERN.search(value) is None
+        )
+    ):
+        return [segment.strip() for segment in value.split(',')]
+
     cursor = CursorParser(value)
     parsed: list[str] = []
     current: list[str] = []
@@ -179,6 +218,9 @@ def parse_list_items(value: str) -> list[str]:
 
 def remove_http_comments(value: str) -> str:
     """Strip HTTP comments while preserving quoted strings."""
+    if '(' not in value:
+        return value
+
     cursor = CursorParser(value)
     parsed = []
 
@@ -197,3 +239,43 @@ def remove_http_comments(value: str) -> str:
         cursor.index = cursor.index + 1
 
     return ''.join(parsed)
+
+
+def _fast_parse_http_parameters(  # noqa: C901 - complexity due to optimization
+    value: str,
+    *,
+    normalize_parameter_names: bool,
+    normalize_parameter_values: bool,
+) -> list[tuple[str, str]]:
+    error_message = f'malformed parameter list: {value!r}'
+    parameters: list[tuple[str, str]] = []
+    for raw_segment in value.split(';'):
+        segment = raw_segment.strip()
+        if not segment:
+            continue
+
+        name, sep, parameter_value = segment.partition('=')
+        if sep != '=':
+            raise ValueError(error_message)
+
+        name = name.strip()
+        parameter_value = parameter_value.strip()
+        if not name or not parameter_value:
+            raise ValueError(error_message)
+        if _TOKEN_PATTERN.fullmatch(name) is None:
+            raise ValueError(error_message)
+
+        if parameter_value.startswith('"') and parameter_value.endswith('"'):
+            parameter_value = parameter_value[1:-1]
+            if '"' in parameter_value:
+                raise ValueError(error_message)
+        elif _TOKEN_PATTERN.fullmatch(parameter_value) is None:
+            raise ValueError(error_message)
+
+        if normalize_parameter_names:
+            name = name.lower()
+        if normalize_parameter_values:
+            parameter_value = parameter_value.lower()
+        parameters.append((name, parameter_value))
+
+    return parameters

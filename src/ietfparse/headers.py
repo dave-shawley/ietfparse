@@ -340,8 +340,11 @@ def parse_list(value: str) -> list[str]:
     parsed = []
     for segment in _parser.parse_list_items(value):
         if segment.startswith('"') and segment.endswith('"'):
-            cursor = _parser.CursorParser(segment)
-            parsed.append(cursor.parse_quoted_string())
+            if '\\' in segment:
+                cursor = _parser.CursorParser(segment)
+                parsed.append(cursor.parse_quoted_string())
+            else:
+                parsed.append(segment[1:-1])
         else:
             parsed.append(segment)
     return parsed
