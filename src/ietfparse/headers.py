@@ -13,7 +13,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import operator
 import typing
 
@@ -87,33 +86,35 @@ def parse_accept(
         [ietfparse.headers.parse_content_type][]
 
     """
-    guard: contextlib.AbstractContextManager[None]
-    if strict:
-        guard = contextlib.nullcontext()
-    else:
-        guard = contextlib.suppress(ValueError)
-
     decorated: list[_QualifiedItem[datastructures.ContentType]] = []
     for index, content_type in enumerate(parse_list(header_value)):
         if not content_type.strip():
             if strict:
                 raise errors.MalformedContentType(content_type)
             continue
-        header: datastructures.ContentType | None = None
-        with guard:
+
+        try:
             header = parse_content_type(content_type)
-        if header is None:
+            quality = _pop_quality_parameter(header.parameters)
+            item = _QualifiedItem(header, quality, index)
+        except ValueError:
+            if strict:
+                raise
             continue
-        decorated.append(
-            _QualifiedItem(header, header.parameters.pop('q', None), index)
-        )
-        header.quality = decorated[-1].quality
+
+        decorated.append(item)
+        header.quality = item.quality
 
     explicit_max = [item.value for item in decorated if item.is_explicit_max]
     remaining = sorted(
-        [item for item in decorated if not item.is_explicit_max],
-        key=lambda item: (item.quality, item.value),
-        reverse=True,
+        (item for item in decorated if not item.is_explicit_max),
+        key=lambda item: (
+            -item.quality,
+            item.value.content_type == '*',
+            item.value.content_subtype == '*',
+            -len(item.value.parameters),
+            item.index,
+        ),
     )
     return explicit_max + [item.value for item in remaining]
 
@@ -238,6 +239,7 @@ def parse_content_type(
         if the content type cannot be parsed (eg, `Content-Type: *`)
 
     """
+    header_value = content_type
     try:
         type_spec, _, parameter_str = _parser.remove_http_comments(
             content_type
@@ -249,10 +251,13 @@ def parse_content_type(
     except ValueError as error:
         raise errors.MalformedContentType(content_type) from error
 
-    parameters = _parse_parameter_list(
-        parameter_str,
-        normalize_parameter_values=normalize_parameter_values,
-    )
+    try:
+        parameters = _parse_parameter_list(
+            parameter_str,
+            normalize_parameter_values=normalize_parameter_values,
+        )
+    except ValueError as error:
+        raise errors.MalformedContentType(header_value) from error
     if '+' in content_subtype:
         try:
             content_subtype, content_suffix = content_subtype.split('+')
@@ -376,6 +381,14 @@ def _parse_parameter_list(
         normalize_parameter_names=normalize_parameter_names,
         normalize_parameter_values=normalize_parameter_values,
     )
+
+
+def _pop_quality_parameter(parameters: dict[str, str]) -> str | None:
+    """Pop a quality parameter from `parameters` if present."""
+    for name in tuple(parameters):
+        if name.lower() == 'q':
+            return parameters.pop(name)
+    return None
 
 
 def _parse_qualified_list(value: str) -> list[str]:

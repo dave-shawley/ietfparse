@@ -1,3 +1,4 @@
+import decimal
 import unittest
 
 from ietfparse import (
@@ -74,6 +75,19 @@ class ContentTypeQualityTests(unittest.TestCase):
         )
         content_type.quality = 0.9876
         self.assertEqual(0.988, content_type.quality)
+
+    def test_that_decimal_quality_rounding_uses_decimal_semantics(
+        self,
+    ) -> None:
+        content_type = datastructures.ContentType(
+            'a', 'b', parameters={'q': decimal.Decimal('0.1245')}
+        )
+        self.assertEqual(0.125, content_type.quality)
+
+    def test_that_large_decimal_quality_is_treated_as_highest(self) -> None:
+        content_type = datastructures.ContentType('a', 'b')
+        content_type.quality = decimal.Decimal('1E+100000')
+        self.assertEqual(1.0, content_type.quality)
 
     def test_clearing_quality_override(self) -> None:
         content_type = datastructures.ContentType(

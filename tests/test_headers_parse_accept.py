@@ -27,6 +27,11 @@ class ParseAcceptHeaderTests(unittest.TestCase):
         for value in parsed:
             self.assertNotIn('q', value.parameters)
 
+    def test_that_uppercase_quality_parameter_is_removed(self) -> None:
+        parsed = headers.parse_accept('audio/*;Q=0.2,audio/basic')
+        for value in parsed:
+            self.assertNotIn('q', value.parameters)
+
     def test_that_quality_value_of_one_is_treated_as_explicit_highest(
         self,
     ) -> None:
@@ -56,6 +61,15 @@ class ParseAcceptHeaderTests(unittest.TestCase):
     def test_that_quality_is_normalized_on_parsed_content_types(self) -> None:
         parsed = headers.parse_accept('application/json;q=0.1236')
         self.assertEqual(0.124, parsed[0].quality)
+
+    def test_that_equal_quality_values_preserve_input_order(self) -> None:
+        self.assertEqual(
+            headers.parse_accept('application/json, text/html'),
+            [
+                datastructures.ContentType('application', 'json'),
+                datastructures.ContentType('text', 'html'),
+            ],
+        )
 
     # Final example in https://tools.ietf.org/html/rfc7231#section-5.3.2
 
@@ -155,10 +169,10 @@ class ParseAcceptHeaderTests(unittest.TestCase):
         )
         self.assertEqual(len(parsed), 4)
         self.assertEqual(parsed[0], datastructures.ContentType('text', 'html'))
+        self.assertEqual(parsed[1], datastructures.ContentType('image', 'gif'))
         self.assertEqual(
-            parsed[1], datastructures.ContentType('image', 'jpeg')
+            parsed[2], datastructures.ContentType('image', 'jpeg')
         )
-        self.assertEqual(parsed[2], datastructures.ContentType('image', 'gif'))
         self.assertEqual(parsed[3], datastructures.ContentType('*', '*'))
 
     def test_that_invalid_parts_raise_error_when_strict_is_enabled(
@@ -169,6 +183,18 @@ class ParseAcceptHeaderTests(unittest.TestCase):
                 'text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2',
                 strict=True,
             )
+
+    def test_that_invalid_quality_is_skipped_when_strict_is_disabled(
+        self,
+    ) -> None:
+        self.assertEqual(
+            headers.parse_accept('text/plain;q=NaN, text/html'),
+            [datastructures.ContentType('text', 'html')],
+        )
+
+    def test_that_invalid_quality_raises_when_strict_is_enabled(self) -> None:
+        with self.assertRaises(ValueError):
+            headers.parse_accept('text/plain;q=NaN, text/html', strict=True)
 
     def test_that_trailing_empty_items_are_ignored(self) -> None:
         self.assertEqual(

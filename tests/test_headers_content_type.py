@@ -110,6 +110,16 @@ class ParsingBrokenContentTypes(unittest.TestCase):
         with self.assertRaises(errors.MalformedContentType):
             headers.parse_content_type('application/example+json+xml')
 
+    def test_that_malformed_parameter_lists_raise_malformed_content_type(
+        self,
+    ) -> None:
+        value = 'text/plain; foo'
+        with self.assertRaises(errors.MalformedContentType) as raised:
+            headers.parse_content_type(value)
+
+        self.assertEqual(raised.exception.header_value, value)
+        self.assertIsInstance(raised.exception.__cause__, ValueError)
+
 
 class Rfc7231ExampleTests(unittest.TestCase):
     """Test cases from RFC7231, Section 3.1.1.1"""

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import decimal
-import math
 
 _THOUSANDTH = decimal.Decimal('0.001')
 _SMALLEST_QUALITY = _THOUSANDTH
@@ -18,14 +17,18 @@ def normalize_quality(
 ) -> float:
     """Normalize quality values to thousandth precision."""
     try:
-        quality = float(value)
-    except (TypeError, ValueError) as error:
+        quality = (
+            value
+            if isinstance(value, decimal.Decimal)
+            else decimal.Decimal(str(value))
+        )
+    except (decimal.InvalidOperation, TypeError, ValueError) as error:
         raise ValueError(f'invalid quality value: {value!r}') from error
-    if not math.isfinite(quality):
+    if not quality.is_finite():
         raise ValueError(f'invalid quality value: {value!r}')
 
-    if quality < SMALLEST_QUALITY:
+    if quality < _SMALLEST_QUALITY:
         return 0.0
-    if quality > LARGEST_NONMAXIMAL_QUALITY:
+    if quality > _LARGEST_NONMAXIMAL_QUALITY:
         return 1.0
-    return math.floor((quality * 1000.0) + 0.5) / 1000.0
+    return float(quality.quantize(_THOUSANDTH, rounding=decimal.ROUND_HALF_UP))
