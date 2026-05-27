@@ -19,6 +19,9 @@ import typing
 from ietfparse import _links, _parser, _quality, datastructures, errors
 from ietfparse._quality import LARGEST_NONMAXIMAL_QUALITY
 
+if typing.TYPE_CHECKING:
+    from collections import abc
+
 _CACHE_CONTROL_BOOL_DIRECTIVES = (
     'must-revalidate',
     'no-cache',
@@ -383,7 +386,9 @@ def _parse_parameter_list(
     )
 
 
-def _pop_quality_parameter(parameters: dict[str, str]) -> str | None:
+def _pop_quality_parameter(
+    parameters: abc.MutableMapping[str, str],
+) -> str | None:
     """Pop a quality parameter from `parameters` if present."""
     for name in tuple(parameters):
         if name.lower() == 'q':

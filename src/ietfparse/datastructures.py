@@ -19,6 +19,9 @@ from collections import abc
 
 from ietfparse import _helpers, _quality
 
+if typing.TYPE_CHECKING:
+    import decimal
+
 
 @functools.total_ordering
 class ContentType:
@@ -126,7 +129,7 @@ class ContentType:
         return _quality.normalize_quality(q)
 
     @quality.setter
-    def quality(self, value: float | str | None) -> None:
+    def quality(self, value: decimal.Decimal | float | str | None) -> None:
         if value is None:
             self._quality_override = None
             return

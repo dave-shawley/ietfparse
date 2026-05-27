@@ -80,7 +80,7 @@ class ContentTypeQualityTests(unittest.TestCase):
         self,
     ) -> None:
         content_type = datastructures.ContentType(
-            'a', 'b', parameters={'q': decimal.Decimal('0.1245')}
+            'a', 'b', parameters={'q': '0.1245'}
         )
         self.assertEqual(0.125, content_type.quality)
 
