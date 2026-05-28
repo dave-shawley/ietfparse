@@ -80,6 +80,15 @@ class CursorParserTests(unittest.TestCase):
 
 
 class ParameterTokenizerTests(unittest.TestCase):
+    def test_that_quoted_semicolons_are_preserved(self) -> None:
+        self.assertEqual(
+            _parser.parse_http_parameters(
+                'foo="bar;baz"; qux=zap',
+                normalize_parameter_values=False,
+            ),
+            [('foo', 'bar;baz'), ('qux', 'zap')],
+        )
+
     def test_that_parse_http_parameters_uses_the_tokenizer(self) -> None:
         self.assertEqual(
             _parser.parse_http_parameters(

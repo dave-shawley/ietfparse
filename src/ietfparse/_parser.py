@@ -11,7 +11,6 @@ _TOKEN_CHARS = frozenset(
     'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     'abcdefghijklmnopqrstuvwxyz'
 )
-_QUOTED_SEMICOLON_PATTERN = re.compile(r'"[^"]*;[^"]*"')
 _TOKEN_PATTERN = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$")
 
 
@@ -165,13 +164,7 @@ def parse_http_parameters(
     normalize_parameter_values: bool = True,
 ) -> list[tuple[str, str]]:
     """Parse semicolon-delimited HTTP parameters."""
-    if '\\' not in value and (
-        '"' not in value
-        or (
-            value.count('"') % 2 == 0
-            and _QUOTED_SEMICOLON_PATTERN.search(value) is None
-        )
-    ):
+    if '\\' not in value and '"' not in value:
         return _fast_parse_http_parameters(
             value,
             normalize_parameter_names=normalize_parameter_names,
