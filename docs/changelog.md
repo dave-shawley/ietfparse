@@ -31,13 +31,33 @@
 
 - `headers.parse_link` changed to honor the allow multiple `media` and `type`
   parameters as described in [RFC-8288-section-3.4.1].
+- `headers.parse_link` now preserves parentheses and escaped delimiters inside
+  link targets and quoted parameter values, preserves valueless parameters, and
+  raises `MalformedLinkValue` for malformed parameter syntax instead of
+  misparsing the remainder of the header.
 - `datastructures.LinkHeader` changed to combine multiple relationship type
   (rel) parameters into a single space-separated parameter as described in
   [RFC-8288-section-3]. Note that this is only relevant if you disable strict
   mode parsing.
 - `headers.parse_content_type` changed to raise `MalformedContentType` error
   instead of `ValueError`.
+- `headers.parse_content_type` now strips nested HTTP comments without treating
+  parentheses inside quoted parameter values as comments.
 - `datastructures.ContentType` instances can now be compared to strings
+- `datastructures.ContentType.quality` is now normalized metadata. Missing and
+  effectively maximal values normalize to `1.0`, rejected values normalize to
+  `0.0`, intermediate values are rounded to three decimal places, and the
+  `Accept*` parsers now share the same quality-handling rules while preserving
+  the preference for explicitly declared maximum quality values.
+- list-based header parsers now ignore stray empty items produced by extra
+  commas, while `headers.parse_list` preserves those empty items and
+  `headers.parse_accept(..., strict=True)` treats them as malformed.
+- list-style header parsing now preserves escaped quotes and commas inside
+  quoted values for `headers.parse_list`, `headers.parse_cache_control`,
+  `headers.parse_forwarded`, and `headers.parse_accept`.
+- `headers.parse_list` now raises `errors.MalformedListSegment` when a
+  quoted item is followed by additional non-delimited content instead of
+  silently merging it into a malformed value.
 - `algorithms.select_content_type` changed to accept strings as well as `ContentType`
   instances
 

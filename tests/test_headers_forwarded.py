@@ -28,6 +28,12 @@ class ForwardedHeaderParsingTests(unittest.TestCase):
         parsed = headers.parse_forwarded('For="[2001:db8:cafe::17]:4711"')
         self.assertEqual(parsed, [{'for': '[2001:db8:cafe::17]:4711'}])
 
+    def test_that_trailing_empty_items_are_ignored(self) -> None:
+        self.assertEqual(
+            headers.parse_forwarded('for=192.0.2.43,'),
+            [{'for': '192.0.2.43'}],
+        )
+
     def test_parsing_full_header(self) -> None:
         parsed = headers.parse_forwarded(
             'for=192.0.2.60;proto=http;by=203.0.113.43;host=example.com',
@@ -49,3 +55,67 @@ class ForwardedHeaderParsingTests(unittest.TestCase):
             )
         self.assertEqual(context.exception.header_name, 'Forwarded')
         self.assertEqual(context.exception.header_value, 'for=127.0.0.1;one=2')
+
+
+class QuotedForwardedParameterParsingTests(unittest.TestCase):
+    def test_that_quoted_parameters_can_contain_semicolons(self) -> None:
+        parsed = headers.parse_forwarded(
+            'for=192.0.2.60;host="api;backend.example";proto=https'
+        )
+        self.assertEqual(
+            parsed,
+            [
+                {
+                    'for': '192.0.2.60',
+                    'host': 'api;backend.example',
+                    'proto': 'https',
+                }
+            ],
+        )
+
+    def test_that_quoted_parameters_can_contain_equals_signs(self) -> None:
+        parsed = headers.parse_forwarded(
+            'for=192.0.2.60;host="api=backend.example";proto=https'
+        )
+        self.assertEqual(
+            parsed,
+            [
+                {
+                    'for': '192.0.2.60',
+                    'host': 'api=backend.example',
+                    'proto': 'https',
+                }
+            ],
+        )
+
+    def test_that_quoted_pairs_are_unescaped(self) -> None:
+        parsed = headers.parse_forwarded(
+            'for=192.0.2.60;host="api\\"backend.example";proto=https'
+        )
+        self.assertEqual(
+            parsed,
+            [
+                {
+                    'for': '192.0.2.60',
+                    'host': 'api"backend.example',
+                    'proto': 'https',
+                }
+            ],
+        )
+
+    def test_that_escaped_quotes_do_not_split_forwarded_elements(
+        self,
+    ) -> None:
+        parsed = headers.parse_forwarded(
+            'for=192.0.2.60;host="api\\"backend.example,edge";proto=https'
+        )
+        self.assertEqual(
+            parsed,
+            [
+                {
+                    'for': '192.0.2.60',
+                    'host': 'api"backend.example,edge',
+                    'proto': 'https',
+                }
+            ],
+        )

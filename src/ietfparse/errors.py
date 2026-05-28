@@ -19,6 +19,14 @@ class MalformedLinkValue(RootException):
     """Value specified is not a valid link header."""
 
 
+class MalformedListSegment(RootException, ValueError):
+    """A list item contained invalid quoted-string syntax."""
+
+    def __init__(self, segment: str) -> None:
+        super().__init__(segment)
+        self.segment = segment
+
+
 class StrictHeaderParsingFailure(RootException, ValueError):
     """Non-standard header value detected.
 

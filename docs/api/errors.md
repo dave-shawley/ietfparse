@@ -4,4 +4,5 @@
 ::: ietfparse.errors.NoMatch
 ::: ietfparse.errors.MalformedContentType
 ::: ietfparse.errors.MalformedLinkValue
+::: ietfparse.errors.MalformedListSegment
 ::: ietfparse.errors.StrictHeaderParsingFailure

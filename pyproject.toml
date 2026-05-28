@@ -64,6 +64,7 @@ packages = ["src/ietfparse"]
 [tool.pyrefly]
 min-severity = "warn"
 preset = "strict"
+permissive-ignores = true
 
 [tool.pyrefly.errors]
 missing-override-decorator = false

@@ -27,6 +27,50 @@ class ParseAcceptHeaderTests(unittest.TestCase):
         for value in parsed:
             self.assertNotIn('q', value.parameters)
 
+    def test_that_uppercase_quality_parameter_is_removed(self) -> None:
+        parsed = headers.parse_accept('audio/*;Q=0.2,audio/basic')
+        for value in parsed:
+            self.assertNotIn('q', value.parameters)
+
+    def test_that_quality_value_of_one_is_treated_as_explicit_highest(
+        self,
+    ) -> None:
+        parsed = headers.parse_accept('text/plain, application/json;q=1')
+        self.assertEqual(1.0, parsed[0].quality)
+        self.assertEqual(
+            parsed[0], datastructures.ContentType('application', 'json')
+        )
+
+    def test_that_quality_value_of_1_000_is_treated_as_explicit_highest(
+        self,
+    ) -> None:
+        parsed = headers.parse_accept('text/plain, application/json;q=1.000')
+        self.assertEqual(1.0, parsed[0].quality)
+        self.assertEqual(
+            parsed[0], datastructures.ContentType('application', 'json')
+        )
+
+    def test_that_0_999_is_not_treated_as_explicit_highest(self) -> None:
+        parsed = headers.parse_accept(
+            'text/plain;q=0.999, application/json;q=1'
+        )
+        self.assertEqual(
+            parsed[0], datastructures.ContentType('application', 'json')
+        )
+
+    def test_that_quality_is_normalized_on_parsed_content_types(self) -> None:
+        parsed = headers.parse_accept('application/json;q=0.1236')
+        self.assertEqual(0.124, parsed[0].quality)
+
+    def test_that_equal_quality_values_preserve_input_order(self) -> None:
+        self.assertEqual(
+            headers.parse_accept('application/json, text/html'),
+            [
+                datastructures.ContentType('application', 'json'),
+                datastructures.ContentType('text', 'html'),
+            ],
+        )
+
     # Final example in https://tools.ietf.org/html/rfc7231#section-5.3.2
 
     def test_that_most_specific_value_is_first(self) -> None:
@@ -78,16 +122,57 @@ class ParseAcceptHeaderTests(unittest.TestCase):
             ],
         )
 
+    def test_that_quoted_extension_parameters_can_contain_semicolons(
+        self,
+    ) -> None:
+        parsed = headers.parse_accept('text/plain; note="a;b"; q=0.8')
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(
+            parsed[0],
+            datastructures.ContentType('text', 'plain', {'note': 'a;b'}),
+        )
+        self.assertEqual(parsed[0].quality, 0.8)
+
+    def test_that_quoted_extension_parameters_can_contain_equals_signs(
+        self,
+    ) -> None:
+        parsed = headers.parse_accept('text/plain; note="a=b"')
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(
+            parsed[0],
+            datastructures.ContentType('text', 'plain', {'note': 'a=b'}),
+        )
+
+    def test_that_quoted_extension_parameters_unescape_quoted_pairs(
+        self,
+    ) -> None:
+        parsed = headers.parse_accept('text/plain; note="a\\"b"')
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(
+            parsed[0],
+            datastructures.ContentType('text', 'plain', {'note': 'a"b'}),
+        )
+
+    def test_that_quoted_extension_parameters_can_contain_commas_after_escapes(
+        self,
+    ) -> None:
+        parsed = headers.parse_accept('text/plain; note="a\\"b,c"')
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(
+            parsed[0],
+            datastructures.ContentType('text', 'plain', {'note': 'a"b,c'}),
+        )
+
     def test_that_invalid_parts_are_skipped(self) -> None:
         parsed = headers.parse_accept(
             'text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2'
         )
         self.assertEqual(len(parsed), 4)
         self.assertEqual(parsed[0], datastructures.ContentType('text', 'html'))
+        self.assertEqual(parsed[1], datastructures.ContentType('image', 'gif'))
         self.assertEqual(
-            parsed[1], datastructures.ContentType('image', 'jpeg')
+            parsed[2], datastructures.ContentType('image', 'jpeg')
         )
-        self.assertEqual(parsed[2], datastructures.ContentType('image', 'gif'))
         self.assertEqual(parsed[3], datastructures.ContentType('*', '*'))
 
     def test_that_invalid_parts_raise_error_when_strict_is_enabled(
@@ -98,6 +183,30 @@ class ParseAcceptHeaderTests(unittest.TestCase):
                 'text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2',
                 strict=True,
             )
+
+    def test_that_invalid_quality_is_skipped_when_strict_is_disabled(
+        self,
+    ) -> None:
+        self.assertEqual(
+            headers.parse_accept('text/plain;q=NaN, text/html'),
+            [datastructures.ContentType('text', 'html')],
+        )
+
+    def test_that_invalid_quality_raises_when_strict_is_enabled(self) -> None:
+        with self.assertRaises(ValueError):
+            headers.parse_accept('text/plain;q=NaN, text/html', strict=True)
+
+    def test_that_trailing_empty_items_are_ignored(self) -> None:
+        self.assertEqual(
+            headers.parse_accept('text/plain,'),
+            [datastructures.ContentType('text', 'plain')],
+        )
+
+    def test_that_trailing_empty_items_raise_error_when_strict_is_enabled(
+        self,
+    ) -> None:
+        with self.assertRaises(ValueError):
+            headers.parse_accept('text/plain,', strict=True)
 
     def test_the_invalid_header_returns_empty_list(self) -> None:
         parsed = headers.parse_accept('*')
@@ -124,6 +233,12 @@ class ParseAcceptCharsetHeaderTests(unittest.TestCase):
             ['utf-8', 'latin1', 'us-ascii'],
         )
 
+    def test_that_quality_parameter_name_is_case_insensitive(self) -> None:
+        self.assertEqual(
+            headers.parse_accept_charset('us-ascii;Q=0.1,utf-8,latin1;Q=0.8'),
+            ['utf-8', 'latin1', 'us-ascii'],
+        )
+
     def test_that_wildcard_sorts_before_rejected_character_sets(self) -> None:
         self.assertEqual(
             headers.parse_accept_charset(
@@ -137,6 +252,17 @@ class ParseAcceptCharsetHeaderTests(unittest.TestCase):
             headers.parse_accept_charset('acceptable, rejected;q=0.0009, *'),
             ['acceptable', '*', 'rejected'],
         )
+
+    def test_that_explicitly_rejected_wildcard_is_treated_as_rejected(
+        self,
+    ) -> None:
+        self.assertEqual(
+            headers.parse_accept_charset('acceptable, rejected;q=0, *;q=0'),
+            ['acceptable', 'rejected', '*'],
+        )
+
+    def test_that_trailing_empty_items_are_ignored(self) -> None:
+        self.assertEqual(headers.parse_accept_charset('utf-8,'), ['utf-8'])
 
 
 class ParseAcceptEncodingTests(unittest.TestCase):
@@ -157,6 +283,12 @@ class ParseAcceptEncodingTests(unittest.TestCase):
             ['gzip', 'bzip', 'snappy'],
         )
 
+    def test_that_quality_parameter_name_is_case_insensitive(self) -> None:
+        self.assertEqual(
+            headers.parse_accept_encoding('snappy;Q=0.1,gzip,bzip;Q=0.8'),
+            ['gzip', 'bzip', 'snappy'],
+        )
+
     def test_that_wildcard_sorts_before_rejected_character_sets(self) -> None:
         self.assertEqual(
             headers.parse_accept_encoding(
@@ -170,6 +302,9 @@ class ParseAcceptEncodingTests(unittest.TestCase):
             headers.parse_accept_encoding('bzip, gzip;q=0.0009, *'),
             ['bzip', '*', 'gzip'],
         )
+
+    def test_that_trailing_empty_items_are_ignored(self) -> None:
+        self.assertEqual(headers.parse_accept_encoding('gzip,'), ['gzip'])
 
 
 class ParseAcceptLanguageTests(unittest.TestCase):
@@ -187,6 +322,12 @@ class ParseAcceptLanguageTests(unittest.TestCase):
     def test_that_unspecified_quality_is_treated_as_highest(self) -> None:
         self.assertEqual(
             headers.parse_accept_language('en-gb;q=0.1,de,en;q=0.8'),
+            ['de', 'en', 'en-gb'],
+        )
+
+    def test_that_quality_parameter_name_is_case_insensitive(self) -> None:
+        self.assertEqual(
+            headers.parse_accept_language('en-gb;Q=0.1,de,en;Q=0.8'),
             ['de', 'en', 'en-gb'],
         )
 
@@ -220,6 +361,28 @@ class ParseAcceptLanguageTests(unittest.TestCase):
             ['de-Latn-DE-1996', 'de-Latn-DE', 'de-Latf-DE'],
         )
 
+    def test_that_quality_value_of_one_is_treated_as_highest(self) -> None:
+        self.assertEqual(
+            headers.parse_accept_language(
+                'de-Latn-DE,de-Latf-DE,de-Latn-DE-1996;q=1'
+            ),
+            ['de-Latn-DE-1996', 'de-Latn-DE', 'de-Latf-DE'],
+        )
+
+    def test_that_quality_value_of_1_000_is_treated_as_highest(self) -> None:
+        self.assertEqual(
+            headers.parse_accept_language(
+                'de-Latn-DE,de-Latf-DE,de-Latn-DE-1996;q=1.000'
+            ),
+            ['de-Latn-DE-1996', 'de-Latn-DE', 'de-Latf-DE'],
+        )
+
+    def test_that_0_999_is_not_treated_as_highest(self) -> None:
+        self.assertEqual(
+            headers.parse_accept_language('de-Latn-DE;q=0.999,de-Latf-DE;q=1'),
+            ['de-Latf-DE', 'de-Latn-DE'],
+        )
+
     def test_that_order_is_retained_for_explicit_highest_quality(self) -> None:
         self.assertEqual(
             headers.parse_accept_language(
@@ -227,3 +390,12 @@ class ParseAcceptLanguageTests(unittest.TestCase):
             ),
             ['de-Latf-DE', 'de-Latn-DE-1996', 'de-Latn-DE'],
         )
+
+    def test_that_equal_explicit_quality_retains_input_order(self) -> None:
+        self.assertEqual(
+            headers.parse_accept_language('de;q=0.8,en;q=0.8,fr;q=0.8'),
+            ['de', 'en', 'fr'],
+        )
+
+    def test_that_trailing_empty_items_are_ignored(self) -> None:
+        self.assertEqual(headers.parse_accept_language('de,'), ['de'])

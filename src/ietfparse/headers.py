@@ -13,13 +13,11 @@
 
 from __future__ import annotations
 
-import contextlib
-import decimal
-import functools
-import re
+import operator
 import typing
 
-from ietfparse import _helpers, datastructures, errors
+from ietfparse import _links, _parser, _quality, datastructures, errors
+from ietfparse._quality import LARGEST_NONMAXIMAL_QUALITY
 
 if typing.TYPE_CHECKING:
     from collections import abc
@@ -34,15 +32,30 @@ _CACHE_CONTROL_BOOL_DIRECTIVES = (
     'private',
     'proxy-revalidate',
 )
-_COMMENT_RE = re.compile(r'\(.*\)')
-_QUOTED_SEGMENT_RE = re.compile(r'"([^"]*)"')
-_DEF_PARAM_VALUE = object()
-
-# This is *here* instead of constants.py to avoid a ciecular import
-_SMALLEST_QUALITY = 0.001
+T = typing.TypeVar('T')
 
 
-def parse_accept(  # noqa: C901 -- overly complex
+class _QualifiedItem(typing.Generic[T]):
+    def __init__(self, value: T, quality: str | None, index: int) -> None:
+        self.value = value
+        self.quality = (
+            1.0 if quality is None else _quality.normalize_quality(quality)
+        )
+        self.explicit_quality = quality is not None
+        self.index = index
+
+    @property
+    def is_explicit_max(self) -> bool:
+        return (
+            self.explicit_quality and self.quality > LARGEST_NONMAXIMAL_QUALITY
+        )
+
+    @property
+    def is_rejected(self) -> bool:
+        return self.quality < _quality.SMALLEST_QUALITY
+
+
+def parse_accept(
     header_value: str, *, strict: bool = False
 ) -> list[datastructures.ContentType]:
     """Parse an HTTP Accept header.
@@ -76,44 +89,37 @@ def parse_accept(  # noqa: C901 -- overly complex
         [ietfparse.headers.parse_content_type][]
 
     """
-    guard: contextlib.AbstractContextManager[None]
-    if strict:
-        guard = contextlib.nullcontext()
-    else:
-        guard = contextlib.suppress(ValueError)
+    decorated: list[_QualifiedItem[datastructures.ContentType]] = []
+    for index, content_type in enumerate(parse_list(header_value)):
+        if not content_type.strip():
+            if strict:
+                raise errors.MalformedContentType(content_type)
+            continue
 
-    next_explicit_q = decimal.ExtendedContext.next_plus(decimal.Decimal('5.0'))
-    headers: list[datastructures.ContentType] = []
-    for content_type in parse_list(header_value):
-        with guard:
-            headers.append(parse_content_type(content_type))
+        try:
+            header = parse_content_type(content_type)
+            quality = _pop_quality_parameter(header.parameters)
+            item = _QualifiedItem(header, quality, index)
+        except ValueError:
+            if strict:
+                raise
+            continue
 
-    for header in headers:
-        q = header.parameters.pop('q', None)
-        if q is None:
-            header.quality = 1.0
-        elif q == '1.0':
-            header.quality = float(next_explicit_q)
-            next_explicit_q = next_explicit_q.next_minus()
-        else:
-            header.quality = float(q)
+        decorated.append(item)
+        header.quality = item.quality
 
-    def ordering(
-        left: datastructures.ContentType, right: datastructures.ContentType
-    ) -> int:
-        assert left.quality is not None  # appease mypy  # noqa: S101
-        assert right.quality is not None  # appease mypy  # noqa: S101
-        if left.quality == right.quality:
-            if left == right:
-                return 0
-            if left > right:
-                return -1
-            return 1
-        if left.quality > right.quality:
-            return -1
-        return 1
-
-    return sorted(headers, key=functools.cmp_to_key(ordering))
+    explicit_max = [item.value for item in decorated if item.is_explicit_max]
+    remaining = sorted(
+        (item for item in decorated if not item.is_explicit_max),
+        key=lambda item: (
+            -item.quality,
+            item.value.content_type == '*',
+            item.value.content_subtype == '*',
+            -len(item.value.parameters),
+            item.index,
+        ),
+    )
+    return explicit_max + [item.value for item in remaining]
 
 
 def parse_accept_charset(header_value: str) -> list[str]:
@@ -193,7 +199,11 @@ def parse_cache_control(
     directives: dict[str, str | int | bool | None] = {}
 
     for segment in parse_list(header_value):
+        if not segment.strip():
+            continue
         name, sep, value = segment.partition('=')
+        if not name.strip():
+            continue
         if sep != '=':
             directives[name] = None
         elif sep and value:
@@ -232,18 +242,30 @@ def parse_content_type(
         if the content type cannot be parsed (eg, `Content-Type: *`)
 
     """
-    parts = _remove_comments(content_type).split(';')
-    type_spec = parts.pop(0)
+    header_value = content_type
+    try:
+        type_spec, _, parameter_str = _parser.remove_http_comments(
+            content_type
+        ).partition(';')
+    except _parser.ParseError as error:
+        raise errors.MalformedContentType(content_type) from error
     try:
         content_type, content_subtype = type_spec.split('/')
     except ValueError as error:
         raise errors.MalformedContentType(content_type) from error
 
-    parameters = _parse_parameter_list(
-        parts, normalize_parameter_values=normalize_parameter_values
-    )
+    try:
+        parameters = _parse_parameter_list(
+            parameter_str,
+            normalize_parameter_values=normalize_parameter_values,
+        )
+    except ValueError as error:
+        raise errors.MalformedContentType(header_value) from error
     if '+' in content_subtype:
-        content_subtype, content_suffix = content_subtype.split('+')
+        try:
+            content_subtype, content_suffix = content_subtype.split('+')
+        except ValueError as error:
+            raise errors.MalformedContentType(content_type) from error
         return datastructures.ContentType(
             content_type, content_subtype, dict(parameters), content_suffix
         )
@@ -272,19 +294,20 @@ def parse_forwarded(
         parameter name is encountered
 
     """
+    standard_parameters = {'for', 'proto', 'by', 'host'}
     result = []
     for entry in parse_list(header_value):
+        if not entry.strip():
+            continue
         param_tuples = _parse_parameter_list(
-            entry.split(';'),
+            entry,
             normalize_parameter_names=True,
             normalize_parameter_values=False,
         )
-        if only_standard_parameters:
-            for name, _ in param_tuples:
-                if name not in ('for', 'proto', 'by', 'host'):
-                    raise errors.StrictHeaderParsingFailure(
-                        'Forwarded', header_value
-                    )
+        if only_standard_parameters and any(
+            name not in standard_parameters for name, _ in param_tuples
+        ):
+            raise errors.StrictHeaderParsingFailure('Forwarded', header_value)
         result.append(dict(param_tuples))
     return result
 
@@ -292,7 +315,7 @@ def parse_forwarded(
 def parse_link(
     header_value: str, *, strict: bool = True
 ) -> list[datastructures.LinkHeader]:
-    """Parse a HTTP Link header.
+    """Parse an HTTP Link header.
 
     Parses the [HTTP-Link] header into a sequence of
     [ietfparse.datastructures.LinkHeader][] instances.
@@ -307,62 +330,12 @@ def parse_link(
         if the specified `header_value` cannot be parsed
 
     """
-    sanitized = _remove_comments(header_value)
-    links = []
-
-    def parse_links(
-        buf: str,
-    ) -> abc.Generator[tuple[str, list[str]], None, None]:
-        r"""Parse links from `buf`.
-
-        Find quoted parts, these are allowed to contain commas
-        however, it is much easier to parse if they do not so
-        replace them with \000.  Since the NUL byte is not allowed
-        to be there, we can replace it with a comma later on.
-        A similar trick is performed on semicolons with \001.
-        """
-        quoted = re.findall('"([^"]*)"', buf)
-        for segment in quoted:
-            left, match, right = buf.partition(segment)
-            match = match.replace(',', '\000')
-            match = match.replace(';', '\001')
-            buf = f'{left}{match}{right}'
-
-        while buf:
-            matched = re.match(r'<(?P<link>[^>]*)>\s*(?P<params>.*)', buf)
-            if matched:
-                groups = matched.groupdict()
-                params, _, buf = groups['params'].partition(',')
-                params = params.replace('\000', ',')  # undo comma hackery
-                if params and not params.startswith(';'):
-                    raise errors.MalformedLinkValue(
-                        'Param list missing opening semicolon'
-                    )
-
-                yield (
-                    groups['link'].strip(),
-                    [
-                        p.replace('\001', ';').strip()
-                        for p in params[1:].split(';')
-                        if p
-                    ],
-                )
-                buf = buf.strip()
-            else:
-                raise errors.MalformedLinkValue('Malformed link header', buf)
-
-    for target, param_list in parse_links(sanitized):
-        parser = _helpers.ParameterParser(strict=strict)
-        for name, value in _parse_parameter_list(
-            param_list, strip_interior_whitespace=True
-        ):
-            parser.add_value(name, value)
-
-        links.append(
-            datastructures.LinkHeader(target=target, parameters=parser.values)
+    return [
+        datastructures.LinkHeader(target, params)
+        for target, params in _links.parse_link_header(
+            header_value, strict=strict
         )
-
-    return links
+    ]
 
 
 def parse_list(value: str) -> list[str]:
@@ -370,52 +343,66 @@ def parse_list(value: str) -> list[str]:
 
     :param value: header value to split into elements
     :return: list of header elements as strings
+    :raise ietfparse.errors.MalformedListSegment:
+        if a segment starts with a quoted string but contains additional
+        non-delimited content or otherwise has invalid quoted-string syntax
 
     """
-    segments = _QUOTED_SEGMENT_RE.findall(value)
+    try:
+        segments = _parser.parse_list_items(value)
+    except _parser.ParseError as error:
+        raise errors.MalformedListSegment(value) from error
+
+    parsed = []
     for segment in segments:
-        left, match, right = value.partition(segment)
-        value = ''.join([left, match.replace(',', '\000'), right])
-    return [_dequote(x.strip()).replace('\000', ',') for x in value.split(',')]
+        if segment.startswith('"'):
+            cursor = _parser.CursorParser(segment)
+            parsed_item = cursor.parse_quoted_string()
+            cursor.skip_ows()
+            if cursor.index != len(segment):
+                raise errors.MalformedListSegment(segment)
+            parsed.append(parsed_item)
+        else:
+            parsed.append(segment)
+    return parsed
 
 
 def _parse_parameter_list(
-    parameter_list: abc.Iterable[str],
+    parameter_list: str,
     *,
     normalize_parameter_names: bool = False,
     normalize_parameter_values: bool = True,
-    strip_interior_whitespace: bool = False,
 ) -> list[tuple[str, str]]:
     """Parse a named parameter list in the "common" format.
 
-    :param parameter_list: sequence of string values to parse
+    :param parameter_list: semicolon-delimited parameter string
     :keyword normalize_parameter_names: if specified and *truthy*
         then parameter names will be case-folded to lower case
     :keyword normalize_parameter_values: if omitted or specified
         as *truthy*, then parameter values are case-folded to lower case
-    :keyword strip_interior_whitespace: remove whitespace between
-        name and values surrounding the ``=``
     :return: a sequence containing the name to value pairs
 
     The parsed values are normalized according to the keyword parameters
     and returned as :class:`tuple` of name to value pairs preserving the
-    ordering from `parameter_list`.  The values will have quotes removed
-    if they were present.
+    ordering from `parameter_list`. Quoted strings are unescaped while
+    being tokenized.
 
     """
-    parameters = []
-    for param in parameter_list:
-        param = param.strip()  # noqa: PLW2901 -- overridden for simplicity
-        if param:
-            name, value = param.split('=')
-            if strip_interior_whitespace:
-                name, value = name.strip(), value.strip()
-            if normalize_parameter_names:
-                name = name.lower()
-            if normalize_parameter_values:
-                value = value.lower()
-            parameters.append((name, _dequote(value.strip())))
-    return parameters
+    return _parser.parse_http_parameters(
+        parameter_list,
+        normalize_parameter_names=normalize_parameter_names,
+        normalize_parameter_values=normalize_parameter_values,
+    )
+
+
+def _pop_quality_parameter(
+    parameters: abc.MutableMapping[str, str],
+) -> str | None:
+    """Pop a quality parameter from `parameters` if present."""
+    for name in tuple(parameters):
+        if name.lower() == 'q':
+            return parameters.pop(name)
+    return None
 
 
 def _parse_qualified_list(value: str) -> list[str]:
@@ -427,36 +414,42 @@ def _parse_qualified_list(value: str) -> list[str]:
     :param value: The value to parse into a list
 
     """
-    found_wildcard = False
-    values: list[tuple[float, str]] = []
+    accepted: list[_QualifiedItem[str]] = []
+    wildcards: list[str] = []
     rejected_values: list[str] = []
-    parsed = parse_list(value)
-    default = float(len(parsed) + 1)
-    highest = default + 1.0
-    for raw_str in parsed:
-        charset, _, parameter_str = raw_str.replace(' ', '').partition(';')
-        if charset == '*':
-            found_wildcard = True
+    for index, raw_str in enumerate(parse_list(value)):
+        if not raw_str.strip():
             continue
-        params = dict(_parse_parameter_list(parameter_str.split(';')))
-        actual_param = params.get('q')
-        quality = float(params.pop('q', default))
-        if quality < _SMALLEST_QUALITY:
+        charset, _, parameter_str = raw_str.partition(';')
+        charset = charset.strip()
+        params = dict(
+            _parse_parameter_list(
+                parameter_str,
+                normalize_parameter_names=True,
+            )
+        )
+        item = _QualifiedItem(charset, params.get('q'), index)
+        if charset == '*':
+            if item.is_rejected:
+                rejected_values.append(charset)
+            else:
+                wildcards.append(charset)
+        elif item.is_rejected:
             rejected_values.append(charset)
-        elif actual_param == '1.0':
-            values.append((highest + default, charset))
         else:
-            values.append((quality, charset))
-        default -= 1.0
-    parsed = [value[1] for value in sorted(values, reverse=True)]
-    if found_wildcard:
-        parsed.append('*')
+            accepted.append(item)
+
+    explicit_max = [item.value for item in accepted if item.is_explicit_max]
+    remaining = sorted(
+        (item for item in accepted if not item.is_explicit_max),
+        key=operator.attrgetter('quality'),
+        reverse=True,
+    )
+    parsed = explicit_max
+    parsed.extend(item.value for item in remaining)
+    parsed.extend(wildcards)
     parsed.extend(rejected_values)
     return parsed
-
-
-def _remove_comments(value: str) -> str:
-    return _COMMENT_RE.sub('', value)
 
 
 def _dequote(value: str) -> str:
@@ -476,6 +469,6 @@ def _dequote(value: str) -> str:
     ' with spaces '
 
     """
-    if value[0] == '"' and value[-1] == '"':
-        return value[1:-1]
-    return value
+    return (
+        value[1:-1] if value.startswith('"') and value.endswith('"') else value
+    )

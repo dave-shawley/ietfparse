@@ -80,6 +80,51 @@ class ProactiveContentNegotiationTests(ContentNegotiationTestCase):
             'application/other', 'text/plain', 'application/other'
         )
 
+    def test_that_zero_quality_specific_match_does_not_reject_others(
+        self,
+    ) -> None:
+        self.assert_content_type_matched_as(
+            'text/plain',
+            'text/javascript',
+            'text/plain',
+        )
+
+    def test_that_zero_quality_range_rejects_matching_candidate(self) -> None:
+        with self.assertRaises(errors.NoMatch):
+            algorithms.select_content_type(
+                headers.parse_accept('text/*;q=0, */*;q=0.5'),
+                [headers.parse_content_type('text/plain')],
+            )
+
+    def test_that_more_specific_match_overrides_broader_rejection(
+        self,
+    ) -> None:
+        selected, matched = algorithms.select_content_type(
+            headers.parse_accept('text/plain, text/*;q=0, */*;q=0.5'),
+            [headers.parse_content_type('text/plain')],
+        )
+        self.assertEqual(str(selected), 'text/plain')
+        self.assertEqual(str(matched), 'text/plain')
+
+    def test_that_specific_rejection_overrides_broader_positive_match(
+        self,
+    ) -> None:
+        with self.assertRaises(errors.NoMatch):
+            algorithms.select_content_type(
+                headers.parse_accept(
+                    'text/plain;q=0, text/*;q=0.5, */*;q=0.1'
+                ),
+                [headers.parse_content_type('text/plain')],
+            )
+
+    def test_that_rejection_only_applies_to_matching_ranges(self) -> None:
+        selected, matched = algorithms.select_content_type(
+            headers.parse_accept('text/*;q=0, application/*;q=0.5'),
+            [headers.parse_content_type('application/json')],
+        )
+        self.assertEqual(str(selected), 'application/json')
+        self.assertEqual(str(matched), 'application/*')
+
     def test_that_zero_quality_is_not_matched(self) -> None:
         with self.assertRaises(errors.NoMatch):
             algorithms.select_content_type(

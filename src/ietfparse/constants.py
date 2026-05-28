@@ -24,11 +24,11 @@
 
 """
 
+from ietfparse import _quality, headers
 from ietfparse import datastructures as ds
-from ietfparse import headers
 
-# This is defined in headers to avoid a circular import
-SMALLEST_QUALITY = headers._SMALLEST_QUALITY  # noqa: SLF001
+# This is defined in _quality to avoid a circular import
+SMALLEST_QUALITY = _quality.SMALLEST_QUALITY
 """Smallest non-zero quality value"""
 
 APPLICATION_JSON: ds.ContentType = headers.parse_content_type(

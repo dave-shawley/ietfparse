@@ -17,7 +17,10 @@ import functools
 import typing
 from collections import abc
 
-from ietfparse import _helpers
+from ietfparse import _helpers, _quality
+
+if typing.TYPE_CHECKING:
+    import decimal
 
 
 @functools.total_ordering
@@ -54,7 +57,7 @@ class ContentType:
     content_subtype: str
     parameters: abc.MutableMapping[str, str]
     content_suffix: str | None
-    quality: float | None
+    _quality_override: float | None
 
     def __init__(
         self,
@@ -65,7 +68,7 @@ class ContentType:
     ) -> None:
         self.content_type = content_type.strip().lower()
         self.content_subtype = content_subtype.strip().lower()
-        self.quality = None
+        self._quality_override = None
         if content_suffix is not None:
             self.content_suffix = content_suffix.strip().lower()
         else:
@@ -115,6 +118,23 @@ class ContentType:
             )
         )
 
+    @property
+    def quality(self) -> float:
+        """The normalized quality metadata associated with this value."""
+        if self._quality_override is not None:
+            return self._quality_override
+        q = self.parameters.get('q')
+        if q is None:
+            return 1.0
+        return _quality.normalize_quality(q)
+
+    @quality.setter
+    def quality(self, value: decimal.Decimal | float | str | None) -> None:
+        if value is None:
+            self._quality_override = None
+            return
+        self._quality_override = _quality.normalize_quality(value)
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, str):
             other = _helpers.parse_header('parse_content_type', other)
@@ -146,10 +166,11 @@ class ContentType:
 T = typing.TypeVar('T')
 
 
-class ImmutableSequence(abc.Sequence[T], typing.Generic[T]):  # noqa: PLW1641
+class ImmutableSequence(abc.Sequence[T], typing.Generic[T]):
     """Immutable sequence."""
 
     def __init__(self, seq: abc.Iterable[T]) -> None:
+        super().__init__()
         self.__data = list(seq)
 
     def __len__(self) -> int:
@@ -180,16 +201,17 @@ class ImmutableSequence(abc.Sequence[T], typing.Generic[T]):  # noqa: PLW1641
         return self.__data.count(value)
 
     def __eq__(self, other: object) -> bool:
-        try:
-            return len(other) == len(self.__data) and all(  # type: ignore[arg-type]
-                a == b
-                for a, b in zip(self.__data, other, strict=True)  # type: ignore[call-overload]
-            )
-        except (ValueError, TypeError):
+        if not isinstance(other, abc.Sequence):
             return NotImplemented
+        return len(other) == len(self.__data) and all(
+            a == b for a, b in zip(self.__data, other, strict=True)
+        )
 
-    def __contains__(self, item: object) -> bool:
-        return item in self.__data
+    # explicitly disable hashing since `T` may not be hashable
+    __hash__: None = None
+
+    def __contains__(self, value: object) -> bool:
+        return value in self.__data
 
     def __iter__(self) -> abc.Iterator[T]:
         return iter(self.__data)
@@ -215,7 +237,7 @@ class LinkHeader:
         parameters: abc.Sequence[tuple[str, str]] | None = None,
     ) -> None:
         self._target = target
-        param_dict = collections.defaultdict(list)
+        param_dict = collections.defaultdict(list[str])
         for name, value in parameters or []:
             param_dict[name].append(value)
         self._params = dict(param_dict.items())

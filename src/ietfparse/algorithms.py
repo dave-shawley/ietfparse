@@ -10,6 +10,7 @@ described in IETF RFCs.
 
 from __future__ import annotations
 
+import operator
 import typing
 from operator import attrgetter
 
@@ -32,7 +33,68 @@ def _content_type_matches(
     ) and _wildcard_compare(candidate.content_subtype, pattern.content_subtype)
 
 
-def select_content_type(  # noqa: C901 -- overly complex
+MatchKey = tuple[int, int, int]
+
+
+class _Match(typing.NamedTuple):
+    candidate: datastructures.ContentType
+    pattern: datastructures.ContentType
+    match_type: int
+    exactness: int
+    parameter_distance: int
+
+    @property
+    def key(self) -> MatchKey:
+        return self.match_type, self.exactness, self.parameter_distance
+
+
+def _match_type(pattern: datastructures.ContentType) -> int:
+    if pattern.content_type == pattern.content_subtype == '*':
+        return 2
+    if pattern.content_subtype == '*':
+        return 1
+    return 0
+
+
+def _parameter_distance(
+    candidate: datastructures.ContentType, pattern: datastructures.ContentType
+) -> int:
+    distance = len(candidate.parameters)
+    for key, value in candidate.parameters.items():
+        if key in pattern.parameters:
+            if pattern.parameters[key] == value:
+                distance -= 1
+            else:
+                distance += 1
+    return distance
+
+
+def _build_match(
+    candidate: datastructures.ContentType, pattern: datastructures.ContentType
+) -> _Match | None:
+    if not _content_type_matches(candidate, pattern):
+        return None
+    return _Match(
+        candidate,
+        pattern,
+        _match_type(pattern),
+        0 if candidate == pattern else 1,
+        _parameter_distance(candidate, pattern),
+    )
+
+
+def _is_rejected(
+    match: _Match, rejected: abc.Sequence[datastructures.ContentType]
+) -> bool:
+    return any(
+        (rejected_match := _build_match(match.candidate, rejected_pattern))
+        is not None
+        and rejected_match.key <= match.key
+        for rejected_pattern in rejected
+    )
+
+
+def select_content_type(
     requested: abc.Sequence[datastructures.ContentType | str] | str | None,
     available: abc.Sequence[datastructures.ContentType | str],
     *,
@@ -65,89 +127,33 @@ def select_content_type(  # noqa: C901 -- overly complex
         `available`
 
     """
-
-    class Match:
-        """Sorting assistant.
-
-        Sorting matches is a tricky business.  We need a way to
-        prefer content types by *specificity*.  The definition of
-        *more specific* is a little less than clear.  This class
-        treats the strength of a match as the most important thing.
-        Wild cards are less specific in all cases.  This is tracked
-        by the ``match_type`` attribute.
-
-        If we the candidate and pattern differ only by parameters,
-        then the strength is based on the number of pattern parameters
-        that match parameters from the candidate.  The easiest way to
-        track this is to count the number of candidate parameters that
-        are matched by the pattern.  This is what ``parameter_distance``
-        tracks.
-
-        The final key to the solution is to order the result set such
-        that the most specific matches are first in the list.  This
-        is done by carefully choosing values for ``match_type`` such
-        that full matches bubble up to the front.  We also need a
-        scheme of counting matching parameters that pushes stronger
-        matches to the front of the list.  The `parameter_distance`
-        attribute starts at the number of candidate parameters and
-        decreases for each matching parameter - the lesser the value,
-        the stronger the match.
-
-        """
-
-        FULL_TYPE = 0
-        PARTIAL = 1
-        WILDCARD = 2
-
-        def __init__(
-            self,
-            candidate: datastructures.ContentType,
-            pattern: datastructures.ContentType,
-        ) -> None:
-            self.candidate = candidate
-            self.pattern = pattern
-
-            if pattern.content_type == pattern.content_subtype == '*':
-                self.match_type = self.WILDCARD
-            elif pattern.content_subtype == '*':
-                self.match_type = self.PARTIAL
-            else:
-                self.match_type = self.FULL_TYPE
-
-            self.parameter_distance = len(self.candidate.parameters)
-            for key, value in candidate.parameters.items():
-                if key in pattern.parameters:
-                    if pattern.parameters[key] == value:
-                        self.parameter_distance -= 1
-                    else:
-                        self.parameter_distance += 1
-
-    def extract_quality(obj: datastructures.ContentType) -> float:
-        return 1.0 if obj.quality is None else obj.quality
-
     _requested, _available, _default = _normalize_parameters(
         requested, available, default
     )
 
-    matches: list[Match] = []
-    for pattern in sorted(_requested, key=extract_quality, reverse=True):
-        for candidate in _available:
-            if _content_type_matches(candidate, pattern):
-                if candidate == pattern:  # exact match!!!
-                    if extract_quality(pattern) < constants.SMALLEST_QUALITY:
-                        raise errors.NoMatch  # quality of 0 means NO
-                    return candidate, pattern
-                matches.append(Match(candidate, pattern))
-
+    requested_by_quality = sorted(
+        _requested, key=attrgetter('quality'), reverse=True
+    )
+    rejected = [
+        pattern
+        for pattern in requested_by_quality
+        if pattern.quality < constants.SMALLEST_QUALITY
+    ]
+    matches = [
+        match
+        for pattern in requested_by_quality
+        if pattern.quality >= constants.SMALLEST_QUALITY
+        for candidate in _available
+        if (match := _build_match(candidate, pattern)) is not None
+        and not _is_rejected(match, rejected)
+    ]
     if not matches:
         if _default is not None:
             return _default, _default
         raise errors.NoMatch
 
-    matches = sorted(
-        matches, key=attrgetter('match_type', 'parameter_distance')
-    )
-    return matches[0].candidate, matches[0].pattern
+    best = min(matches, key=operator.attrgetter('key'))
+    return best.candidate, best.pattern
 
 
 def _normalize_parameters(

@@ -1,6 +1,6 @@
 import unittest
 
-from ietfparse import datastructures, errors, headers
+from ietfparse import _parser, datastructures, errors, headers
 
 
 class SimpleContentTypeParsingTests(unittest.TestCase):
@@ -47,10 +47,78 @@ class ParsingComplexContentTypeTests(unittest.TestCase):
         self.assertEqual(self.parsed.parameters['msgtype'], 'Request')
 
 
+class QuotedContentTypeParameterParsingTests(unittest.TestCase):
+    def test_that_quoted_parameters_can_contain_semicolons(self) -> None:
+        parsed = headers.parse_content_type(
+            'text/plain; note="a;b"; charset=utf-8',
+            normalize_parameter_values=False,
+        )
+        self.assertEqual(parsed.parameters['note'], 'a;b')
+        self.assertEqual(parsed.parameters['charset'], 'utf-8')
+
+    def test_that_quoted_parameters_can_contain_equals_signs(self) -> None:
+        parsed = headers.parse_content_type(
+            'text/plain; note="a=b"; charset=utf-8',
+            normalize_parameter_values=False,
+        )
+        self.assertEqual(parsed.parameters['note'], 'a=b')
+        self.assertEqual(parsed.parameters['charset'], 'utf-8')
+
+    def test_that_quoted_pairs_are_unescaped(self) -> None:
+        parsed = headers.parse_content_type(
+            'text/plain; note="a\\"b"',
+            normalize_parameter_values=False,
+        )
+        self.assertEqual(parsed.parameters['note'], 'a"b')
+
+    def test_that_comments_with_nesting_and_escapes_are_ignored(self) -> None:
+        parsed = headers.parse_content_type(
+            'text/plain (outer(inner\\)value)); charset=utf-8',
+            normalize_parameter_values=False,
+        )
+        self.assertEqual(parsed.content_type, 'text')
+        self.assertEqual(parsed.content_subtype, 'plain')
+        self.assertEqual(parsed.parameters['charset'], 'utf-8')
+
+    def test_that_parentheses_inside_quoted_parameters_are_not_comments(
+        self,
+    ) -> None:
+        parsed = headers.parse_content_type(
+            'text/plain; note="(kept)"; charset=utf-8 (discard)',
+            normalize_parameter_values=False,
+        )
+        self.assertEqual(parsed.parameters['note'], '(kept)')
+        self.assertEqual(parsed.parameters['charset'], 'utf-8')
+
+
 class ParsingBrokenContentTypes(unittest.TestCase):
     def test_that_missing_subtype_raises_value_error(self) -> None:
         with self.assertRaises(errors.MalformedContentType):
             headers.parse_content_type('*')
+
+    def test_that_comment_parse_errors_raise_malformed_content_type(
+        self,
+    ) -> None:
+        value = 'text/plain (unterminated'
+        with self.assertRaises(errors.MalformedContentType) as raised:
+            headers.parse_content_type(value)
+
+        self.assertEqual(raised.exception.header_value, value)
+        self.assertIsInstance(raised.exception.__cause__, _parser.ParseError)
+
+    def test_that_multiple_suffix_delimiters_raise_value_error(self) -> None:
+        with self.assertRaises(errors.MalformedContentType):
+            headers.parse_content_type('application/example+json+xml')
+
+    def test_that_malformed_parameter_lists_raise_malformed_content_type(
+        self,
+    ) -> None:
+        value = 'text/plain; foo'
+        with self.assertRaises(errors.MalformedContentType) as raised:
+            headers.parse_content_type(value)
+
+        self.assertEqual(raised.exception.header_value, value)
+        self.assertIsInstance(raised.exception.__cause__, ValueError)
 
 
 class Rfc7231ExampleTests(unittest.TestCase):
