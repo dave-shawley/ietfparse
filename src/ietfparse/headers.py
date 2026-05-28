@@ -343,16 +343,25 @@ def parse_list(value: str) -> list[str]:
 
     :param value: header value to split into elements
     :return: list of header elements as strings
+    :raise ietfparse.errors.MalformedListSegment:
+        if a segment starts with a quoted string but contains additional
+        non-delimited content or otherwise has invalid quoted-string syntax
 
     """
+    try:
+        segments = _parser.parse_list_items(value)
+    except _parser.ParseError as error:
+        raise errors.MalformedListSegment(value) from error
+
     parsed = []
-    for segment in _parser.parse_list_items(value):
-        if segment.startswith('"') and segment.endswith('"'):
-            if '\\' in segment:
-                cursor = _parser.CursorParser(segment)
-                parsed.append(cursor.parse_quoted_string())
-            else:
-                parsed.append(segment[1:-1])
+    for segment in segments:
+        if segment.startswith('"'):
+            cursor = _parser.CursorParser(segment)
+            parsed_item = cursor.parse_quoted_string()
+            cursor.skip_ows()
+            if cursor.index != len(segment):
+                raise errors.MalformedListSegment(segment)
+            parsed.append(parsed_item)
         else:
             parsed.append(segment)
     return parsed

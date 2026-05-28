@@ -55,6 +55,9 @@
 - list-style header parsing now preserves escaped quotes and commas inside
   quoted values for `headers.parse_list`, `headers.parse_cache_control`,
   `headers.parse_forwarded`, and `headers.parse_accept`.
+- `headers.parse_list` now raises `errors.MalformedListSegment` when a
+  quoted item is followed by additional non-delimited content instead of
+  silently merging it into a malformed value.
 - `algorithms.select_content_type` changed to accept strings as well as `ContentType`
   instances
 

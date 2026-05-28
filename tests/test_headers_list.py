@@ -1,6 +1,6 @@
 import unittest
 
-from ietfparse import headers
+from ietfparse import errors, headers
 
 
 class ListHeaderParsingTests(unittest.TestCase):
@@ -35,3 +35,19 @@ class ListHeaderParsingTests(unittest.TestCase):
 
     def test_that_trailing_empty_items_are_preserved(self) -> None:
         self.assertEqual(headers.parse_list('first,'), ['first', ''])
+
+    def test_that_quoted_items_with_missing_delimiters_are_rejected(
+        self,
+    ) -> None:
+        with self.assertRaises(errors.MalformedListSegment) as raised:
+            headers.parse_list(
+                'token, "space separated", "incorrect" "quoted"'
+            )
+        self.assertEqual(raised.exception.segment, '"incorrect" "quoted"')
+
+    def test_that_malformed_quoted_items_raise_public_list_errors(
+        self,
+    ) -> None:
+        with self.assertRaises(errors.MalformedListSegment) as raised:
+            headers.parse_list('token, "unterminated')
+        self.assertEqual(raised.exception.segment, 'token, "unterminated')
