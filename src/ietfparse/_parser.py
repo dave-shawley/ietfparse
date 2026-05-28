@@ -11,7 +11,6 @@ _TOKEN_CHARS = frozenset(
     'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     'abcdefghijklmnopqrstuvwxyz'
 )
-_QUOTED_COMMA_PATTERN = re.compile(r'"[^"]*,[^"]*"')
 _QUOTED_SEMICOLON_PATTERN = re.compile(r'"[^"]*;[^"]*"')
 _TOKEN_PATTERN = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$")
 
@@ -186,13 +185,7 @@ def parse_http_parameters(
 
 def parse_list_items(value: str) -> list[str]:
     """Parse a comma-delimited list while respecting quoted strings."""
-    if '\\' not in value and (
-        '"' not in value
-        or (
-            value.count('"') % 2 == 0
-            and _QUOTED_COMMA_PATTERN.search(value) is None
-        )
-    ):
+    if '\\' not in value and '"' not in value:
         return [segment.strip() for segment in value.split(',')]
 
     cursor = CursorParser(value)

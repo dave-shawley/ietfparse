@@ -172,6 +172,12 @@ class ParameterTokenizerTests(unittest.TestCase):
 
 
 class ListItemParserTests(unittest.TestCase):
+    def test_that_quoted_commas_are_preserved(self) -> None:
+        self.assertEqual(
+            _parser.parse_list_items('first, "comma ->,<- here", last'),
+            ['first', '"comma ->,<- here"', 'last'],
+        )
+
     def test_that_unterminated_quoted_items_raise_parse_error(self) -> None:
         with self.assertRaisesRegex(
             _parser.ParseError,
