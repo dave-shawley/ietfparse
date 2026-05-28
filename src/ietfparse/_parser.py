@@ -227,7 +227,7 @@ def remove_http_comments(value: str) -> str:
     return ''.join(parsed)
 
 
-def _fast_parse_http_parameters(  # noqa: C901 - complexity due to optimization
+def _fast_parse_http_parameters(
     value: str,
     *,
     normalize_parameter_names: bool,
@@ -251,11 +251,7 @@ def _fast_parse_http_parameters(  # noqa: C901 - complexity due to optimization
         if _TOKEN_PATTERN.fullmatch(name) is None:
             raise ValueError(error_message)
 
-        if parameter_value.startswith('"') and parameter_value.endswith('"'):
-            parameter_value = parameter_value[1:-1]
-            if '"' in parameter_value:
-                raise ValueError(error_message)
-        elif _TOKEN_PATTERN.fullmatch(parameter_value) is None:
+        if _TOKEN_PATTERN.fullmatch(parameter_value) is None:
             raise ValueError(error_message)
 
         if normalize_parameter_names:
