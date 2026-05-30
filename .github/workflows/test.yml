@@ -9,6 +9,21 @@ on:
 
 jobs:
 
+  sonar-ready:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -n "$SONAR_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
   style-check:
     runs-on: ubuntu-latest
     steps:
@@ -69,8 +84,9 @@ jobs:
           report_type: "test_results"
 
   analysis:
+    needs: sonar-ready
+    if: ${{ needs.sonar-ready.outputs.enabled == 'true' }}
     runs-on: "ubuntu-latest"
-    if: secrets.SONAR_TOKEN
     steps:
       - uses: actions/checkout@v6
         with:
