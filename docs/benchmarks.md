@@ -69,6 +69,36 @@ In version 1 the `implementation` field is always `workspace`. It is included
 now so future releases can compare multiple implementations without changing
 the top-level result schema.
 
+## Comparing implementations
+
+The benchmark CLI can compare multiple implementations when compatible parser
+surfaces exist. Today that means the `link` header can be benchmarked against:
+
+- `workspace` for `ietfparse.headers.parse_link`
+- `requests` for `requests.utils.parse_header_links`
+- `httpx` for `httpx.Response.links`
+
+Use `--implementation` one or more times to select implementations:
+
+```commandline
+$ ietfparse-test run --header link --implementation workspace --implementation requests
+$ ietfparse-test run --header link --implementation workspace --implementation httpx
+```
+
+If omitted, `run` defaults to the workspace parser implementation.
+
+The `requests` and `httpx` implementations only support the `link` header.
+Selecting either for other headers fails fast with a validation error.
+
+For behavioral comparisons, use the dedicated `compare-link` command. It runs a
+curated set of link parsing edge cases derived from the test suite through the
+available implementations and emits either Rich summary output or detailed JSON:
+
+```commandline
+$ ietfparse-test compare-link
+$ ietfparse-test compare-link --format json
+```
+
 ## Using the utility
 
 The benchmark CLI is part of the optional `tests` extra:
@@ -97,6 +127,9 @@ Use `run` to execute one or more benchmark selections:
 $ ietfparse-test run
 $ ietfparse-test run --header accept --workload realistic
 $ ietfparse-test run --header link --workload complex --iterations 5000 --repeat 5
+$ ietfparse-test run --header link --implementation workspace --implementation requests
+$ ietfparse-test run --header link --implementation workspace --implementation httpx
+$ ietfparse-test compare-link --format json
 $ python -m ietfparse.test run --format json
 ```
 
