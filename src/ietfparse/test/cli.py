@@ -42,7 +42,15 @@ class RunPayload(t.TypedDict):
 
     headers: list[data.SupportedHeader]
     workloads: list[data.SupportedWorkload]
+    implementations: list[runner.SupportedImplementation]
     results: list[runner.BenchmarkResultJson]
+
+
+class CompareLinkPayload(t.TypedDict):
+    """Stable JSON schema for `compare-link` output."""
+
+    case_count: int
+    results: list[runner.LinkComparisonJson]
 
 
 T = t.TypeVar('T')
@@ -90,6 +98,22 @@ def resolve_workloads(
     )
 
 
+def resolve_implementations(
+    selected: abc.Iterable[str] | None,
+) -> tuple[runner.SupportedImplementation, ...]:
+    """Normalize an optional implementation selection list."""
+    if not selected:
+        return ('workspace',)
+    return t.cast(
+        'tuple[runner.SupportedImplementation, ...]',
+        _normalize_values(
+            label='implementation',
+            valid=runner.SUPPORTED_IMPLEMENTATIONS,
+            values=selected,
+        ),
+    )
+
+
 def determine_output_format(
     *, requested: OutputFormat | None, stream: t.IO[str]
 ) -> OutputFormat:
@@ -113,12 +137,25 @@ def build_run_payload(
     results: abc.Iterable[runner.BenchmarkResult],
     header_ids: abc.Sequence[data.SupportedHeader],
     workload_ids: abc.Sequence[data.SupportedWorkload],
+    implementation_ids: abc.Sequence[runner.SupportedImplementation],
 ) -> RunPayload:
     """Build the stable JSON payload for `run` output."""
     return {
         'headers': list(header_ids),
         'workloads': list(workload_ids),
+        'implementations': list(implementation_ids),
         'results': [runner.result_to_json(result) for result in results],
+    }
+
+
+def build_compare_link_payload(
+    *,
+    results: abc.Sequence[runner.LinkComparisonJson],
+) -> CompareLinkPayload:
+    """Build the stable JSON payload for `compare-link` output."""
+    return {
+        'case_count': len(results),
+        'results': list(results),
     }
 
 
@@ -171,6 +208,19 @@ def run(  # noqa: PLR0913
             help='Number of timing repeats to execute.',
         ),
     ] = 5,
+    implementation: t.Annotated[
+        list[str] | None,
+        typer.Option(
+            '--implementation',
+            help=(
+                'Implementation id to benchmark. '
+                'May be specified multiple times.'
+            ),
+            autocompletion=_generate_autocomplete(
+                runner.SUPPORTED_IMPLEMENTATIONS
+            ),
+        ),
+    ] = None,
     output_format: t.Annotated[
         OutputFormat | None,
         typer.Option(
@@ -191,19 +241,33 @@ def run(  # noqa: PLR0913
     dataset = data.load_dataset()
     header_ids = resolve_headers(header)
     workload_ids = resolve_workloads(workload)
-    results = runner.run_benchmarks(
-        dataset,
-        selection=runner.BenchmarkSelection(
-            header_ids=header_ids,
-            workload_ids=workload_ids,
-            iterations=iterations,
-            repeat=repeat,
-        ),
+    implementation_ids = resolve_implementations(implementation)
+    results: list[runner.BenchmarkResult] = []
+    selection = runner.BenchmarkSelection(
+        header_ids=header_ids,
+        workload_ids=workload_ids,
+        iterations=iterations,
+        repeat=repeat,
     )
+    for implementation_name in implementation_ids:
+        runner.validate_implementation_support(
+            implementation_name=implementation_name,
+            header_ids=header_ids,
+        )
+        results.extend(
+            runner.run_benchmarks(
+                dataset,
+                selection=selection,
+                implementation=runner.implementation_named(
+                    implementation_name
+                ),
+            )
+        )
     payload = build_run_payload(
         results=results,
         header_ids=header_ids,
         workload_ids=workload_ids,
+        implementation_ids=implementation_ids,
     )
     format_name = determine_output_format(
         requested=output_format,
@@ -213,6 +277,30 @@ def run(  # noqa: PLR0913
         _write_json(payload)
         return
     _render_rich_results(payload=payload, quiet=quiet)
+
+
+@app.command(name='compare-link')
+def compare_link(
+    *,
+    output_format: t.Annotated[
+        OutputFormat | None,
+        typer.Option(
+            '--format',
+            case_sensitive=False,
+            help='Output format.',
+        ),
+    ] = None,
+) -> None:
+    """Compare curated Link header cases across implementations."""
+    payload = build_compare_link_payload(results=runner.compare_link_cases())
+    format_name = determine_output_format(
+        requested=output_format,
+        stream=sys.stdout,
+    )
+    if format_name is OutputFormat.json:
+        _write_json(payload)
+        return
+    _render_rich_link_comparison(payload)
 
 
 @app.command(name='list')
@@ -240,7 +328,9 @@ def list_command(
     _render_rich_listing(dataset)
 
 
-def _write_json(payload: ListPayload | RunPayload) -> None:
+def _write_json(
+    payload: ListPayload | RunPayload | CompareLinkPayload,
+) -> None:
     sys.stdout.write(f'{json.dumps(payload, indent=2, sort_keys=True)}\n')
 
 
@@ -291,7 +381,37 @@ def _render_rich_results(*, payload: RunPayload, quiet: bool) -> None:
             panel.Panel(
                 f'headers={len(payload["headers"])} '
                 f'workloads={len(payload["workloads"])} '
+                f'implementations={len(payload["implementations"])} '
                 f'results={len(payload["results"])}'
             )
         )
     cons.print(tbl)
+
+
+def _render_rich_link_comparison(payload: CompareLinkPayload) -> None:
+    cons = console.Console()
+    tbl = table.Table(title='ietfparse link comparison')
+    tbl.add_column('Case')
+    tbl.add_column('Strict')
+    tbl.add_column('Workspace')
+    tbl.add_column('Requests')
+    tbl.add_column('HTTPX')
+    for row in payload['results']:
+        tbl.add_row(
+            row['case_id'],
+            'yes' if row['strict'] else 'no',
+            _comparison_summary(row['workspace']),
+            _comparison_summary(row['requests']),
+            _comparison_summary(row['httpx']),
+        )
+    cons.print(panel.Panel(f'cases={payload["case_count"]}'))
+    cons.print(tbl)
+
+
+def _comparison_summary(payload: runner.ParserOutcomeJson) -> str:
+    if payload['status'] == 'error':
+        return f'error:{payload["error_type"]}'
+    result = payload['result']
+    if isinstance(result, list):
+        return f'ok:{len(result)} value(s)'
+    return 'ok'

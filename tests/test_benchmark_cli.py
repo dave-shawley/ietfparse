@@ -69,6 +69,15 @@ class BenchmarkCliSelectionTests(unittest.TestCase):
     def test_all_workloads_selected_by_default(self) -> None:
         self.assertEqual(cli.resolve_workloads(None), data.SUPPORTED_WORKLOADS)
 
+    def test_implementation_selection_defaults_to_workspace(self) -> None:
+        self.assertEqual(cli.resolve_implementations(None), ('workspace',))
+
+    def test_multiple_implementation_selection(self) -> None:
+        self.assertEqual(
+            cli.resolve_implementations(['WORKSPACE', 'requests', 'HTTPX']),
+            ('workspace', 'requests', 'httpx'),
+        )
+
 
 class BenchmarkCliOutputModeTests(unittest.TestCase):
     def test_tty_defaults_to_rich(self) -> None:
@@ -120,9 +129,11 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             results=results,
             header_ids=('accept',),
             workload_ids=('realistic',),
+            implementation_ids=('workspace',),
         )
         self.assertEqual(payload['headers'], ['accept'])
         self.assertEqual(payload['workloads'], ['realistic'])
+        self.assertEqual(payload['implementations'], ['workspace'])
         self.assertEqual(len(payload['results']), 1)
         result = payload['results'][0]
         self.assertEqual(
@@ -153,6 +164,37 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         counts = payload['sample_counts']
         self.assertEqual(counts['accept']['realistic'], 3)
         self.assertEqual(counts['link']['complex'], 2)
+
+    def test_compare_link_payload_reports_case_count(self) -> None:
+        payload = cli.build_compare_link_payload(
+            results=[
+                {
+                    'case_id': 'edge',
+                    'description': 'edge case',
+                    'sample': '<>',
+                    'strict': True,
+                    'workspace': {
+                        'status': 'ok',
+                        'result': [],
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                    'requests': {
+                        'status': 'ok',
+                        'result': [],
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                    'httpx': {
+                        'status': 'ok',
+                        'result': {},
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                }
+            ]
+        )
+        self.assertEqual(payload['case_count'], 1)
 
 
 class BenchmarkCliIntegrationTests(unittest.TestCase):
@@ -192,6 +234,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
         self.assertIn('"implementation": "workspace"', result.stdout)
         self.assertIn('"header": "accept"', result.stdout)
+        self.assertIn('"implementations": [', result.stdout)
 
     def test_list_command_emits_rich_output(self) -> None:
         result = self.runner.invoke(cli.app, ['list', '--format', 'rich'])
@@ -246,4 +289,82 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
             ],
         )
         self.assertEqual(result.exit_code, 0)
-        self.assertIn('headers=1 workloads=1 results=1', result.stdout)
+        self.assertIn(
+            'headers=1 workloads=1 implementations=1 results=1',
+            result.stdout,
+        )
+
+    def test_run_command_rejects_requests_for_non_link_headers(self) -> None:
+        result = self.runner.invoke(
+            cli.app,
+            [
+                'run',
+                '--header',
+                'accept',
+                '--implementation',
+                'requests',
+            ],
+        )
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIsNotNone(result.exception)
+        self.assertIn(
+            'The requests implementation only supports the link header',
+            str(result.exception),
+        )
+
+    def test_run_command_rejects_httpx_for_non_link_headers(self) -> None:
+        result = self.runner.invoke(
+            cli.app,
+            [
+                'run',
+                '--header',
+                'accept',
+                '--implementation',
+                'httpx',
+            ],
+        )
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIsNotNone(result.exception)
+        self.assertIn(
+            'The httpx implementation only supports the link header',
+            str(result.exception),
+        )
+
+    def test_compare_link_command_emits_json_output(self) -> None:
+        with unittest.mock.patch.object(
+            runner,
+            'compare_link_cases',
+            return_value=[
+                {
+                    'case_id': 'edge',
+                    'description': 'edge case',
+                    'sample': '<>',
+                    'strict': True,
+                    'workspace': {
+                        'status': 'ok',
+                        'result': [],
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                    'requests': {
+                        'status': 'ok',
+                        'result': [],
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                    'httpx': {
+                        'status': 'ok',
+                        'result': {},
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                }
+            ],
+        ):
+            result = self.runner.invoke(
+                cli.app,
+                ['compare-link', '--format', 'json'],
+            )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('"case_count": 1', result.stdout)
+        self.assertIn('"case_id": "edge"', result.stdout)

@@ -55,6 +55,10 @@ dev = [
   "ty>=0.0.34",
   "zensical>=0.0.41",
 ]
+perftest = [
+  "httpx>=0.28.1",
+  "requests>=2.33.1",
+]
 
 [build-system]
 requires = ["hatchling"]

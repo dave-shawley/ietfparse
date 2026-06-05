@@ -106,6 +106,12 @@ class BenchmarkDatasetValidationTests(unittest.TestCase):
 
 
 class BenchmarkRunnerTests(unittest.TestCase):
+    def test_supported_implementations_are_stable(self) -> None:
+        self.assertEqual(
+            runner.SUPPORTED_IMPLEMENTATIONS,
+            ('workspace', 'requests', 'httpx'),
+        )
+
     def test_sample_error_returns_exception_for_invalid_value(self) -> None:
         sample_error = vars(runner)['_sample_error']
         error = sample_error(
@@ -133,3 +139,31 @@ class BenchmarkRunnerTests(unittest.TestCase):
         )
         self.assertGreaterEqual(elapsed_ns, 0)
         self.assertGreater(checksum, 0)
+
+    def test_requests_implementation_rejects_non_link_headers(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            'only supports the link header',
+        ):
+            runner.validate_implementation_support(
+                implementation_name='requests',
+                header_ids=('accept',),
+            )
+
+    def test_httpx_implementation_rejects_non_link_headers(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            'only supports the link header',
+        ):
+            runner.validate_implementation_support(
+                implementation_name='httpx',
+                header_ids=('accept',),
+            )
+
+    def test_compare_link_cases_returns_curated_results(self) -> None:
+        results = runner.compare_link_cases()
+        self.assertGreater(len(results), 0)
+        self.assertIn('case_id', results[0])
+        self.assertIn('workspace', results[0])
+        self.assertIn('requests', results[0])
+        self.assertIn('httpx', results[0])
