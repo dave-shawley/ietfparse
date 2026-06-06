@@ -109,7 +109,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
     def test_supported_implementations_are_stable(self) -> None:
         self.assertEqual(
             runner.SUPPORTED_IMPLEMENTATIONS,
-            ('workspace', 'requests', 'httpx'),
+            ('workspace', 'werkzeug', 'requests', 'httpx'),
         )
 
     def test_sample_error_returns_exception_for_invalid_value(self) -> None:
@@ -140,10 +140,74 @@ class BenchmarkRunnerTests(unittest.TestCase):
         self.assertGreaterEqual(elapsed_ns, 0)
         self.assertGreater(checksum, 0)
 
+    def test_werkzeug_parser_uses_accept_class_for_header_family(self) -> None:
+        parse_accept_header = unittest.mock.Mock(return_value=object())
+        mime_accept = object()
+        charset_accept = object()
+        accept = object()
+        language_accept = object()
+
+        def fake_import_module(name: str) -> object:
+            if name == 'werkzeug.http':
+                return unittest.mock.Mock(
+                    parse_accept_header=parse_accept_header
+                )
+            if name == 'werkzeug.datastructures':
+                return unittest.mock.Mock(
+                    MIMEAccept=mime_accept,
+                    CharsetAccept=charset_accept,
+                    Accept=accept,
+                    LanguageAccept=language_accept,
+                )
+            raise AssertionError(name)
+
+        with unittest.mock.patch.object(
+            runner.importlib,
+            'import_module',
+            side_effect=fake_import_module,
+        ):
+            mime_parser = runner.implementation_named('werkzeug').parser_for(
+                'parse_accept'
+            )
+            charset_parser = runner.implementation_named(
+                'werkzeug'
+            ).parser_for('parse_accept_charset')
+            encoding_parser = runner.implementation_named(
+                'werkzeug'
+            ).parser_for('parse_accept_encoding')
+            language_parser = runner.implementation_named(
+                'werkzeug'
+            ).parser_for('parse_accept_language')
+
+        mime_parser('text/html')
+        charset_parser('utf-8')
+        encoding_parser('gzip')
+        language_parser('en')
+
+        self.assertEqual(
+            parse_accept_header.call_args_list,
+            [
+                unittest.mock.call('text/html', cls=mime_accept),
+                unittest.mock.call('utf-8', cls=charset_accept),
+                unittest.mock.call('gzip', cls=accept),
+                unittest.mock.call('en', cls=language_accept),
+            ],
+        )
+
+    def test_werkzeug_implementation_rejects_non_accept_headers(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            'only supports the following headers',
+        ):
+            runner.validate_implementation_support(
+                implementation_name='werkzeug',
+                header_ids=('cache-control',),
+            )
+
     def test_requests_implementation_rejects_non_link_headers(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            'only supports the link header',
+            "only supports the following headers: 'link'",
         ):
             runner.validate_implementation_support(
                 implementation_name='requests',
@@ -153,7 +217,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
     def test_httpx_implementation_rejects_non_link_headers(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            'only supports the link header',
+            "only supports the following headers: 'link'",
         ):
             runner.validate_implementation_support(
                 implementation_name='httpx',
@@ -167,3 +231,31 @@ class BenchmarkRunnerTests(unittest.TestCase):
         self.assertIn('workspace', results[0])
         self.assertIn('requests', results[0])
         self.assertIn('httpx', results[0])
+
+    def test_compare_accept_cases_returns_curated_results(self) -> None:
+        class FakeWerkzeugAccept:
+            def best_match(
+                self,
+                matches: list[str],
+                default: str | None = None,
+            ) -> str | None:
+                return matches[0] if matches else default
+
+        implementation = runner.BenchmarkImplementation(
+            name='werkzeug',
+            parser_resolver=lambda _: lambda _: FakeWerkzeugAccept(),
+        )
+
+        with unittest.mock.patch.object(
+            runner,
+            'implementation_named',
+            return_value=implementation,
+        ):
+            results = runner.compare_accept_cases()
+
+        self.assertGreater(len(results), 0)
+        self.assertIn('case_id', results[0])
+        self.assertIn('accept', results[0])
+        self.assertIn('available', results[0])
+        self.assertIn('workspace', results[0])
+        self.assertIn('werkzeug', results[0])

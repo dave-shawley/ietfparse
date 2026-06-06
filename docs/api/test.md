@@ -36,6 +36,14 @@ $ ietfparse-test run --header link --workload complex --iterations 5000 --repeat
 $ python -m ietfparse.test run --format json
 ```
 
+Use `compare-link` and `compare-accept` to inspect curated behavioral
+differences across implementations.
+
+```commandline
+$ ietfparse-test compare-link --format json
+$ ietfparse-test compare-accept --format json
+```
+
 ## Options
 
 The `run` command supports:

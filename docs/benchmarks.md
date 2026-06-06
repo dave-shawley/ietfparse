@@ -65,38 +65,51 @@ Each JSON result record includes:
 - `ns_per_call`
 - `calls_per_second`
 
-In version 1 the `implementation` field is always `workspace`. It is included
-now so future releases can compare multiple implementations without changing
-the top-level result schema.
+The field stays stable whether the benchmark runs the workspace parser or a
+compatible third-party implementation.
 
 ## Comparing implementations
 
 The benchmark CLI can compare multiple implementations when compatible parser
-surfaces exist. Today that means the `link` header can be benchmarked against:
+surfaces exist. Today that includes:
 
-- `workspace` for `ietfparse.headers.parse_link`
+- `workspace` for every packaged benchmark fixture
+- `werkzeug` for the Accept-family headers via
+  `werkzeug.http.parse_accept_header`
 - `requests` for `requests.utils.parse_header_links`
 - `httpx` for `httpx.Response.links`
 
 Use `--implementation` one or more times to select implementations:
 
 ```commandline
+$ ietfparse-test run --header accept --implementation workspace --implementation werkzeug
+$ ietfparse-test run --header accept-language --implementation workspace --implementation werkzeug
 $ ietfparse-test run --header link --implementation workspace --implementation requests
 $ ietfparse-test run --header link --implementation workspace --implementation httpx
 ```
 
 If omitted, `run` defaults to the workspace parser implementation.
 
-The `requests` and `httpx` implementations only support the `link` header.
-Selecting either for other headers fails fast with a validation error.
+The `werkzeug` implementation only supports `accept`, `accept-charset`,
+`accept-encoding`, and `accept-language`. The `requests` and `httpx`
+implementations only support `link`. Selecting any implementation for other
+headers fails fast with a validation error.
 
-For behavioral comparisons, use the dedicated `compare-link` command. It runs a
-curated set of link parsing edge cases derived from the test suite through the
-available implementations and emits either Rich summary output or detailed JSON:
+For behavioral comparisons, use the dedicated comparison commands:
+
+- `compare-link` runs curated `Link` parsing edge cases through the available
+  parser implementations.
+- `compare-accept` runs curated `Accept` negotiation cases through
+  [ietfparse.algorithms.select_content_type][] and Werkzeug's
+  `Accept.best_match`.
+
+Both commands emit either Rich summary output or detailed JSON:
 
 ```commandline
 $ ietfparse-test compare-link
 $ ietfparse-test compare-link --format json
+$ ietfparse-test compare-accept
+$ ietfparse-test compare-accept --format json
 ```
 
 ## Using the utility
@@ -126,10 +139,12 @@ Use `run` to execute one or more benchmark selections:
 ```commandline
 $ ietfparse-test run
 $ ietfparse-test run --header accept --workload realistic
+$ ietfparse-test run --header accept --implementation workspace --implementation werkzeug
 $ ietfparse-test run --header link --workload complex --iterations 5000 --repeat 5
 $ ietfparse-test run --header link --implementation workspace --implementation requests
 $ ietfparse-test run --header link --implementation workspace --implementation httpx
 $ ietfparse-test compare-link --format json
+$ ietfparse-test compare-accept --format json
 $ python -m ietfparse.test run --format json
 ```
 

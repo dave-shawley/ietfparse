@@ -58,6 +58,7 @@ dev = [
 perftest = [
   "httpx>=0.28.1",
   "requests>=2.33.1",
+  "werkzeug>=3.1",
 ]
 
 [build-system]

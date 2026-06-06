@@ -74,8 +74,10 @@ class BenchmarkCliSelectionTests(unittest.TestCase):
 
     def test_multiple_implementation_selection(self) -> None:
         self.assertEqual(
-            cli.resolve_implementations(['WORKSPACE', 'requests', 'HTTPX']),
-            ('workspace', 'requests', 'httpx'),
+            cli.resolve_implementations(
+                ['WORKSPACE', 'werkzeug', 'requests', 'HTTPX']
+            ),
+            ('workspace', 'werkzeug', 'requests', 'httpx'),
         )
 
 
@@ -196,6 +198,35 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         )
         self.assertEqual(payload['case_count'], 1)
 
+    def test_compare_accept_payload_reports_case_count(self) -> None:
+        payload = cli.build_compare_accept_payload(
+            results=[
+                {
+                    'case_id': 'accept-case',
+                    'description': 'accept case',
+                    'accept': 'application/json',
+                    'available': ['application/json'],
+                    'default': None,
+                    'workspace': {
+                        'status': 'ok',
+                        'result': {
+                            'selected': 'application/json',
+                            'matched': 'application/json',
+                        },
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                    'werkzeug': {
+                        'status': 'ok',
+                        'result': {'selected': 'application/json'},
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                }
+            ]
+        )
+        self.assertEqual(payload['case_count'], 1)
+
 
 class BenchmarkCliIntegrationTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -308,7 +339,8 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         self.assertNotEqual(result.exit_code, 0)
         self.assertIsNotNone(result.exception)
         self.assertIn(
-            'The requests implementation only supports the link header',
+            'The requests implementation only supports the following '
+            "headers: 'link'",
             str(result.exception),
         )
 
@@ -326,7 +358,28 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         self.assertNotEqual(result.exit_code, 0)
         self.assertIsNotNone(result.exception)
         self.assertIn(
-            'The httpx implementation only supports the link header',
+            'The httpx implementation only supports the following '
+            "headers: 'link'",
+            str(result.exception),
+        )
+
+    def test_run_command_rejects_werkzeug_for_non_accept_headers(self) -> None:
+        result = self.runner.invoke(
+            cli.app,
+            [
+                'run',
+                '--header',
+                'cache-control',
+                '--implementation',
+                'werkzeug',
+            ],
+        )
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIsNotNone(result.exception)
+        self.assertIn(
+            'The werkzeug implementation only supports the following '
+            "headers: 'accept', 'accept-charset', 'accept-encoding', "
+            "'accept-language'",
             str(result.exception),
         )
 
@@ -368,3 +421,40 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
         self.assertIn('"case_count": 1', result.stdout)
         self.assertIn('"case_id": "edge"', result.stdout)
+
+    def test_compare_accept_command_emits_json_output(self) -> None:
+        with unittest.mock.patch.object(
+            runner,
+            'compare_accept_cases',
+            return_value=[
+                {
+                    'case_id': 'accept-case',
+                    'description': 'accept case',
+                    'accept': 'application/json',
+                    'available': ['application/json'],
+                    'default': None,
+                    'workspace': {
+                        'status': 'ok',
+                        'result': {
+                            'selected': 'application/json',
+                            'matched': 'application/json',
+                        },
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                    'werkzeug': {
+                        'status': 'ok',
+                        'result': {'selected': 'application/json'},
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                }
+            ],
+        ):
+            result = self.runner.invoke(
+                cli.app,
+                ['compare-accept', '--format', 'json'],
+            )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('"case_count": 1', result.stdout)
+        self.assertIn('"case_id": "accept-case"', result.stdout)

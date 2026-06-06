@@ -53,6 +53,13 @@ class CompareLinkPayload(t.TypedDict):
     results: list[runner.LinkComparisonJson]
 
 
+class CompareAcceptPayload(t.TypedDict):
+    """Stable JSON schema for `compare-accept` output."""
+
+    case_count: int
+    results: list[runner.AcceptComparisonJson]
+
+
 T = t.TypeVar('T')
 
 
@@ -153,6 +160,17 @@ def build_compare_link_payload(
     results: abc.Sequence[runner.LinkComparisonJson],
 ) -> CompareLinkPayload:
     """Build the stable JSON payload for `compare-link` output."""
+    return {
+        'case_count': len(results),
+        'results': list(results),
+    }
+
+
+def build_compare_accept_payload(
+    *,
+    results: abc.Sequence[runner.AcceptComparisonJson],
+) -> CompareAcceptPayload:
+    """Build the stable JSON payload for `compare-accept` output."""
     return {
         'case_count': len(results),
         'results': list(results),
@@ -303,6 +321,32 @@ def compare_link(
     _render_rich_link_comparison(payload)
 
 
+@app.command(name='compare-accept')
+def compare_accept(
+    *,
+    output_format: t.Annotated[
+        OutputFormat | None,
+        typer.Option(
+            '--format',
+            case_sensitive=False,
+            help='Output format.',
+        ),
+    ] = None,
+) -> None:
+    """Compare curated Accept negotiation cases across implementations."""
+    payload = build_compare_accept_payload(
+        results=runner.compare_accept_cases()
+    )
+    format_name = determine_output_format(
+        requested=output_format,
+        stream=sys.stdout,
+    )
+    if format_name is OutputFormat.json:
+        _write_json(payload)
+        return
+    _render_rich_accept_comparison(payload)
+
+
 @app.command(name='list')
 def list_command(
     *,
@@ -329,7 +373,9 @@ def list_command(
 
 
 def _write_json(
-    payload: ListPayload | RunPayload | CompareLinkPayload,
+    payload: (
+        ListPayload | RunPayload | CompareLinkPayload | CompareAcceptPayload
+    ),
 ) -> None:
     sys.stdout.write(f'{json.dumps(payload, indent=2, sort_keys=True)}\n')
 
@@ -408,6 +454,22 @@ def _render_rich_link_comparison(payload: CompareLinkPayload) -> None:
     cons.print(tbl)
 
 
+def _render_rich_accept_comparison(payload: CompareAcceptPayload) -> None:
+    cons = console.Console()
+    tbl = table.Table(title='ietfparse accept comparison')
+    tbl.add_column('Case')
+    tbl.add_column('Workspace')
+    tbl.add_column('Werkzeug')
+    for row in payload['results']:
+        tbl.add_row(
+            row['case_id'],
+            _accept_workspace_summary(row['workspace']),
+            _accept_werkzeug_summary(row['werkzeug']),
+        )
+    cons.print(panel.Panel(f'cases={payload["case_count"]}'))
+    cons.print(tbl)
+
+
 def _comparison_summary(payload: runner.ParserOutcomeJson) -> str:
     if payload['status'] == 'error':
         return f'error:{payload["error_type"]}'
@@ -415,3 +477,17 @@ def _comparison_summary(payload: runner.ParserOutcomeJson) -> str:
     if isinstance(result, list):
         return f'ok:{len(result)} value(s)'
     return 'ok'
+
+
+def _accept_workspace_summary(payload: runner.ParserOutcomeJson) -> str:
+    if payload['status'] == 'error':
+        return f'error:{payload["error_type"]}'
+    result = t.cast('dict[str, str]', payload['result'])
+    return f'{result["selected"]} <= {result["matched"]}'
+
+
+def _accept_werkzeug_summary(payload: runner.ParserOutcomeJson) -> str:
+    if payload['status'] == 'error':
+        return f'error:{payload["error_type"]}'
+    result = t.cast('dict[str, str | None]', payload['result'])
+    return result['selected'] or 'none'

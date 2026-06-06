@@ -10,12 +10,14 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TypedDict
 
-from ietfparse import errors
+from ietfparse import algorithms, errors
 from ietfparse import headers as header_parsers
-from ietfparse.test import data, link_cases
+from ietfparse.test import accept_cases, data, link_cases
 
 Parser = Callable[[str], object]
-SupportedImplementation = typing.Literal['workspace', 'requests', 'httpx']
+SupportedImplementation = typing.Literal[
+    'workspace', 'werkzeug', 'requests', 'httpx'
+]
 SUPPORTED_IMPLEMENTATIONS: tuple[str, ...] = typing.get_args(
     SupportedImplementation
 )
@@ -55,6 +57,18 @@ class LinkComparisonJson(TypedDict):
     workspace: ParserOutcomeJson
     requests: ParserOutcomeJson
     httpx: ParserOutcomeJson
+
+
+class AcceptComparisonJson(TypedDict):
+    """Stable JSON schema for one Accept negotiation comparison."""
+
+    case_id: str
+    description: str
+    accept: str
+    available: list[str]
+    default: str | None
+    workspace: ParserOutcomeJson
+    werkzeug: ParserOutcomeJson
 
 
 @dataclass(frozen=True)
@@ -112,6 +126,39 @@ def _resolve_requests_parser(parser_name: str) -> Parser:
     return parse_header_links
 
 
+def _resolve_werkzeug_parser(parser_name: str) -> Parser:
+    accept_classes = {
+        'parse_accept': 'MIMEAccept',
+        'parse_accept_charset': 'CharsetAccept',
+        'parse_accept_encoding': 'Accept',
+        'parse_accept_language': 'LanguageAccept',
+    }
+    class_name = accept_classes.get(parser_name)
+    if class_name is None:
+        raise ValueError(
+            'The werkzeug implementation only supports the Accept-family '
+            'headers'
+        )
+    try:
+        http_module = importlib.import_module('werkzeug.http')
+        datastructures_module = importlib.import_module(
+            'werkzeug.datastructures'
+        )
+    except ImportError as error:  # pragma: no cover -- env dependent
+        raise RuntimeError(
+            'The werkzeug benchmark implementation requires the werkzeug '
+            'package to be installed.'
+        ) from error
+
+    parse_accept_header = http_module.parse_accept_header
+    accept_class = getattr(datastructures_module, class_name)
+
+    def _parse_accept_header(value: str) -> object:
+        return parse_accept_header(value, cls=accept_class)
+
+    return _parse_accept_header
+
+
 def _resolve_httpx_parser(parser_name: str) -> Parser:
     if parser_name != 'parse_link':
         raise ValueError('The httpx implementation only supports parse_link')
@@ -133,6 +180,10 @@ WORKSPACE_IMPLEMENTATION = BenchmarkImplementation(
     name='workspace',
     parser_resolver=lambda parser_name: getattr(header_parsers, parser_name),
 )
+WERKZEUG_IMPLEMENTATION = BenchmarkImplementation(
+    name='werkzeug',
+    parser_resolver=_resolve_werkzeug_parser,
+)
 REQUESTS_IMPLEMENTATION = BenchmarkImplementation(
     name='requests',
     parser_resolver=_resolve_requests_parser,
@@ -149,6 +200,8 @@ def implementation_named(
     """Resolve a supported implementation by stable name."""
     if name == 'workspace':
         return WORKSPACE_IMPLEMENTATION
+    if name == 'werkzeug':
+        return WERKZEUG_IMPLEMENTATION
     if name == 'requests':
         return REQUESTS_IMPLEMENTATION
     if name == 'httpx':
@@ -162,15 +215,30 @@ def validate_implementation_support(
     header_ids: tuple[data.SupportedHeader, ...],
 ) -> None:
     """Ensure that an implementation supports the selected headers."""
-    if implementation_name not in ('requests', 'httpx'):
+    if implementation_name == 'workspace':
         return
+    supported_headers = {
+        'werkzeug': {
+            'accept',
+            'accept-charset',
+            'accept-encoding',
+            'accept-language',
+        },
+        'requests': {'link'},
+        'httpx': {'link'},
+    }[implementation_name]
     unsupported = sorted(
-        header_id for header_id in header_ids if header_id != 'link'
+        header_id
+        for header_id in header_ids
+        if header_id not in supported_headers
     )
     if unsupported:
+        supported_detail = ', '.join(
+            sorted(repr(h) for h in supported_headers)
+        )
         raise ValueError(
             f'The {implementation_name} implementation only supports the '
-            'link header. '
+            f'following headers: {supported_detail}. '
             'Unsupported header values: '
             f'{", ".join(repr(h) for h in unsupported)}'
         )
@@ -250,6 +318,40 @@ def compare_link_cases() -> list[LinkComparisonJson]:
             ),
         )
         for case in link_cases.CASES
+    ]
+
+
+def compare_accept_cases() -> list[AcceptComparisonJson]:
+    """Run curated Accept negotiation cases through both implementations."""
+    werkzeug_parser = implementation_named('werkzeug').parser_for(
+        'parse_accept'
+    )
+    return [
+        AcceptComparisonJson(
+            case_id=case.case_id,
+            description=case.description,
+            accept=case.accept,
+            available=list(case.available),
+            default=case.default,
+            workspace=_capture_outcome(
+                lambda case=case: algorithms.select_content_type(
+                    case.accept,
+                    case.available,
+                    default=case.default,
+                ),
+                _normalize_workspace_accept_result,
+            ),
+            werkzeug=_capture_outcome(
+                lambda case=case: _select_werkzeug_best_match(
+                    parser=werkzeug_parser,
+                    accept=case.accept,
+                    available=case.available,
+                    default=case.default,
+                ),
+                _normalize_werkzeug_accept_result,
+            ),
+        )
+        for case in accept_cases.CASES
     ]
 
 
@@ -349,6 +451,36 @@ def _normalize_requests_link_result(parsed: object) -> object:
 
 def _normalize_httpx_link_result(parsed: object) -> object:
     return dict(typing.cast('dict[str | None, dict[str, str]]', parsed))
+
+
+def _select_werkzeug_best_match(
+    *,
+    parser: Parser,
+    accept: str,
+    available: tuple[str, ...],
+    default: str | None,
+) -> object:
+    parsed = parser(accept)
+    return typing.cast(
+        'typing.Any',
+        parsed,
+    ).best_match(list(available), default=default)
+
+
+def _normalize_workspace_accept_result(parsed: object) -> object:
+    selected, matched = typing.cast(
+        'tuple[typing.Any, typing.Any]',
+        parsed,
+    )
+    return {
+        'selected': str(selected),
+        'matched': str(matched),
+    }
+
+
+def _normalize_werkzeug_accept_result(parsed: object) -> object:
+    selected = typing.cast('str | None', parsed)
+    return {'selected': selected}
 
 
 def result_to_json(result: BenchmarkResult) -> BenchmarkResultJson:
