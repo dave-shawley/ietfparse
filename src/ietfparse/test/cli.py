@@ -12,7 +12,7 @@ if t.TYPE_CHECKING:
 
 try:
     import typer
-    from rich import console, panel, table
+    from rich import console, panel, table, text
 except ImportError as error:  # pragma: no cover -- env dependent
     raise RuntimeError(
         'The benchmark CLI requires optional dependencies. '
@@ -47,17 +47,35 @@ class RunPayload(t.TypedDict):
 
 
 class CompareLinkPayload(t.TypedDict):
-    """Stable JSON schema for `compare-link` output."""
+    """Stable JSON schema for `compare link` output."""
 
     case_count: int
     results: list[runner.LinkComparisonJson]
 
 
 class CompareAcceptPayload(t.TypedDict):
-    """Stable JSON schema for `compare-accept` output."""
+    """Stable JSON schema for `compare accept` output."""
 
     case_count: int
     results: list[runner.AcceptComparisonJson]
+
+
+class CompareImplementationRowJson(t.TypedDict):
+    """Stable JSON schema for one implementation comparison row."""
+
+    header: str
+    workload: str
+    ns_per_call: dict[str, float]
+    vs_workspace: dict[str, float]
+
+
+class CompareImplementationPayload(t.TypedDict):
+    """Stable JSON schema for `compare implementation` output."""
+
+    headers: list[data.SupportedHeader]
+    workloads: list[data.SupportedWorkload]
+    implementations: list[runner.SupportedImplementation]
+    results: list[CompareImplementationRowJson]
 
 
 T = t.TypeVar('T')
@@ -121,6 +139,24 @@ def resolve_implementations(
     )
 
 
+def resolve_compare_implementations(
+    selected: abc.Iterable[str],
+) -> tuple[runner.SupportedImplementation, ...]:
+    """Normalize comparison implementations with workspace always included."""
+    normalized = _normalize_values(
+        label='implementation',
+        valid=runner.SUPPORTED_IMPLEMENTATIONS,
+        values=selected,
+    )
+    unique = tuple(dict.fromkeys(('workspace', *normalized)))
+    if unique == ('workspace',):
+        raise ValueError(
+            'compare implementation requires at least one non-workspace '
+            'implementation'
+        )
+    return t.cast('tuple[runner.SupportedImplementation, ...]', unique)
+
+
 def determine_output_format(
     *, requested: OutputFormat | None, stream: t.IO[str]
 ) -> OutputFormat:
@@ -159,7 +195,7 @@ def build_compare_link_payload(
     *,
     results: abc.Sequence[runner.LinkComparisonJson],
 ) -> CompareLinkPayload:
-    """Build the stable JSON payload for `compare-link` output."""
+    """Build the stable JSON payload for `compare link` output."""
     return {
         'case_count': len(results),
         'results': list(results),
@@ -170,10 +206,62 @@ def build_compare_accept_payload(
     *,
     results: abc.Sequence[runner.AcceptComparisonJson],
 ) -> CompareAcceptPayload:
-    """Build the stable JSON payload for `compare-accept` output."""
+    """Build the stable JSON payload for `compare accept` output."""
     return {
         'case_count': len(results),
         'results': list(results),
+    }
+
+
+def build_compare_implementation_payload(
+    *,
+    results: abc.Iterable[runner.BenchmarkResult],
+    header_ids: abc.Sequence[data.SupportedHeader],
+    workload_ids: abc.Sequence[data.SupportedWorkload],
+    implementation_ids: abc.Sequence[runner.SupportedImplementation],
+) -> CompareImplementationPayload:
+    """Build the stable JSON payload for `compare implementation` output."""
+    result_map = {
+        (result.header, result.workload, result.implementation): result
+        for result in results
+    }
+    comparison_rows: list[CompareImplementationRowJson] = []
+    for header_id in header_ids:
+        for workload_id in workload_ids:
+            workspace_result = result_map[
+                (header_id, workload_id, 'workspace')
+            ]
+            row_results = {
+                implementation_id: result_map[
+                    (header_id, workload_id, implementation_id)
+                ]
+                for implementation_id in implementation_ids
+            }
+            comparison_rows.append(
+                CompareImplementationRowJson(
+                    header=header_id,
+                    workload=workload_id,
+                    ns_per_call={
+                        implementation_id: row_results[
+                            implementation_id
+                        ].ns_per_call
+                        for implementation_id in implementation_ids
+                    },
+                    vs_workspace={
+                        implementation_id: row_results[
+                            implementation_id
+                        ].ns_per_call
+                        / workspace_result.ns_per_call
+                        for implementation_id in implementation_ids
+                        if implementation_id != 'workspace'
+                    },
+                )
+            )
+    return {
+        'headers': list(header_ids),
+        'workloads': list(workload_ids),
+        'implementations': list(implementation_ids),
+        'results': comparison_rows,
     }
 
 
@@ -189,6 +277,11 @@ def _generate_autocomplete(
 
 
 app = typer.Typer(no_args_is_help=True)
+compare_app = typer.Typer(
+    help='Compare performance against different implementations.',
+    no_args_is_help=True,
+)
+app.add_typer(compare_app, name='compare')
 
 
 @app.command()
@@ -297,7 +390,7 @@ def run(  # noqa: PLR0913
     _render_rich_results(payload=payload, quiet=quiet)
 
 
-@app.command(name='compare-link')
+@compare_app.command(name='link')
 def compare_link(
     *,
     output_format: t.Annotated[
@@ -321,7 +414,7 @@ def compare_link(
     _render_rich_link_comparison(payload)
 
 
-@app.command(name='compare-accept')
+@compare_app.command(name='accept')
 def compare_accept(
     *,
     output_format: t.Annotated[
@@ -345,6 +438,96 @@ def compare_accept(
         _write_json(payload)
         return
     _render_rich_accept_comparison(payload)
+
+
+@compare_app.command(name='implementation')
+def compare_implementation(
+    implementation: t.Annotated[
+        list[str],
+        typer.Argument(
+            help=(
+                'One or more non-workspace implementations to compare '
+                'against workspace.'
+            ),
+            autocompletion=_generate_autocomplete(
+                runner.SUPPORTED_IMPLEMENTATIONS
+            ),
+        ),
+    ],
+    *,
+    workload: t.Annotated[
+        list[str] | None,
+        typer.Option(
+            '--workload',
+            help='Workload to benchmark. May be specified multiple times.',
+            autocompletion=_generate_autocomplete(data.SUPPORTED_WORKLOADS),
+        ),
+    ] = None,
+    iterations: t.Annotated[
+        int,
+        typer.Option(
+            '--iterations',
+            min=1,
+            help='Passes over each sample set per repeat.',
+        ),
+    ] = 1_000,
+    repeat: t.Annotated[
+        int,
+        typer.Option(
+            '--repeat',
+            min=1,
+            help='Number of timing repeats to execute.',
+        ),
+    ] = 5,
+    output_format: t.Annotated[
+        OutputFormat | None,
+        typer.Option(
+            '--format',
+            case_sensitive=False,
+            help='Output format.',
+        ),
+    ] = None,
+) -> None:
+    """Compare benchmark timings on headers shared by all implementations."""
+    dataset = data.load_dataset()
+    workload_ids = resolve_workloads(workload)
+    implementation_ids = resolve_compare_implementations(implementation)
+    header_ids = runner.common_supported_headers(implementation_ids)
+    if not header_ids:
+        raise ValueError(
+            'The selected implementations do not share any benchmark headers.'
+        )
+    results: list[runner.BenchmarkResult] = []
+    selection = runner.BenchmarkSelection(
+        header_ids=header_ids,
+        workload_ids=workload_ids,
+        iterations=iterations,
+        repeat=repeat,
+    )
+    for implementation_name in implementation_ids:
+        results.extend(
+            runner.run_benchmarks(
+                dataset,
+                selection=selection,
+                implementation=runner.implementation_named(
+                    implementation_name
+                ),
+            )
+        )
+    payload = build_compare_implementation_payload(
+        results=results,
+        header_ids=header_ids,
+        workload_ids=workload_ids,
+        implementation_ids=implementation_ids,
+    )
+    format_name = determine_output_format(
+        requested=output_format,
+        stream=sys.stdout,
+    )
+    if format_name is OutputFormat.json:
+        _write_json(payload)
+        return
+    _render_rich_implementation_comparison(payload)
 
 
 @app.command(name='list')
@@ -374,7 +557,11 @@ def list_command(
 
 def _write_json(
     payload: (
-        ListPayload | RunPayload | CompareLinkPayload | CompareAcceptPayload
+        ListPayload
+        | RunPayload
+        | CompareLinkPayload
+        | CompareAcceptPayload
+        | CompareImplementationPayload
     ),
 ) -> None:
     sys.stdout.write(f'{json.dumps(payload, indent=2, sort_keys=True)}\n')
@@ -468,6 +655,54 @@ def _render_rich_accept_comparison(payload: CompareAcceptPayload) -> None:
         )
     cons.print(panel.Panel(f'cases={payload["case_count"]}'))
     cons.print(tbl)
+
+
+def _render_rich_implementation_comparison(
+    payload: CompareImplementationPayload,
+) -> None:
+    cons = console.Console()
+    tbl = table.Table(title='ietfparse implementation comparison')
+    tbl.add_column('Header')
+    tbl.add_column('Workload')
+    for implementation_id in payload['implementations']:
+        if implementation_id != 'workspace':
+            tbl.add_column(f'vs {implementation_id}', justify='right')
+    for implementation_id in payload['implementations']:
+        tbl.add_column(f'{implementation_id} ns/call', justify='right')
+    for row in payload['results']:
+        cells = [row['header'], row['workload']]
+        cells.extend(
+            _comparison_ratio_cell(row['vs_workspace'][implementation_id])
+            for implementation_id in payload['implementations']
+            if implementation_id != 'workspace'
+        )
+        cells.extend(
+            f'{row["ns_per_call"][implementation_id]:.1f}'
+            for implementation_id in payload['implementations']
+        )
+        tbl.add_row(*cells)
+    cons.print(
+        panel.Panel(
+            f'headers={len(payload["headers"])} '
+            f'workloads={len(payload["workloads"])} '
+            f'implementations={len(payload["implementations"])} '
+            f'results={len(payload["results"])}'
+        )
+    )
+    cons.print(tbl)
+
+
+def _comparison_ratio_cell(ratio: float) -> text.Text:
+    if ratio < 1:
+        indicator = 'v'
+        style = 'red'
+    elif ratio > 1:
+        indicator = '^'
+        style = 'green'
+    else:
+        indicator = '='
+        style = 'yellow'
+    return text.Text(f'{indicator} {ratio:.2f}x', style=style)
 
 
 def _comparison_summary(payload: runner.ParserOutcomeJson) -> str:

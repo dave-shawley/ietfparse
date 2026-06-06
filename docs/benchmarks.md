@@ -95,21 +95,31 @@ The `werkzeug` implementation only supports `accept`, `accept-charset`,
 implementations only support `link`. Selecting any implementation for other
 headers fails fast with a validation error.
 
+To compare multiple implementations only on the headers they all support, use
+`compare implementation`. It always includes `workspace`, computes the shared
+header set automatically, and reports one row per header/workload with
+per-implementation `ns/call` plus ratios against `workspace`:
+
+```commandline
+$ ietfparse-test compare implementation werkzeug
+$ ietfparse-test compare implementation werkzeug --workload realistic
+```
+
 For behavioral comparisons, use the dedicated comparison commands:
 
-- `compare-link` runs curated `Link` parsing edge cases through the available
+- `compare link` runs curated `Link` parsing edge cases through the available
   parser implementations.
-- `compare-accept` runs curated `Accept` negotiation cases through
+- `compare accept` runs curated `Accept` negotiation cases through
   [ietfparse.algorithms.select_content_type][] and Werkzeug's
   `Accept.best_match`.
 
 Both commands emit either Rich summary output or detailed JSON:
 
 ```commandline
-$ ietfparse-test compare-link
-$ ietfparse-test compare-link --format json
-$ ietfparse-test compare-accept
-$ ietfparse-test compare-accept --format json
+$ ietfparse-test compare link
+$ ietfparse-test compare link --format json
+$ ietfparse-test compare accept
+$ ietfparse-test compare accept --format json
 ```
 
 ## Using the utility
@@ -143,8 +153,9 @@ $ ietfparse-test run --header accept --implementation workspace --implementation
 $ ietfparse-test run --header link --workload complex --iterations 5000 --repeat 5
 $ ietfparse-test run --header link --implementation workspace --implementation requests
 $ ietfparse-test run --header link --implementation workspace --implementation httpx
-$ ietfparse-test compare-link --format json
-$ ietfparse-test compare-accept --format json
+$ ietfparse-test compare implementation werkzeug --format json
+$ ietfparse-test compare link --format json
+$ ietfparse-test compare accept --format json
 $ python -m ietfparse.test run --format json
 ```
 

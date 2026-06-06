@@ -21,6 +21,17 @@ SupportedImplementation = typing.Literal[
 SUPPORTED_IMPLEMENTATIONS: tuple[str, ...] = typing.get_args(
     SupportedImplementation
 )
+IMPLEMENTATION_HEADERS: dict[str, tuple[data.SupportedHeader, ...]] = {
+    'workspace': data.SUPPORTED_HEADERS,
+    'werkzeug': (
+        'accept',
+        'accept-charset',
+        'accept-encoding',
+        'accept-language',
+    ),
+    'requests': ('link',),
+    'httpx': ('link',),
+}
 
 
 class BenchmarkResultJson(TypedDict):
@@ -215,18 +226,7 @@ def validate_implementation_support(
     header_ids: tuple[data.SupportedHeader, ...],
 ) -> None:
     """Ensure that an implementation supports the selected headers."""
-    if implementation_name == 'workspace':
-        return
-    supported_headers = {
-        'werkzeug': {
-            'accept',
-            'accept-charset',
-            'accept-encoding',
-            'accept-language',
-        },
-        'requests': {'link'},
-        'httpx': {'link'},
-    }[implementation_name]
+    supported_headers = set(headers_supported_by(implementation_name))
     unsupported = sorted(
         header_id
         for header_id in header_ids
@@ -242,6 +242,32 @@ def validate_implementation_support(
             'Unsupported header values: '
             f'{", ".join(repr(h) for h in unsupported)}'
         )
+
+
+def headers_supported_by(
+    implementation_name: SupportedImplementation,
+) -> tuple[data.SupportedHeader, ...]:
+    """Return benchmark headers supported by one implementation."""
+    return IMPLEMENTATION_HEADERS[implementation_name]
+
+
+def common_supported_headers(
+    implementation_names: typing.Iterable[SupportedImplementation],
+) -> tuple[data.SupportedHeader, ...]:
+    """Return headers supported by every selected implementation."""
+    names = tuple(implementation_names)
+    if not names:
+        return ()
+    supported = [
+        set(headers_supported_by(implementation_name))
+        for implementation_name in names
+    ]
+    common = set.intersection(*supported)
+    return tuple(
+        header_id
+        for header_id in data.SUPPORTED_HEADERS
+        if header_id in common
+    )
 
 
 def run_benchmarks(

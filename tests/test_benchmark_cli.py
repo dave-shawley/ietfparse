@@ -2,6 +2,7 @@ import importlib
 import typing
 import unittest.mock
 
+from rich.text import Text
 from typer.testing import CliRunner
 
 from ietfparse.test import cli, data, runner
@@ -79,6 +80,21 @@ class BenchmarkCliSelectionTests(unittest.TestCase):
             ),
             ('workspace', 'werkzeug', 'requests', 'httpx'),
         )
+
+    def test_compare_implementation_selection_adds_workspace(self) -> None:
+        self.assertEqual(
+            cli.resolve_compare_implementations(['werkzeug', 'workspace']),
+            ('workspace', 'werkzeug'),
+        )
+
+    def test_compare_implementation_selection_requires_non_workspace(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            'requires at least one non-workspace implementation',
+        ):
+            cli.resolve_compare_implementations(['workspace'])
 
 
 class BenchmarkCliOutputModeTests(unittest.TestCase):
@@ -226,6 +242,67 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             ]
         )
         self.assertEqual(payload['case_count'], 1)
+
+    def test_compare_implementation_payload_pivots_rows(self) -> None:
+        payload = cli.build_compare_implementation_payload(
+            results=[
+                runner.BenchmarkResult(
+                    implementation='workspace',
+                    header='accept',
+                    workload='realistic',
+                    sample_count=1,
+                    byte_count=10,
+                    repeat=1,
+                    iterations=1,
+                    median_elapsed_ns=100,
+                    ns_per_call=100.0,
+                    calls_per_second=1.0,
+                ),
+                runner.BenchmarkResult(
+                    implementation='werkzeug',
+                    header='accept',
+                    workload='realistic',
+                    sample_count=1,
+                    byte_count=10,
+                    repeat=1,
+                    iterations=1,
+                    median_elapsed_ns=50,
+                    ns_per_call=50.0,
+                    calls_per_second=1.0,
+                ),
+            ],
+            header_ids=('accept',),
+            workload_ids=('realistic',),
+            implementation_ids=('workspace', 'werkzeug'),
+        )
+        self.assertEqual(payload['headers'], ['accept'])
+        self.assertEqual(payload['workloads'], ['realistic'])
+        self.assertEqual(payload['implementations'], ['workspace', 'werkzeug'])
+        self.assertEqual(len(payload['results']), 1)
+        self.assertEqual(
+            payload['results'][0]['ns_per_call'],
+            {'workspace': 100.0, 'werkzeug': 50.0},
+        )
+        self.assertEqual(
+            payload['results'][0]['vs_workspace'],
+            {'werkzeug': 0.5},
+        )
+
+    def test_comparison_ratio_cell_marks_workspace_slower(self) -> None:
+        cell = vars(cli)['_comparison_ratio_cell'](0.86)
+        self.assertIsInstance(cell, Text)
+        self.assertEqual(cell.plain, 'v 0.86x')
+        self.assertEqual(str(cell.style), 'red')
+
+    def test_comparison_ratio_cell_marks_workspace_faster(self) -> None:
+        cell = vars(cli)['_comparison_ratio_cell'](1.25)
+        self.assertEqual(cell.plain, '^ 1.25x')
+        self.assertEqual(str(cell.style), 'green')
+
+    def test_comparison_ratio_cell_marks_equal_ratio(self) -> None:
+        cell = vars(cli)['_comparison_ratio_cell'](1.0)
+        self.assertEqual(cell.plain, '= 1.00x')
+        self.assertEqual(str(cell.style), 'yellow')
 
 
 class BenchmarkCliIntegrationTests(unittest.TestCase):
@@ -416,7 +493,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         ):
             result = self.runner.invoke(
                 cli.app,
-                ['compare-link', '--format', 'json'],
+                ['compare', 'link', '--format', 'json'],
             )
         self.assertEqual(result.exit_code, 0)
         self.assertIn('"case_count": 1', result.stdout)
@@ -453,8 +530,84 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         ):
             result = self.runner.invoke(
                 cli.app,
-                ['compare-accept', '--format', 'json'],
+                ['compare', 'accept', '--format', 'json'],
             )
         self.assertEqual(result.exit_code, 0)
         self.assertIn('"case_count": 1', result.stdout)
         self.assertIn('"case_id": "accept-case"', result.stdout)
+
+    def test_compare_implementation_command_emits_json_output(self) -> None:
+        fake_results = [
+            runner.BenchmarkResult(
+                implementation='workspace',
+                header='accept',
+                workload='realistic',
+                sample_count=1,
+                byte_count=10,
+                repeat=1,
+                iterations=1,
+                median_elapsed_ns=100,
+                ns_per_call=100.0,
+                calls_per_second=1.0,
+            ),
+            runner.BenchmarkResult(
+                implementation='werkzeug',
+                header='accept',
+                workload='realistic',
+                sample_count=1,
+                byte_count=10,
+                repeat=1,
+                iterations=1,
+                median_elapsed_ns=80,
+                ns_per_call=80.0,
+                calls_per_second=1.0,
+            ),
+        ]
+        with (
+            unittest.mock.patch.object(
+                runner,
+                'common_supported_headers',
+                return_value=('accept',),
+            ),
+            unittest.mock.patch.object(
+                runner,
+                'run_benchmarks',
+                side_effect=[fake_results[:1], fake_results[1:]],
+            ),
+        ):
+            result = self.runner.invoke(
+                cli.app,
+                [
+                    'compare',
+                    'implementation',
+                    'werkzeug',
+                    '--workload',
+                    'realistic',
+                    '--iterations',
+                    '1',
+                    '--repeat',
+                    '1',
+                    '--format',
+                    'json',
+                ],
+            )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('"implementations": [', result.stdout)
+        self.assertIn('"werkzeug": 80.0', result.stdout)
+        self.assertIn('"vs_workspace": {', result.stdout)
+
+    def test_compare_implementation_rejects_empty_intersection(self) -> None:
+        with unittest.mock.patch.object(
+            runner,
+            'common_supported_headers',
+            return_value=(),
+        ):
+            result = self.runner.invoke(
+                cli.app,
+                ['compare', 'implementation', 'werkzeug', 'requests'],
+            )
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn(
+            'do not share any benchmark headers',
+            str(result.exception),
+        )

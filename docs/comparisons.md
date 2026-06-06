@@ -155,7 +155,7 @@ $ ietfparse-test run --header link --implementation workspace --implementation r
 Use the dedicated comparison command to inspect edge-case behavior:
 
 ```commandline
-$ ietfparse-test compare-link --format json
+$ ietfparse-test compare link --format json
 ```
 
 ## `httpx.Response.links`

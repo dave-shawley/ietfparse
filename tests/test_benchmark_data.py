@@ -112,6 +112,29 @@ class BenchmarkRunnerTests(unittest.TestCase):
             ('workspace', 'werkzeug', 'requests', 'httpx'),
         )
 
+    def test_headers_supported_by_returns_workspace_headers(self) -> None:
+        self.assertEqual(
+            runner.headers_supported_by('workspace'),
+            data.SUPPORTED_HEADERS,
+        )
+
+    def test_common_supported_headers_uses_intersection(self) -> None:
+        self.assertEqual(
+            runner.common_supported_headers(('workspace', 'werkzeug')),
+            (
+                'accept',
+                'accept-charset',
+                'accept-encoding',
+                'accept-language',
+            ),
+        )
+        self.assertEqual(
+            runner.common_supported_headers(
+                ('workspace', 'werkzeug', 'requests')
+            ),
+            (),
+        )
+
     def test_sample_error_returns_exception_for_invalid_value(self) -> None:
         sample_error = vars(runner)['_sample_error']
         error = sample_error(
