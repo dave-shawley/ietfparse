@@ -180,6 +180,8 @@ def parse_list_items(value: str) -> list[str]:
     """Parse a comma-delimited list while respecting quoted strings."""
     if '\\' not in value and '"' not in value:
         return [segment.strip() for segment in value.split(',')]
+    if '\\' not in value:
+        return _parse_list_items_without_escapes(value)
 
     cursor = CursorParser(value)
     parsed: list[str] = []
@@ -199,6 +201,26 @@ def parse_list_items(value: str) -> list[str]:
             cursor.index = cursor.index + 1
 
     parsed.append(''.join(current).strip())
+    return parsed
+
+
+def _parse_list_items_without_escapes(value: str) -> list[str]:
+    """Parse list items when quoted strings cannot contain escapes."""
+    parsed: list[str] = []
+    start = 0
+    in_quotes = False
+
+    for index, char in enumerate(value):
+        if char == '"':
+            in_quotes = not in_quotes
+        elif char == ',' and not in_quotes:
+            parsed.append(value[start:index].strip())
+            start = index + 1
+
+    if in_quotes:
+        raise ParseError(f'malformed parser input: {value!r}')
+
+    parsed.append(value[start:].strip())
     return parsed
 
 
