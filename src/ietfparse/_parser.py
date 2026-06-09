@@ -50,20 +50,24 @@ class CursorParser:
 
     def parse_quoted_string(self) -> str:
         parsed = []
-        self.index = self.index + 1
-        while self.index < len(self.value):
-            if self.value[self.index] == '\\':
-                self.index = self.index + 1
-                if self.index >= len(self.value):
+        value = self.value
+        index = self.index + 1
+        value_len = len(value)
+        while index < value_len:
+            if value[index] == '\\':
+                index += 1
+                if index >= value_len:
+                    self.index = index
                     raise ParseError(f'malformed parser input: {self.value!r}')
-                parsed.append(self.value[self.index])
-            elif self.value[self.index] == '"':
-                self.index = self.index + 1
+                parsed.append(value[index])
+            elif value[index] == '"':
+                self.index = index + 1
                 return ''.join(parsed)
             else:
-                parsed.append(self.value[self.index])
-            self.index = self.index + 1
+                parsed.append(value[index])
+            index += 1
 
+        self.index = index
         raise ParseError(f'malformed parser input: {self.value!r}')
 
     def skip_comment(self) -> None:
