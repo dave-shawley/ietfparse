@@ -243,6 +243,30 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         )
         self.assertEqual(payload['case_count'], 1)
 
+    def test_compare_cache_control_payload_reports_case_count(self) -> None:
+        payload = cli.build_compare_cache_control_payload(
+            results=[
+                {
+                    'case_id': 'cache-control-case',
+                    'description': 'cache-control case',
+                    'sample': 'public',
+                    'workspace': {
+                        'status': 'ok',
+                        'result': {'public': True},
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                    'werkzeug': {
+                        'status': 'ok',
+                        'result': {'public': None},
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                }
+            ]
+        )
+        self.assertEqual(payload['case_count'], 1)
+
     def test_compare_implementation_payload_pivots_rows(self) -> None:
         payload = cli.build_compare_implementation_payload(
             results=[
@@ -320,6 +344,13 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                 'accept-encoding',
                 'accept-language',
             ],
+        )
+        compare_autocomplete = generate_autocomplete(
+            ('accept', 'cache-control', 'implementation', 'link')
+        )
+        self.assertEqual(
+            list(compare_autocomplete('ca')),
+            ['cache-control'],
         )
 
     def test_run_command_emits_json_output(self) -> None:
@@ -440,13 +471,15 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
             str(result.exception),
         )
 
-    def test_run_command_rejects_werkzeug_for_non_accept_headers(self) -> None:
+    def test_run_command_rejects_werkzeug_for_unsupported_headers(
+        self,
+    ) -> None:
         result = self.runner.invoke(
             cli.app,
             [
                 'run',
                 '--header',
-                'cache-control',
+                'forwarded',
                 '--implementation',
                 'werkzeug',
             ],
@@ -456,7 +489,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         self.assertIn(
             'The werkzeug implementation only supports the following '
             "headers: 'accept', 'accept-charset', 'accept-encoding', "
-            "'accept-language'",
+            "'accept-language', 'cache-control'",
             str(result.exception),
         )
 
@@ -535,6 +568,38 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
         self.assertIn('"case_count": 1', result.stdout)
         self.assertIn('"case_id": "accept-case"', result.stdout)
+
+    def test_compare_cache_control_command_emits_json_output(self) -> None:
+        with unittest.mock.patch.object(
+            runner,
+            'compare_cache_control_cases',
+            return_value=[
+                {
+                    'case_id': 'cache-control-case',
+                    'description': 'cache-control case',
+                    'sample': 'public',
+                    'workspace': {
+                        'status': 'ok',
+                        'result': {'public': True},
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                    'werkzeug': {
+                        'status': 'ok',
+                        'result': {'public': None},
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                }
+            ],
+        ):
+            result = self.runner.invoke(
+                cli.app,
+                ['compare', 'cache-control', '--format', 'json'],
+            )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('"case_count": 1', result.stdout)
+        self.assertIn('"case_id": "cache-control-case"', result.stdout)
 
     def test_compare_implementation_command_emits_json_output(self) -> None:
         fake_results = [

@@ -12,7 +12,7 @@ from typing import TypedDict
 
 from ietfparse import algorithms, errors
 from ietfparse import headers as header_parsers
-from ietfparse.test import accept_cases, data, link_cases
+from ietfparse.test import accept_cases, cache_control_cases, data, link_cases
 
 Parser = Callable[[str], object]
 SupportedImplementation = typing.Literal[
@@ -28,6 +28,7 @@ IMPLEMENTATION_HEADERS: dict[str, tuple[data.SupportedHeader, ...]] = {
         'accept-charset',
         'accept-encoding',
         'accept-language',
+        'cache-control',
     ),
     'requests': ('link',),
     'httpx': ('link',),
@@ -78,6 +79,16 @@ class AcceptComparisonJson(TypedDict):
     accept: str
     available: list[str]
     default: str | None
+    workspace: ParserOutcomeJson
+    werkzeug: ParserOutcomeJson
+
+
+class CacheControlComparisonJson(TypedDict):
+    """Stable JSON schema for one Cache-Control parsing comparison."""
+
+    case_id: str
+    description: str
+    sample: str
     workspace: ParserOutcomeJson
     werkzeug: ParserOutcomeJson
 
@@ -145,22 +156,23 @@ def _resolve_werkzeug_parser(parser_name: str) -> Parser:
         'parse_accept_language': 'LanguageAccept',
     }
     class_name = accept_classes.get(parser_name)
-    if class_name is None:
-        raise ValueError(
-            'The werkzeug implementation only supports the Accept-family '
-            'headers'
-        )
     try:
         http_module = importlib.import_module('werkzeug.http')
-        datastructures_module = importlib.import_module(
-            'werkzeug.datastructures'
-        )
     except ImportError as error:  # pragma: no cover -- env dependent
         raise RuntimeError(
             'The werkzeug benchmark implementation requires the werkzeug '
             'package to be installed.'
         ) from error
 
+    if parser_name == 'parse_cache_control':
+        return http_module.parse_cache_control_header
+
+    if class_name is None:
+        raise ValueError(
+            'The werkzeug implementation only supports the Accept-family '
+            'headers and Cache-Control'
+        )
+    datastructures_module = importlib.import_module('werkzeug.datastructures')
     parse_accept_header = http_module.parse_accept_header
     accept_class = getattr(datastructures_module, class_name)
 
@@ -381,6 +393,31 @@ def compare_accept_cases() -> list[AcceptComparisonJson]:
     ]
 
 
+def compare_cache_control_cases() -> list[CacheControlComparisonJson]:
+    """Run curated Cache-Control cases through both implementations."""
+    werkzeug_parser = implementation_named('werkzeug').parser_for(
+        'parse_cache_control'
+    )
+    return [
+        CacheControlComparisonJson(
+            case_id=case.case_id,
+            description=case.description,
+            sample=case.sample,
+            workspace=_capture_outcome(
+                lambda case=case: header_parsers.parse_cache_control(
+                    case.sample
+                ),
+                _normalize_cache_control_result,
+            ),
+            werkzeug=_capture_outcome(
+                lambda case=case: werkzeug_parser(case.sample),
+                _normalize_werkzeug_cache_control_result,
+            ),
+        )
+        for case in cache_control_cases.CASES
+    ]
+
+
 def validate_dataset(
     dataset: data.BenchmarkDataset,
     *,
@@ -507,6 +544,16 @@ def _normalize_workspace_accept_result(parsed: object) -> object:
 def _normalize_werkzeug_accept_result(parsed: object) -> object:
     selected = typing.cast('str | None', parsed)
     return {'selected': selected}
+
+
+def _normalize_cache_control_result(parsed: object) -> object:
+    return dict(
+        typing.cast('dict[str, str | int | bool | None]', parsed).items()
+    )
+
+
+def _normalize_werkzeug_cache_control_result(parsed: object) -> object:
+    return dict(typing.cast('typing.Any', parsed).items())
 
 
 def result_to_json(result: BenchmarkResult) -> BenchmarkResultJson:

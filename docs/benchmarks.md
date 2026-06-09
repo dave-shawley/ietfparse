@@ -75,7 +75,8 @@ surfaces exist. Today that includes:
 
 - `workspace` for every packaged benchmark fixture
 - `werkzeug` for the Accept-family headers via
-  `werkzeug.http.parse_accept_header`
+  `werkzeug.http.parse_accept_header` and for `Cache-Control` via
+  `werkzeug.http.parse_cache_control_header`
 - `requests` for `requests.utils.parse_header_links`
 - `httpx` for `httpx.Response.links`
 
@@ -91,9 +92,9 @@ $ ietfparse-test run --header link --implementation workspace --implementation h
 If omitted, `run` defaults to the workspace parser implementation.
 
 The `werkzeug` implementation only supports `accept`, `accept-charset`,
-`accept-encoding`, and `accept-language`. The `requests` and `httpx`
-implementations only support `link`. Selecting any implementation for other
-headers fails fast with a validation error.
+`accept-encoding`, `accept-language`, and `cache-control`. The `requests` and
+`httpx` implementations only support `link`. Selecting any implementation for
+other headers fails fast with a validation error.
 
 To compare multiple implementations only on the headers they all support, use
 `compare implementation`. It always includes `workspace`, computes the shared
@@ -112,6 +113,9 @@ For behavioral comparisons, use the dedicated comparison commands:
 - `compare accept` runs curated `Accept` negotiation cases through
   [ietfparse.algorithms.select_content_type][] and Werkzeug's
   `Accept.best_match`.
+- `compare cache-control` runs curated `Cache-Control` parsing cases through
+  `ietfparse.headers.parse_cache_control` and Werkzeug's
+  `parse_cache_control_header`.
 
 Both commands emit either Rich summary output or detailed JSON:
 
@@ -120,6 +124,8 @@ $ ietfparse-test compare link
 $ ietfparse-test compare link --format json
 $ ietfparse-test compare accept
 $ ietfparse-test compare accept --format json
+$ ietfparse-test compare cache-control
+$ ietfparse-test compare cache-control --format json
 ```
 
 ## Using the utility
@@ -156,6 +162,7 @@ $ ietfparse-test run --header link --implementation workspace --implementation h
 $ ietfparse-test compare implementation werkzeug --format json
 $ ietfparse-test compare link --format json
 $ ietfparse-test compare accept --format json
+$ ietfparse-test compare cache-control --format json
 $ python -m ietfparse.test run --format json
 ```
 

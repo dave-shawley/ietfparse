@@ -49,6 +49,7 @@ differences across implementations.
 ```commandline
 $ ietfparse-test compare link --format json
 $ ietfparse-test compare accept --format json
+$ ietfparse-test compare cache-control --format json
 ```
 
 ## Options

@@ -60,6 +60,13 @@ class CompareAcceptPayload(t.TypedDict):
     results: list[runner.AcceptComparisonJson]
 
 
+class CompareCacheControlPayload(t.TypedDict):
+    """Stable JSON schema for `compare cache-control` output."""
+
+    case_count: int
+    results: list[runner.CacheControlComparisonJson]
+
+
 class CompareImplementationRowJson(t.TypedDict):
     """Stable JSON schema for one implementation comparison row."""
 
@@ -207,6 +214,17 @@ def build_compare_accept_payload(
     results: abc.Sequence[runner.AcceptComparisonJson],
 ) -> CompareAcceptPayload:
     """Build the stable JSON payload for `compare accept` output."""
+    return {
+        'case_count': len(results),
+        'results': list(results),
+    }
+
+
+def build_compare_cache_control_payload(
+    *,
+    results: abc.Sequence[runner.CacheControlComparisonJson],
+) -> CompareCacheControlPayload:
+    """Build the stable JSON payload for `compare cache-control` output."""
     return {
         'case_count': len(results),
         'results': list(results),
@@ -440,6 +458,32 @@ def compare_accept(
     _render_rich_accept_comparison(payload)
 
 
+@compare_app.command(name='cache-control')
+def compare_cache_control(
+    *,
+    output_format: t.Annotated[
+        OutputFormat | None,
+        typer.Option(
+            '--format',
+            case_sensitive=False,
+            help='Output format.',
+        ),
+    ] = None,
+) -> None:
+    """Compare curated Cache-Control parsing cases across implementations."""
+    payload = build_compare_cache_control_payload(
+        results=runner.compare_cache_control_cases()
+    )
+    format_name = determine_output_format(
+        requested=output_format,
+        stream=sys.stdout,
+    )
+    if format_name is OutputFormat.json:
+        _write_json(payload)
+        return
+    _render_rich_cache_control_comparison(payload)
+
+
 @compare_app.command(name='implementation')
 def compare_implementation(
     implementation: t.Annotated[
@@ -561,6 +605,7 @@ def _write_json(
         | RunPayload
         | CompareLinkPayload
         | CompareAcceptPayload
+        | CompareCacheControlPayload
         | CompareImplementationPayload
     ),
 ) -> None:
@@ -657,6 +702,24 @@ def _render_rich_accept_comparison(payload: CompareAcceptPayload) -> None:
     cons.print(tbl)
 
 
+def _render_rich_cache_control_comparison(
+    payload: CompareCacheControlPayload,
+) -> None:
+    cons = console.Console()
+    tbl = table.Table(title='ietfparse cache-control comparison')
+    tbl.add_column('Case')
+    tbl.add_column('Workspace')
+    tbl.add_column('Werkzeug')
+    for row in payload['results']:
+        tbl.add_row(
+            row['case_id'],
+            _cache_control_summary(row['workspace']),
+            _cache_control_summary(row['werkzeug']),
+        )
+    cons.print(panel.Panel(f'cases={payload["case_count"]}'))
+    cons.print(tbl)
+
+
 def _render_rich_implementation_comparison(
     payload: CompareImplementationPayload,
 ) -> None:
@@ -726,3 +789,10 @@ def _accept_werkzeug_summary(payload: runner.ParserOutcomeJson) -> str:
         return f'error:{payload["error_type"]}'
     result = t.cast('dict[str, str | None]', payload['result'])
     return result['selected'] or 'none'
+
+
+def _cache_control_summary(payload: runner.ParserOutcomeJson) -> str:
+    if payload['status'] == 'error':
+        return f'error:{payload["error_type"]}'
+    result = t.cast('dict[str, object]', payload['result'])
+    return json.dumps(result, sort_keys=True)

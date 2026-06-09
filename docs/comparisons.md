@@ -40,6 +40,51 @@ The benchmark utility and comparison tooling in [Benchmarking Header
 Parsers](benchmarks.md) are intended to make these comparisons repeatable
 instead of anecdotal.
 
+## `werkzeug.http.parse_cache_control_header`
+
+The adjacent comparison for `Cache-Control` parsing is Werkzeug's
+`parse_cache_control_header`.
+
+### Surface Differences
+
+Both libraries expose a mapping-like result, but they preserve different value
+semantics:
+
+- `ietfparse.headers.parse_cache_control` converts flag directives such as
+  `public` into `True` and numeric directives such as `max-age=100` into
+  integers.
+- Werkzeug returns a `RequestCacheControl` object whose mapping view uses
+  `None` for valueless directives and strings for directive values.
+
+### Conformance And Correctness
+
+The current comparison suite shows a small but meaningful semantic split:
+
+- `ietfparse` normalizes boolean directives to explicit booleans.
+- `ietfparse` parses numeric directives into integers.
+- Werkzeug preserves the original string form for values and keeps valueless
+  directives as `None`.
+- `ietfparse` drops empty directive values like `x-should-be-ignored=`, while
+  Werkzeug preserves them as empty strings.
+
+Representative examples:
+
+| Case                                   | `ietfparse`                          | Werkzeug                             |
+|----------------------------------------|--------------------------------------|--------------------------------------|
+| `public, no-store`                     | `{'public': True, 'no-store': True}` | `{'public': None, 'no-store': None}` |
+| `min-fresh=20, max-age=100`            | integers for both directives         | strings for both directives          |
+| `x-should-be-ignored=`                 | directive omitted                    | `{'x-should-be-ignored': ''}`        |
+| `community="UCI", x-token=" foo bar "` | quoted values preserved              | quoted values preserved              |
+
+So the difference here is less about rejecting malformed input and more about
+what the caller receives as normalized structure.
+
+### Reproducing The Comparison
+
+```commandline
+$ ietfparse-test compare cache-control --format json
+```
+
 ## `requests.utils.parse_header_links`
 
 The standard comparison for `Link` parsing is

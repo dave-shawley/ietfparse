@@ -126,6 +126,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
                 'accept-charset',
                 'accept-encoding',
                 'accept-language',
+                'cache-control',
             ),
         )
         self.assertEqual(
@@ -165,6 +166,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
 
     def test_werkzeug_parser_uses_accept_class_for_header_family(self) -> None:
         parse_accept_header = unittest.mock.Mock(return_value=object())
+        parse_cache_control_header = unittest.mock.Mock(return_value=object())
         mime_accept = object()
         charset_accept = object()
         accept = object()
@@ -173,7 +175,8 @@ class BenchmarkRunnerTests(unittest.TestCase):
         def fake_import_module(name: str) -> object:
             if name == 'werkzeug.http':
                 return unittest.mock.Mock(
-                    parse_accept_header=parse_accept_header
+                    parse_accept_header=parse_accept_header,
+                    parse_cache_control_header=parse_cache_control_header,
                 )
             if name == 'werkzeug.datastructures':
                 return unittest.mock.Mock(
@@ -201,11 +204,15 @@ class BenchmarkRunnerTests(unittest.TestCase):
             language_parser = runner.implementation_named(
                 'werkzeug'
             ).parser_for('parse_accept_language')
+            cache_control_parser = runner.implementation_named(
+                'werkzeug'
+            ).parser_for('parse_cache_control')
 
         mime_parser('text/html')
         charset_parser('utf-8')
         encoding_parser('gzip')
         language_parser('en')
+        cache_control_parser('public')
 
         self.assertEqual(
             parse_accept_header.call_args_list,
@@ -216,6 +223,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
                 unittest.mock.call('en', cls=language_accept),
             ],
         )
+        parse_cache_control_header.assert_called_once_with('public')
 
     def test_werkzeug_implementation_rejects_non_accept_headers(self) -> None:
         with self.assertRaisesRegex(
@@ -224,7 +232,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
         ):
             runner.validate_implementation_support(
                 implementation_name='werkzeug',
-                header_ids=('cache-control',),
+                header_ids=('forwarded',),
             )
 
     def test_requests_implementation_rejects_non_link_headers(self) -> None:
@@ -280,5 +288,24 @@ class BenchmarkRunnerTests(unittest.TestCase):
         self.assertIn('case_id', results[0])
         self.assertIn('accept', results[0])
         self.assertIn('available', results[0])
+        self.assertIn('workspace', results[0])
+        self.assertIn('werkzeug', results[0])
+
+    def test_compare_cache_control_cases_returns_curated_results(self) -> None:
+        implementation = runner.BenchmarkImplementation(
+            name='werkzeug',
+            parser_resolver=lambda _: lambda _: {'public': None},
+        )
+
+        with unittest.mock.patch.object(
+            runner,
+            'implementation_named',
+            return_value=implementation,
+        ):
+            results = runner.compare_cache_control_cases()
+
+        self.assertGreater(len(results), 0)
+        self.assertIn('case_id', results[0])
+        self.assertIn('sample', results[0])
         self.assertIn('workspace', results[0])
         self.assertIn('werkzeug', results[0])
