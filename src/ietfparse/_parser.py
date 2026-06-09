@@ -39,14 +39,15 @@ class CursorParser:
 
     def parse_token(self) -> str:
         start = self.index
-        while (
-            self.index < len(self.value)
-            and self.value[self.index] in _TOKEN_CHARS
-        ):
-            self.index = self.index + 1
-        if start == self.index:
+        index = self.index
+        value_len = len(self.value)
+        value = self.value
+        while index < value_len and value[index] in _TOKEN_CHARS:
+            index += 1
+        self.index = index
+        if start == index:
             raise ParseError(f'malformed parser input: {self.value!r}')
-        return self.value[start : self.index]
+        return value[start:index]
 
     def parse_quoted_string(self) -> str:
         parsed = []
