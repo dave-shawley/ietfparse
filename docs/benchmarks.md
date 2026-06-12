@@ -106,6 +106,16 @@ $ ietfparse-test compare implementation werkzeug
 $ ietfparse-test compare implementation werkzeug --workload realistic
 ```
 
+To summarize release-to-release timing changes from saved
+`run --format json` or `compare implementation --format json` outputs, use
+`diff`. It compares the same header/workload rows across two files and reports
+old/new `ns/call` plus the ratio and percentage change for each implementation:
+
+```commandline
+$ ietfparse-test diff old.json new.json
+$ ietfparse-test diff old.json new.json --format json
+```
+
 For behavioral comparisons, use the dedicated comparison commands:
 
 - `compare link` runs curated `Link` parsing edge cases through the available
@@ -160,6 +170,7 @@ $ ietfparse-test run --header link --workload complex --iterations 5000 --repeat
 $ ietfparse-test run --header link --implementation workspace --implementation requests
 $ ietfparse-test run --header link --implementation workspace --implementation httpx
 $ ietfparse-test compare implementation werkzeug --format json
+$ ietfparse-test diff old.json new.json
 $ ietfparse-test compare link --format json
 $ ietfparse-test compare accept --format json
 $ ietfparse-test compare cache-control --format json

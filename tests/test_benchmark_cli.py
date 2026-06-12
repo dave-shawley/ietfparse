@@ -1,4 +1,7 @@
 import importlib
+import json
+import pathlib
+import tempfile
 import typing
 import unittest.mock
 
@@ -312,6 +315,244 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             {'werkzeug': 0.5},
         )
 
+    def test_compare_implementation_diff_payload_reports_deltas(self) -> None:
+        baseline = cli.CompareImplementationPayload(
+            headers=['accept'],
+            workloads=['realistic'],
+            implementations=['workspace', 'werkzeug'],
+            results=[
+                cli.CompareImplementationRowJson(
+                    header='accept',
+                    workload='realistic',
+                    ns_per_call={'workspace': 100.0, 'werkzeug': 50.0},
+                    vs_workspace={'werkzeug': 0.5},
+                )
+            ],
+        )
+        candidate = cli.CompareImplementationPayload(
+            headers=['accept'],
+            workloads=['realistic'],
+            implementations=['workspace', 'werkzeug'],
+            results=[
+                cli.CompareImplementationRowJson(
+                    header='accept',
+                    workload='realistic',
+                    ns_per_call={'workspace': 80.0, 'werkzeug': 60.0},
+                    vs_workspace={'werkzeug': 0.75},
+                )
+            ],
+        )
+        payload = cli.build_compare_implementation_diff_payload(
+            baseline=baseline,
+            candidate=candidate,
+            baseline_label='old.json',
+            candidate_label='new.json',
+        )
+        self.assertEqual(payload['baseline_label'], 'old.json')
+        self.assertEqual(payload['candidate_label'], 'new.json')
+        self.assertEqual(payload['implementations'], ['workspace', 'werkzeug'])
+        self.assertEqual(
+            payload['results'][0]['implementations']['workspace'],
+            {
+                'old_ns_per_call': 100.0,
+                'new_ns_per_call': 80.0,
+                'delta_ns_per_call': -20.0,
+                'ratio': 0.8,
+                'percent_change': -20.0,
+            },
+        )
+        self.assertEqual(
+            payload['results'][0]['implementations']['werkzeug'],
+            {
+                'old_ns_per_call': 50.0,
+                'new_ns_per_call': 60.0,
+                'delta_ns_per_call': 10.0,
+                'ratio': 1.2,
+                'percent_change': 20.0,
+            },
+        )
+
+    def test_compare_implementation_diff_payload_rejects_shape_mismatch(
+        self,
+    ) -> None:
+        baseline = cli.CompareImplementationPayload(
+            headers=['accept'],
+            workloads=['realistic'],
+            implementations=['workspace'],
+            results=[],
+        )
+        candidate = cli.CompareImplementationPayload(
+            headers=['link'],
+            workloads=['realistic'],
+            implementations=['workspace'],
+            results=[],
+        )
+        with self.assertRaisesRegex(ValueError, 'same headers'):
+            cli.build_compare_implementation_diff_payload(
+                baseline=baseline,
+                candidate=candidate,
+                baseline_label='old.json',
+                candidate_label='new.json',
+            )
+
+    def test_compare_implementation_diff_payload_rejects_workload_mismatch(
+        self,
+    ) -> None:
+        baseline = cli.CompareImplementationPayload(
+            headers=['accept'],
+            workloads=['realistic'],
+            implementations=['workspace'],
+            results=[],
+        )
+        candidate = cli.CompareImplementationPayload(
+            headers=['accept'],
+            workloads=['complex'],
+            implementations=['workspace'],
+            results=[],
+        )
+        with self.assertRaisesRegex(ValueError, 'same workloads'):
+            cli.build_compare_implementation_diff_payload(
+                baseline=baseline,
+                candidate=candidate,
+                baseline_label='old.json',
+                candidate_label='new.json',
+            )
+
+    def test_diff_payload_rejects_implementation_mismatch(
+        self,
+    ) -> None:
+        baseline = cli.CompareImplementationPayload(
+            headers=['accept'],
+            workloads=['realistic'],
+            implementations=['workspace'],
+            results=[],
+        )
+        candidate = cli.CompareImplementationPayload(
+            headers=['accept'],
+            workloads=['realistic'],
+            implementations=['workspace', 'werkzeug'],
+            results=[],
+        )
+        with self.assertRaisesRegex(ValueError, 'same implementations'):
+            cli.build_compare_implementation_diff_payload(
+                baseline=baseline,
+                candidate=candidate,
+                baseline_label='old.json',
+                candidate_label='new.json',
+            )
+
+    def test_compare_implementation_diff_payload_rejects_row_mismatch(
+        self,
+    ) -> None:
+        baseline = cli.CompareImplementationPayload(
+            headers=['accept'],
+            workloads=['realistic'],
+            implementations=['workspace'],
+            results=[
+                cli.CompareImplementationRowJson(
+                    header='accept',
+                    workload='realistic',
+                    ns_per_call={'workspace': 100.0},
+                    vs_workspace={},
+                )
+            ],
+        )
+        candidate = cli.CompareImplementationPayload(
+            headers=['accept'],
+            workloads=['realistic'],
+            implementations=['workspace'],
+            results=[],
+        )
+        with self.assertRaisesRegex(ValueError, 'same header/workload rows'):
+            cli.build_compare_implementation_diff_payload(
+                baseline=baseline,
+                candidate=candidate,
+                baseline_label='old.json',
+                candidate_label='new.json',
+            )
+
+    def test_run_payload_is_normalized_for_diff(self) -> None:
+        payload = cli.RunPayload(
+            headers=['accept'],
+            workloads=['realistic'],
+            implementations=['workspace', 'werkzeug'],
+            results=[
+                runner.BenchmarkResultJson(
+                    implementation='workspace',
+                    header='accept',
+                    workload='realistic',
+                    sample_count=1,
+                    byte_count=10,
+                    repeat=1,
+                    iterations=1,
+                    median_elapsed_ns=100,
+                    ns_per_call=100.0,
+                    calls_per_second=1.0,
+                ),
+                runner.BenchmarkResultJson(
+                    implementation='werkzeug',
+                    header='accept',
+                    workload='realistic',
+                    sample_count=1,
+                    byte_count=10,
+                    repeat=1,
+                    iterations=1,
+                    median_elapsed_ns=80,
+                    ns_per_call=80.0,
+                    calls_per_second=1.0,
+                ),
+            ],
+        )
+        normalized = vars(cli)['_normalize_run_payload_for_diff'](
+            payload=payload
+        )
+        self.assertEqual(
+            normalized['results'],
+            [
+                {
+                    'header': 'accept',
+                    'workload': 'realistic',
+                    'ns_per_call': {'workspace': 100.0, 'werkzeug': 80.0},
+                    'vs_workspace': {'werkzeug': 0.8},
+                }
+            ],
+        )
+
+    def test_run_payload_normalization_requires_all_rows(self) -> None:
+        payload = cli.RunPayload(
+            headers=['accept'],
+            workloads=['realistic'],
+            implementations=['workspace', 'werkzeug'],
+            results=[
+                runner.BenchmarkResultJson(
+                    implementation='workspace',
+                    header='accept',
+                    workload='realistic',
+                    sample_count=1,
+                    byte_count=10,
+                    repeat=1,
+                    iterations=1,
+                    median_elapsed_ns=100,
+                    ns_per_call=100.0,
+                    calls_per_second=1.0,
+                )
+            ],
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            'run payload is missing one or more '
+            'header/workload/implementation rows',
+        ):
+            vars(cli)['_normalize_run_payload_for_diff'](payload=payload)
+
+    def test_vs_workspace_ratios_without_workspace_returns_empty_dict(
+        self,
+    ) -> None:
+        self.assertEqual(
+            vars(cli)['_vs_workspace_ratios']({'werkzeug': 80.0}),
+            {},
+        )
+
     def test_comparison_ratio_cell_marks_workspace_slower(self) -> None:
         cell = vars(cli)['_comparison_ratio_cell'](0.86)
         self.assertIsInstance(cell, Text)
@@ -327,6 +568,133 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         cell = vars(cli)['_comparison_ratio_cell'](1.0)
         self.assertEqual(cell.plain, '= 1.00x')
         self.assertEqual(str(cell.style), 'yellow')
+
+    def test_implementation_delta_cell_marks_lower_ns_per_call_as_better(
+        self,
+    ) -> None:
+        cell = vars(cli)['_implementation_delta_cell'](
+            {
+                'old_ns_per_call': 100.0,
+                'new_ns_per_call': 80.0,
+                'delta_ns_per_call': -20.0,
+                'ratio': 0.8,
+                'percent_change': -20.0,
+            }
+        )
+        self.assertEqual(cell.plain, 'v 0.80x (-20.0%)')
+        self.assertEqual(str(cell.style), 'green')
+
+    def test_implementation_delta_cell_marks_higher_ns_per_call_as_worse(
+        self,
+    ) -> None:
+        cell = vars(cli)['_implementation_delta_cell'](
+            {
+                'old_ns_per_call': 100.0,
+                'new_ns_per_call': 120.0,
+                'delta_ns_per_call': 20.0,
+                'ratio': 1.2,
+                'percent_change': 20.0,
+            }
+        )
+        self.assertEqual(cell.plain, '^ 1.20x (+20.0%)')
+        self.assertEqual(str(cell.style), 'red')
+
+    def test_implementation_delta_cell_marks_equal_ns_per_call_as_equal(
+        self,
+    ) -> None:
+        cell = vars(cli)['_implementation_delta_cell'](
+            {
+                'old_ns_per_call': 100.0,
+                'new_ns_per_call': 100.0,
+                'delta_ns_per_call': 0.0,
+                'ratio': 1.0,
+                'percent_change': 0.0,
+            }
+        )
+        self.assertEqual(cell.plain, '= 1.00x (+0.0%)')
+        self.assertEqual(str(cell.style), 'yellow')
+
+    def test_load_diffable_benchmark_payload_accepts_empty_results(
+        self,
+    ) -> None:
+        with (
+            self.subTest('compare implementation shape'),
+            tempfile.TemporaryDirectory() as temp_dir,
+        ):
+            path = pathlib.Path(temp_dir) / 'empty.json'
+            path.write_text(
+                json.dumps(
+                    {
+                        'headers': ['accept'],
+                        'workloads': ['realistic'],
+                        'implementations': ['workspace'],
+                        'results': [],
+                    }
+                )
+            )
+            payload = vars(cli)['_load_diffable_benchmark_payload'](path)
+        self.assertEqual(payload['results'], [])
+
+    def test_load_diffable_benchmark_payload_rejects_invalid_json(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = pathlib.Path(temp_dir) / 'invalid.json'
+            path.write_text('{')
+            with self.assertRaisesRegex(ValueError, 'is not valid JSON'):
+                vars(cli)['_load_diffable_benchmark_payload'](path)
+
+    def test_load_diffable_benchmark_payload_rejects_non_mapping(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = pathlib.Path(temp_dir) / 'invalid.json'
+            path.write_text('[]')
+            with self.assertRaisesRegex(
+                TypeError,
+                'is not a run or compare implementation JSON payload',
+            ):
+                vars(cli)['_load_diffable_benchmark_payload'](path)
+
+    def test_load_diffable_benchmark_payload_rejects_mixed_row_shapes(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = pathlib.Path(temp_dir) / 'invalid.json'
+            path.write_text(
+                json.dumps(
+                    {
+                        'headers': ['accept'],
+                        'workloads': ['realistic'],
+                        'implementations': ['workspace'],
+                        'results': [
+                            {
+                                'header': 'accept',
+                                'workload': 'realistic',
+                                'ns_per_call': {'workspace': 100.0},
+                                'vs_workspace': {},
+                            },
+                            {
+                                'implementation': 'workspace',
+                                'header': 'accept',
+                                'workload': 'realistic',
+                                'sample_count': 1,
+                                'byte_count': 10,
+                                'repeat': 1,
+                                'iterations': 1,
+                                'median_elapsed_ns': 100,
+                                'ns_per_call': 100.0,
+                                'calls_per_second': 1.0,
+                            },
+                        ],
+                    }
+                )
+            )
+            with self.assertRaisesRegex(
+                ValueError,
+                'is not a run or compare implementation JSON payload',
+            ):
+                vars(cli)['_load_diffable_benchmark_payload'](path)
 
 
 class BenchmarkCliIntegrationTests(unittest.TestCase):
@@ -674,5 +1042,182 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         self.assertNotEqual(result.exit_code, 0)
         self.assertIn(
             'do not share any benchmark headers',
+            str(result.exception),
+        )
+
+    def test_diff_command_emits_json_output(self) -> None:
+        baseline_payload = {
+            'headers': ['accept'],
+            'workloads': ['realistic'],
+            'implementations': ['workspace', 'werkzeug'],
+            'results': [
+                {
+                    'header': 'accept',
+                    'workload': 'realistic',
+                    'ns_per_call': {'workspace': 100.0, 'werkzeug': 50.0},
+                    'vs_workspace': {'werkzeug': 0.5},
+                }
+            ],
+        }
+        candidate_payload = {
+            'headers': ['accept'],
+            'workloads': ['realistic'],
+            'implementations': ['workspace', 'werkzeug'],
+            'results': [
+                {
+                    'header': 'accept',
+                    'workload': 'realistic',
+                    'ns_per_call': {'workspace': 80.0, 'werkzeug': 60.0},
+                    'vs_workspace': {'werkzeug': 0.75},
+                }
+            ],
+        }
+        with self.runner.isolated_filesystem():
+            baseline_path = pathlib.Path('baseline.json')
+            candidate_path = pathlib.Path('candidate.json')
+            baseline_path.write_text(json.dumps(baseline_payload))
+            candidate_path.write_text(json.dumps(candidate_payload))
+            result = self.runner.invoke(
+                cli.app,
+                [
+                    'diff',
+                    str(baseline_path),
+                    str(candidate_path),
+                    '--format',
+                    'json',
+                ],
+            )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('"baseline_label": "baseline.json"', result.stdout)
+        self.assertIn('"candidate_label": "candidate.json"', result.stdout)
+        self.assertIn('"delta_ns_per_call": -20.0', result.stdout)
+        self.assertIn('"ratio": 0.8', result.stdout)
+
+    def test_diff_command_accepts_run_payloads(self) -> None:
+        baseline_payload = {
+            'headers': ['accept'],
+            'workloads': ['realistic'],
+            'implementations': ['workspace'],
+            'results': [
+                {
+                    'implementation': 'workspace',
+                    'header': 'accept',
+                    'workload': 'realistic',
+                    'sample_count': 1,
+                    'byte_count': 10,
+                    'repeat': 1,
+                    'iterations': 1,
+                    'median_elapsed_ns': 100,
+                    'ns_per_call': 100.0,
+                    'calls_per_second': 1.0,
+                }
+            ],
+        }
+        candidate_payload = {
+            'headers': ['accept'],
+            'workloads': ['realistic'],
+            'implementations': ['workspace'],
+            'results': [
+                {
+                    'implementation': 'workspace',
+                    'header': 'accept',
+                    'workload': 'realistic',
+                    'sample_count': 1,
+                    'byte_count': 10,
+                    'repeat': 1,
+                    'iterations': 1,
+                    'median_elapsed_ns': 90,
+                    'ns_per_call': 90.0,
+                    'calls_per_second': 1.0,
+                }
+            ],
+        }
+        with self.runner.isolated_filesystem():
+            baseline_path = pathlib.Path('baseline.json')
+            candidate_path = pathlib.Path('candidate.json')
+            baseline_path.write_text(json.dumps(baseline_payload))
+            candidate_path.write_text(json.dumps(candidate_payload))
+            result = self.runner.invoke(
+                cli.app,
+                [
+                    'diff',
+                    str(baseline_path),
+                    str(candidate_path),
+                    '--format',
+                    'json',
+                ],
+            )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('"old_ns_per_call": 100.0', result.stdout)
+        self.assertIn('"new_ns_per_call": 90.0', result.stdout)
+        self.assertIn('"percent_change": -10.0', result.stdout)
+
+    def test_diff_command_emits_rich_output(self) -> None:
+        payload = {
+            'headers': ['accept'],
+            'workloads': ['realistic'],
+            'implementations': ['workspace'],
+            'results': [
+                {
+                    'header': 'accept',
+                    'workload': 'realistic',
+                    'ns_per_call': {'workspace': 100.0},
+                    'vs_workspace': {},
+                }
+            ],
+        }
+        with self.runner.isolated_filesystem():
+            baseline_path = pathlib.Path('baseline.json')
+            candidate_path = pathlib.Path('candidate.json')
+            baseline_path.write_text(json.dumps(payload))
+            candidate_path.write_text(
+                json.dumps(
+                    {
+                        **payload,
+                        'results': [
+                            {
+                                'header': 'accept',
+                                'workload': 'realistic',
+                                'ns_per_call': {'workspace': 90.0},
+                                'vs_workspace': {},
+                            }
+                        ],
+                    }
+                )
+            )
+            result = self.runner.invoke(
+                cli.app,
+                [
+                    'diff',
+                    str(baseline_path),
+                    str(candidate_path),
+                    '--format',
+                    'rich',
+                ],
+            )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('ietfparse implementation diff', result.stdout)
+        self.assertIn('baseline=baseline.json', result.stdout)
+        self.assertIn('candidate=candidate.json', result.stdout)
+        self.assertIn('baseline.json', result.stdout)
+        self.assertIn('candidate.json', result.stdout)
+        self.assertIn('ns/call', result.stdout)
+
+    def test_diff_command_rejects_non_compare_implementation_payload(
+        self,
+    ) -> None:
+        payload = {'case_count': 1, 'results': []}
+        with self.runner.isolated_filesystem():
+            baseline_path = pathlib.Path('baseline.json')
+            candidate_path = pathlib.Path('candidate.json')
+            baseline_path.write_text(json.dumps(payload))
+            candidate_path.write_text(json.dumps(payload))
+            result = self.runner.invoke(
+                cli.app,
+                ['diff', str(baseline_path), str(candidate_path)],
+            )
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn(
+            'not a run or compare implementation JSON payload',
             str(result.exception),
         )

@@ -43,6 +43,13 @@ selected implementations. The command always includes `workspace`.
 $ ietfparse-test compare implementation werkzeug --format json
 ```
 
+Use `diff` to summarize timing changes between two saved
+`run --format json` or `compare implementation --format json` outputs.
+
+```commandline
+$ ietfparse-test diff old.json new.json --format json
+```
+
 Use `compare link` and `compare accept` to inspect curated behavioral
 differences across implementations.
 
