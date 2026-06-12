@@ -107,46 +107,11 @@ class ParameterTokenizer:
         self.normalize_parameter_values = normalize_parameter_values
 
     def parse(self, value: str) -> list[tuple[str, str]]:
-        cursor = CursorParser(value)
-        parameters = []
-        try:
-            while True:
-                cursor.skip_ows()
-                if cursor.index >= len(cursor.value):
-                    return parameters
-                if cursor.value[cursor.index] == ';':
-                    cursor.index = cursor.index + 1
-                    continue
-                parameters.append(self._parse_parameter(cursor))
-                cursor.skip_ows()
-                if cursor.index >= len(cursor.value):
-                    return parameters
-                if cursor.value[cursor.index] != ';':
-                    raise ValueError(self._error_message(cursor))
-                cursor.index = cursor.index + 1
-        except ParseError as exc:
-            raise ValueError(self._error_message(cursor)) from exc
-
-    @staticmethod
-    def _error_message(cursor: CursorParser) -> str:
-        return f'malformed parameter list: {cursor.value!r}'
-
-    def _parse_parameter(self, cursor: CursorParser) -> tuple[str, str]:
-        name = cursor.parse_token()
-        cursor.skip_ows()
-        if (
-            cursor.index >= len(cursor.value)
-            or cursor.value[cursor.index] != '='
-        ):
-            raise ParseError(self._error_message(cursor))
-
-        cursor.index = cursor.index + 1
-        value = cursor.parse_parameter_value()
-        if self.normalize_parameter_names:
-            name = name.lower()
-        if self.normalize_parameter_values:
-            value = value.lower()
-        return name, value
+        return _parse_http_parameters_with_quotes(
+            value,
+            normalize_parameter_names=self.normalize_parameter_names,
+            normalize_parameter_values=self.normalize_parameter_values,
+        )
 
 
 _PARAMETER_TOKENIZERS = {
@@ -288,3 +253,93 @@ def _fast_parse_http_parameters(
         parameters.append((name, parameter_value))
 
     return parameters
+
+
+def _parse_http_parameters_with_quotes(
+    value: str,
+    *,
+    normalize_parameter_names: bool,
+    normalize_parameter_values: bool,
+) -> list[tuple[str, str]]:
+    error_message = f'malformed parameter list: {value!r}'
+    parameters: list[tuple[str, str]] = []
+    value_len = len(value)
+    index = 0
+
+    while True:
+        index = _skip_ows_at(value, index)
+        if index >= value_len:
+            return parameters
+        if value[index] == ';':
+            index += 1
+            continue
+
+        name, index = _parse_token_at(value, index, error_message)
+        index = _skip_ows_at(value, index)
+        if index >= value_len or value[index] != '=':
+            raise ValueError(error_message)
+        index += 1
+
+        index = _skip_ows_at(value, index)
+        if index >= value_len:
+            raise ValueError(error_message)
+
+        parameter_value, index = _parse_parameter_value_at(
+            value, index, error_message
+        )
+        index = _skip_ows_at(value, index)
+        if index < value_len and value[index] != ';':
+            raise ValueError(error_message)
+
+        if normalize_parameter_names:
+            name = name.lower()
+        if normalize_parameter_values:
+            parameter_value = parameter_value.lower()
+        parameters.append((name, parameter_value))
+
+
+def _skip_ows_at(value: str, index: int) -> int:
+    value_len = len(value)
+    while index < value_len and value[index] in _OWS:
+        index += 1
+    return index
+
+
+def _parse_token_at(
+    value: str, index: int, error_message: str
+) -> tuple[str, int]:
+    start = index
+    value_len = len(value)
+    while index < value_len and value[index] in _TOKEN_CHARS:
+        index += 1
+    if start == index:
+        raise ValueError(error_message)
+    return value[start:index], index
+
+
+def _parse_parameter_value_at(
+    value: str, index: int, error_message: str
+) -> tuple[str, int]:
+    if value[index] != '"':
+        return _parse_token_at(value, index, error_message)
+    return _parse_quoted_parameter_value_at(value, index + 1, error_message)
+
+
+def _parse_quoted_parameter_value_at(
+    value: str, index: int, error_message: str
+) -> tuple[str, int]:
+    value_len = len(value)
+    parsed_value: list[str] = []
+    while index < value_len:
+        char = value[index]
+        if char == '\\':
+            index += 1
+            if index >= value_len:
+                raise ValueError(error_message)
+            parsed_value.append(value[index])
+        elif char == '"':
+            return ''.join(parsed_value), index + 1
+        else:
+            parsed_value.append(char)
+        index += 1
+    raise ValueError(error_message)
