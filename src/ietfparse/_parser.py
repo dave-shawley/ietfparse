@@ -94,39 +94,6 @@ class CursorParser:
         raise ParseError(f'malformed parser input: {self.value!r}')
 
 
-class ParameterTokenizer:
-    """Tokenize semicolon-delimited HTTP parameter strings."""
-
-    def __init__(
-        self,
-        *,
-        normalize_parameter_names: bool = False,
-        normalize_parameter_values: bool = True,
-    ) -> None:
-        self.normalize_parameter_names = normalize_parameter_names
-        self.normalize_parameter_values = normalize_parameter_values
-
-    def parse(self, value: str) -> list[tuple[str, str]]:
-        return _parse_http_parameters_with_quotes(
-            value,
-            normalize_parameter_names=self.normalize_parameter_names,
-            normalize_parameter_values=self.normalize_parameter_values,
-        )
-
-
-_PARAMETER_TOKENIZERS = {
-    (False, False): ParameterTokenizer(
-        normalize_parameter_values=False,
-    ),
-    (False, True): ParameterTokenizer(),
-    (True, False): ParameterTokenizer(
-        normalize_parameter_names=True,
-        normalize_parameter_values=False,
-    ),
-    (True, True): ParameterTokenizer(normalize_parameter_names=True),
-}
-
-
 def parse_http_parameters(
     value: str,
     *,
@@ -140,10 +107,11 @@ def parse_http_parameters(
             normalize_parameter_names=normalize_parameter_names,
             normalize_parameter_values=normalize_parameter_values,
         )
-
-    return _PARAMETER_TOKENIZERS[
-        (normalize_parameter_names, normalize_parameter_values)
-    ].parse(value)
+    return _parse_http_parameters_with_quotes(
+        value,
+        normalize_parameter_names=normalize_parameter_names,
+        normalize_parameter_values=normalize_parameter_values,
+    )
 
 
 def parse_list_items(value: str) -> list[str]:
