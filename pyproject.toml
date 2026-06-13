@@ -30,6 +30,16 @@ classifiers = [
 Documentation = "https://dave-shawley.github.io/ietfparse/"
 "Source Code" = "https://github.com/dave-shawley/ietfparse"
 
+[project.scripts]
+ietfparse-test = "ietfparse.test.cli:app"
+
+[project.optional-dependencies]
+tests = [
+  "rich>=14,<15",
+  "tomli>=2 ; python_version < '3.11'",
+  "typer>=0.16,<1",
+]
+
 [dependency-groups]
 dev = [
   "coverage[toml]~=7.14",
@@ -44,6 +54,11 @@ dev = [
   "ruff>=0.15",
   "ty>=0.0.34",
   "zensical>=0.0.41",
+]
+perftest = [
+  "httpx>=0.28.1",
+  "requests>=2.33.1",
+  "werkzeug>=3.1",
 ]
 
 [build-system]
