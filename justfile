@@ -6,7 +6,7 @@ export UV_FROZEN := "1"
     just --list
 
 [doc("Run lint & test disabling PYTEST_ADDOPTS")]
-ci:
+ci: format
     #!/bin/sh
     unset PYTEST_ADDOPTS
     set -e
