@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import enum
 import sys
 import typing
 from importlib import resources
@@ -12,17 +13,21 @@ if sys.version_info >= (3, 11):
 else:  # pragma: no cover -- Python < 3.11
     import tomli as tomllib
 
-SupportedHeader = typing.Literal[
-    'accept',
-    'accept-charset',
-    'accept-encoding',
-    'accept-language',
-    'cache-control',
-    'content-type',
-    'forwarded',
-    'link',
-]
-SUPPORTED_HEADERS: tuple[str] = typing.get_args(SupportedHeader)
+
+class SupportedHeader(enum.StrEnum):
+    """Supported header names."""
+
+    ACCEPT = 'accept'
+    ACCEPT_CHARSET = 'accept-charset'
+    ACCEPT_ENCODING = 'accept-encoding'
+    ACCEPT_LANGUAGE = 'accept-language'
+    CACHE_CONTROL = 'cache-control'
+    CONTENT_TYPE = 'content-type'
+    FORWARDED = 'forwarded'
+    LINK = 'link'
+
+
+SUPPORTED_HEADERS: tuple[str, ...] = tuple(h.value for h in SupportedHeader)
 SupportedWorkload = typing.Literal['realistic', 'complex', 'large']
 SUPPORTED_WORKLOADS: tuple[str] = typing.get_args(SupportedWorkload)
 MAX_LARGE_SAMPLE_BYTES = 8192

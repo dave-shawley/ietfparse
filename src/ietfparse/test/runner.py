@@ -14,6 +14,10 @@ from ietfparse import algorithms, errors
 from ietfparse import headers as header_parsers
 from ietfparse.test import accept_cases, cache_control_cases, data, link_cases
 
+if typing.TYPE_CHECKING:
+    from collections import abc
+
+
 Parser = Callable[[str], object]
 SupportedImplementation = typing.Literal[
     'workspace', 'werkzeug', 'requests', 'httpx'
@@ -22,17 +26,37 @@ SUPPORTED_IMPLEMENTATIONS: tuple[str, ...] = typing.get_args(
     SupportedImplementation
 )
 IMPLEMENTATION_HEADERS: dict[str, tuple[data.SupportedHeader, ...]] = {
-    'workspace': data.SUPPORTED_HEADERS,
+    'workspace': tuple(data.SupportedHeader),
     'werkzeug': (
-        'accept',
-        'accept-charset',
-        'accept-encoding',
-        'accept-language',
-        'cache-control',
+        data.SupportedHeader.ACCEPT,
+        data.SupportedHeader.ACCEPT_CHARSET,
+        data.SupportedHeader.ACCEPT_ENCODING,
+        data.SupportedHeader.ACCEPT_LANGUAGE,
+        data.SupportedHeader.CACHE_CONTROL,
     ),
-    'requests': ('link',),
-    'httpx': ('link',),
+    'requests': (data.SupportedHeader.LINK,),
+    'httpx': (data.SupportedHeader.LINK,),
 }
+
+
+class UnsupportedHeaderError(ValueError):
+    """CLI received an unsupported header value."""
+
+    def __init__(
+        self,
+        implementation: SupportedImplementation,
+        unsupported_values: abc.Iterable[data.SupportedHeader],
+    ) -> None:
+        supported = headers_supported_by(implementation)
+        supported_detail = sorted(repr(header.value) for header in supported)
+        unsupported_detail = sorted(
+            repr(header.value) for header in unsupported_values
+        )
+        super().__init__(
+            f'The {implementation} implementation only supports the '
+            f'following headers: {", ".join(supported_detail)}. '
+            f'Unsupported header values: {", ".join(unsupported_detail)}'
+        )
 
 
 class BenchmarkResultJson(TypedDict):
@@ -235,32 +259,24 @@ def implementation_named(
 def validate_implementation_support(
     *,
     implementation_name: SupportedImplementation,
-    header_ids: tuple[data.SupportedHeader, ...],
+    header_ids: abc.Iterable[data.SupportedHeader],
 ) -> None:
     """Ensure that an implementation supports the selected headers."""
-    supported_headers = set(headers_supported_by(implementation_name))
+    supported_headers = headers_supported_by(implementation_name)
     unsupported = sorted(
         header_id
         for header_id in header_ids
         if header_id not in supported_headers
     )
     if unsupported:
-        supported_detail = ', '.join(
-            sorted(repr(h) for h in supported_headers)
-        )
-        raise ValueError(
-            f'The {implementation_name} implementation only supports the '
-            f'following headers: {supported_detail}. '
-            'Unsupported header values: '
-            f'{", ".join(repr(h) for h in unsupported)}'
-        )
+        raise UnsupportedHeaderError(implementation_name, unsupported)
 
 
 def headers_supported_by(
     implementation_name: SupportedImplementation,
-) -> tuple[data.SupportedHeader, ...]:
+) -> set[data.SupportedHeader]:
     """Return benchmark headers supported by one implementation."""
-    return IMPLEMENTATION_HEADERS[implementation_name]
+    return set(IMPLEMENTATION_HEADERS[implementation_name])
 
 
 def common_supported_headers(
@@ -271,14 +287,12 @@ def common_supported_headers(
     if not names:
         return ()
     supported = [
-        set(headers_supported_by(implementation_name))
+        headers_supported_by(implementation_name)
         for implementation_name in names
     ]
     common = set.intersection(*supported)
     return tuple(
-        header_id
-        for header_id in data.SUPPORTED_HEADERS
-        if header_id in common
+        header_id for header_id in data.SupportedHeader if header_id in common
     )
 
 

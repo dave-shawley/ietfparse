@@ -290,13 +290,13 @@ def build_compare_implementation_payload(
                     header=header_id,
                     workload=workload_id,
                     ns_per_call={
-                        implementation_id: row_results[
+                        str(implementation_id): row_results[
                             implementation_id
                         ].ns_per_call
                         for implementation_id in implementation_ids
                     },
                     vs_workspace={
-                        implementation_id: row_results[
+                        str(implementation_id): row_results[
                             implementation_id
                         ].ns_per_call
                         / workspace_result.ns_per_call
@@ -343,7 +343,7 @@ def build_compare_implementation_diff_payload(
                     header=header_id,
                     workload=workload_id,
                     implementations={
-                        implementation_id: ImplementationDiffJson(
+                        str(implementation_id): ImplementationDiffJson(
                             old_ns_per_call=baseline_row['ns_per_call'][
                                 implementation_id
                             ],
@@ -414,7 +414,7 @@ app.add_typer(compare_app, name='compare')
 def run(  # noqa: PLR0913
     *,
     header: t.Annotated[
-        list[str] | None,
+        list[data.SupportedHeader] | None,
         typer.Option(
             '--header',
             help='Header id to benchmark. May be specified multiple times.',
@@ -476,12 +476,12 @@ def run(  # noqa: PLR0913
 ) -> None:
     """Run one or more benchmark suite."""
     dataset = data.load_dataset()
-    header_ids = resolve_headers(header)
+    header_ids = header or tuple(data.SupportedHeader)
     workload_ids = resolve_workloads(workload)
     implementation_ids = resolve_implementations(implementation)
     results: list[runner.BenchmarkResult] = []
     selection = runner.BenchmarkSelection(
-        header_ids=header_ids,
+        header_ids=tuple(header_ids),
         workload_ids=workload_ids,
         iterations=iterations,
         repeat=repeat,
@@ -893,7 +893,7 @@ def _render_rich_implementation_comparison(
     for implementation_id in payload['implementations']:
         tbl.add_column(f'{implementation_id} ns/call', justify='right')
     for row in payload['results']:
-        cells = [row['header'], row['workload']]
+        cells: list[console.RenderableType] = [row['header'], row['workload']]
         cells.extend(
             _comparison_ratio_cell(row['vs_workspace'][implementation_id])
             for implementation_id in payload['implementations']
@@ -935,7 +935,7 @@ def _render_rich_implementation_diff(
             justify='right',
         )
     for row in payload['results']:
-        cells = [row['header'], row['workload']]
+        cells: list[console.RenderableType] = [row['header'], row['workload']]
         cells.extend(
             _implementation_delta_cell(
                 row['implementations'][implementation_id]

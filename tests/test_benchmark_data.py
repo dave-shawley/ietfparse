@@ -1,4 +1,4 @@
-import unittest
+import unittest.mock
 
 from ietfparse import headers
 from ietfparse.test import data, runner
@@ -113,9 +113,9 @@ class BenchmarkRunnerTests(unittest.TestCase):
         )
 
     def test_headers_supported_by_returns_workspace_headers(self) -> None:
-        self.assertEqual(
+        self.assertSetEqual(
             runner.headers_supported_by('workspace'),
-            data.SUPPORTED_HEADERS,
+            {data.SupportedHeader(v) for v in data.SUPPORTED_HEADERS},
         )
 
     def test_common_supported_headers_uses_intersection(self) -> None:
@@ -232,7 +232,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
         ):
             runner.validate_implementation_support(
                 implementation_name='werkzeug',
-                header_ids=('forwarded',),
+                header_ids=(data.SupportedHeader.FORWARDED,),
             )
 
     def test_requests_implementation_rejects_non_link_headers(self) -> None:
@@ -242,7 +242,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
         ):
             runner.validate_implementation_support(
                 implementation_name='requests',
-                header_ids=('accept',),
+                header_ids=(data.SupportedHeader.ACCEPT,),
             )
 
     def test_httpx_implementation_rejects_non_link_headers(self) -> None:
@@ -252,7 +252,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
         ):
             runner.validate_implementation_support(
                 implementation_name='httpx',
-                header_ids=('accept',),
+                header_ids=(data.SupportedHeader.ACCEPT,),
             )
 
     def test_compare_link_cases_returns_curated_results(self) -> None:

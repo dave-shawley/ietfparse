@@ -140,7 +140,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         results = runner.run_benchmarks(
             dataset,
             selection=runner.BenchmarkSelection(
-                header_ids=('accept',),
+                header_ids=(data.SupportedHeader.ACCEPT,),
                 workload_ids=('realistic',),
                 iterations=1,
                 repeat=1,
@@ -148,7 +148,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         )
         payload = cli.build_run_payload(
             results=results,
-            header_ids=('accept',),
+            header_ids=(data.SupportedHeader.ACCEPT,),
             workload_ids=('realistic',),
             implementation_ids=('workspace',),
         )
@@ -298,7 +298,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
                     calls_per_second=1.0,
                 ),
             ],
-            header_ids=('accept',),
+            header_ids=(data.SupportedHeader.ACCEPT,),
             workload_ids=('realistic',),
             implementation_ids=('workspace', 'werkzeug'),
         )
@@ -317,7 +317,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
 
     def test_compare_implementation_diff_payload_reports_deltas(self) -> None:
         baseline = cli.CompareImplementationPayload(
-            headers=['accept'],
+            headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
             implementations=['workspace', 'werkzeug'],
             results=[
@@ -330,7 +330,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             ],
         )
         candidate = cli.CompareImplementationPayload(
-            headers=['accept'],
+            headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
             implementations=['workspace', 'werkzeug'],
             results=[
@@ -376,13 +376,13 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         self,
     ) -> None:
         baseline = cli.CompareImplementationPayload(
-            headers=['accept'],
+            headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
             implementations=['workspace'],
             results=[],
         )
         candidate = cli.CompareImplementationPayload(
-            headers=['link'],
+            headers=[data.SupportedHeader.LINK],
             workloads=['realistic'],
             implementations=['workspace'],
             results=[],
@@ -399,13 +399,13 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         self,
     ) -> None:
         baseline = cli.CompareImplementationPayload(
-            headers=['accept'],
+            headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
             implementations=['workspace'],
             results=[],
         )
         candidate = cli.CompareImplementationPayload(
-            headers=['accept'],
+            headers=[data.SupportedHeader.ACCEPT],
             workloads=['complex'],
             implementations=['workspace'],
             results=[],
@@ -422,13 +422,13 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         self,
     ) -> None:
         baseline = cli.CompareImplementationPayload(
-            headers=['accept'],
+            headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
             implementations=['workspace'],
             results=[],
         )
         candidate = cli.CompareImplementationPayload(
-            headers=['accept'],
+            headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
             implementations=['workspace', 'werkzeug'],
             results=[],
@@ -445,7 +445,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         self,
     ) -> None:
         baseline = cli.CompareImplementationPayload(
-            headers=['accept'],
+            headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
             implementations=['workspace'],
             results=[
@@ -458,7 +458,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             ],
         )
         candidate = cli.CompareImplementationPayload(
-            headers=['accept'],
+            headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
             implementations=['workspace'],
             results=[],
@@ -473,7 +473,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
 
     def test_run_payload_is_normalized_for_diff(self) -> None:
         payload = cli.RunPayload(
-            headers=['accept'],
+            headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
             implementations=['workspace', 'werkzeug'],
             results=[
@@ -520,7 +520,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
 
     def test_run_payload_normalization_requires_all_rows(self) -> None:
         payload = cli.RunPayload(
-            headers=['accept'],
+            headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
             implementations=['workspace', 'werkzeug'],
             results=[
@@ -1153,8 +1153,8 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         self.assertIn('"percent_change": -10.0', result.stdout)
 
     def test_diff_command_emits_rich_output(self) -> None:
-        payload = {
-            'headers': ['accept'],
+        payload: cli.CompareImplementationPayload = {
+            'headers': [data.SupportedHeader.ACCEPT],
             'workloads': ['realistic'],
             'implementations': ['workspace'],
             'results': [
@@ -1206,7 +1206,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
     def test_diff_command_rejects_non_compare_implementation_payload(
         self,
     ) -> None:
-        payload = {'case_count': 1, 'results': []}
+        payload: cli.CompareAcceptPayload = {'case_count': 1, 'results': []}
         with self.runner.isolated_filesystem():
             baseline_path = pathlib.Path('baseline.json')
             candidate_path = pathlib.Path('candidate.json')

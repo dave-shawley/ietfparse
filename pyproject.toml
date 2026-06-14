@@ -115,3 +115,6 @@ ignore = [
 
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
+
+[tool.ty.environment]
+python-version = "3.12"
