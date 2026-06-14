@@ -445,21 +445,15 @@ def _validate_samples(
     samples: tuple[str, ...],
     parser: Parser,
 ) -> None:
-    for sample in samples:
-        error = _sample_error(parser, sample)
-        if error is not None:
-            raise ValueError(
-                f'invalid benchmark fixture for {header_id}/{workload}: '
-                f'{sample!r}'
-            ) from error
-
-
-def _sample_error(parser: Parser, sample: str) -> Exception | None:
+    probe: str | None = None
     try:
-        parser(sample)
+        for sample in samples:
+            probe = sample
+            parser(sample)
     except (errors.RootException, ValueError) as error:
-        return error
-    return None
+        raise ValueError(
+            f'invalid benchmark fixture for {header_id}/{workload}: {probe!r}'
+        ) from error
 
 
 def _run_once(
@@ -469,12 +463,8 @@ def _run_once(
     checksum = 0
     for _ in range(iterations):
         for sample in samples:
-            checksum += _consume(parser(sample))
+            checksum += len(repr(parser(sample)))
     return time.perf_counter_ns() - start, checksum
-
-
-def _consume(parsed: object) -> int:
-    return len(repr(parsed))
 
 
 def _capture_outcome(
