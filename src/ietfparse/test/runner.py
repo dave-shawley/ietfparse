@@ -25,17 +25,19 @@ SupportedImplementation = typing.Literal[
 SUPPORTED_IMPLEMENTATIONS: tuple[str, ...] = typing.get_args(
     SupportedImplementation
 )
-IMPLEMENTATION_HEADERS: dict[str, tuple[data.SupportedHeader, ...]] = {
-    'workspace': tuple(data.SupportedHeader),
-    'werkzeug': (
+IMPLEMENTATION_HEADERS: dict[
+    SupportedImplementation, set[data.SupportedHeader]
+] = {
+    'workspace': set(data.SupportedHeader),
+    'werkzeug': {
         data.SupportedHeader.ACCEPT,
         data.SupportedHeader.ACCEPT_CHARSET,
         data.SupportedHeader.ACCEPT_ENCODING,
         data.SupportedHeader.ACCEPT_LANGUAGE,
         data.SupportedHeader.CACHE_CONTROL,
-    ),
-    'requests': (data.SupportedHeader.LINK,),
-    'httpx': (data.SupportedHeader.LINK,),
+    },
+    'requests': {data.SupportedHeader.LINK},
+    'httpx': {data.SupportedHeader.LINK},
 }
 
 
@@ -47,7 +49,7 @@ class UnsupportedHeaderError(ValueError):
         implementation: SupportedImplementation,
         unsupported_values: abc.Iterable[data.SupportedHeader],
     ) -> None:
-        supported = headers_supported_by(implementation)
+        supported = IMPLEMENTATION_HEADERS[implementation]
         supported_detail = sorted(repr(header.value) for header in supported)
         unsupported_detail = sorted(
             repr(header.value) for header in unsupported_values
@@ -262,7 +264,7 @@ def validate_implementation_support(
     header_ids: abc.Iterable[data.SupportedHeader],
 ) -> None:
     """Ensure that an implementation supports the selected headers."""
-    supported_headers = headers_supported_by(implementation_name)
+    supported_headers = IMPLEMENTATION_HEADERS[implementation_name]
     unsupported = sorted(
         header_id
         for header_id in header_ids
@@ -270,13 +272,6 @@ def validate_implementation_support(
     )
     if unsupported:
         raise UnsupportedHeaderError(implementation_name, unsupported)
-
-
-def headers_supported_by(
-    implementation_name: SupportedImplementation,
-) -> set[data.SupportedHeader]:
-    """Return benchmark headers supported by one implementation."""
-    return set(IMPLEMENTATION_HEADERS[implementation_name])
 
 
 def common_supported_headers(
@@ -287,7 +282,7 @@ def common_supported_headers(
     if not names:
         return ()
     supported = [
-        headers_supported_by(implementation_name)
+        IMPLEMENTATION_HEADERS[implementation_name]
         for implementation_name in names
     ]
     common = set.intersection(*supported)

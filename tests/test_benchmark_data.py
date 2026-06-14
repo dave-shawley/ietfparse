@@ -114,7 +114,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
 
     def test_headers_supported_by_returns_workspace_headers(self) -> None:
         self.assertSetEqual(
-            runner.headers_supported_by('workspace'),
+            runner.IMPLEMENTATION_HEADERS['workspace'],
             {data.SupportedHeader(v) for v in data.SUPPORTED_HEADERS},
         )
 
