@@ -14,12 +14,12 @@ from __future__ import annotations
 
 import collections
 import functools
-import typing
+import typing as t
 from collections import abc
 
 from ietfparse import _helpers, _quality
 
-if typing.TYPE_CHECKING:
+if t.TYPE_CHECKING:
     import decimal
 
 
@@ -163,10 +163,10 @@ class ContentType:
         return self.content_type < other.content_type
 
 
-T = typing.TypeVar('T')
+T = t.TypeVar('T')
 
 
-class ImmutableSequence(abc.Sequence[T], typing.Generic[T]):
+class ImmutableSequence(abc.Sequence[T], t.Generic[T]):
     """Immutable sequence."""
 
     def __init__(self, seq: abc.Iterable[T]) -> None:
@@ -179,10 +179,10 @@ class ImmutableSequence(abc.Sequence[T], typing.Generic[T]):
     def __repr__(self) -> str:
         return repr(self.__data)
 
-    @typing.overload
+    @t.overload
     def __getitem__(self, index: int) -> T: ...  # pragma: nocover
 
-    @typing.overload
+    @t.overload
     def __getitem__(
         self, index: slice
     ) -> abc.Sequence[T]: ...  # pragma: nocover

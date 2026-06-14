@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import typing
+import typing as t
 import unittest
 
 from ietfparse import algorithms, datastructures, errors, headers
 
 
 class ContentNegotiationTestCase(unittest.TestCase):
-    requested: typing.ClassVar[list[datastructures.ContentType]] = []
+    requested: t.ClassVar[list[datastructures.ContentType]] = []
 
     def assert_content_type_matched_as(
         self,

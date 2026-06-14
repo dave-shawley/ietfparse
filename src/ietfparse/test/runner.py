@@ -2,27 +2,21 @@
 
 from __future__ import annotations
 
+import dataclasses
 import importlib
 import statistics
 import time
-import typing
-from collections.abc import Callable
-from dataclasses import dataclass
-from typing import TypedDict
+import typing as t
+from collections import abc
 
-from ietfparse import algorithms, errors
-from ietfparse import headers as header_parsers
+from ietfparse import algorithms, errors, headers
 from ietfparse.test import accept_cases, cache_control_cases, data, link_cases
 
-if typing.TYPE_CHECKING:
-    from collections import abc
-
-
-Parser = Callable[[str], object]
-SupportedImplementation = typing.Literal[
+Parser = abc.Callable[[str], object]
+SupportedImplementation = t.Literal[
     'workspace', 'werkzeug', 'requests', 'httpx'
 ]
-SUPPORTED_IMPLEMENTATIONS: tuple[str, ...] = typing.get_args(
+SUPPORTED_IMPLEMENTATIONS: tuple[str, ...] = t.get_args(
     SupportedImplementation
 )
 IMPLEMENTATION_HEADERS: dict[
@@ -61,7 +55,7 @@ class UnsupportedHeaderError(ValueError):
         )
 
 
-class BenchmarkResultJson(TypedDict):
+class BenchmarkResultJson(t.TypedDict):
     """Stable JSON schema for one benchmark result."""
 
     implementation: str
@@ -76,7 +70,7 @@ class BenchmarkResultJson(TypedDict):
     calls_per_second: float
 
 
-class ParserOutcomeJson(TypedDict):
+class ParserOutcomeJson(t.TypedDict):
     """Stable JSON schema for one parser outcome."""
 
     status: str
@@ -85,7 +79,7 @@ class ParserOutcomeJson(TypedDict):
     error_message: str | None
 
 
-class LinkComparisonJson(TypedDict):
+class LinkComparisonJson(t.TypedDict):
     """Stable JSON schema for one link edge-case comparison."""
 
     case_id: str
@@ -97,7 +91,7 @@ class LinkComparisonJson(TypedDict):
     httpx: ParserOutcomeJson
 
 
-class AcceptComparisonJson(TypedDict):
+class AcceptComparisonJson(t.TypedDict):
     """Stable JSON schema for one Accept negotiation comparison."""
 
     case_id: str
@@ -109,7 +103,7 @@ class AcceptComparisonJson(TypedDict):
     werkzeug: ParserOutcomeJson
 
 
-class CacheControlComparisonJson(TypedDict):
+class CacheControlComparisonJson(t.TypedDict):
     """Stable JSON schema for one Cache-Control parsing comparison."""
 
     case_id: str
@@ -119,19 +113,19 @@ class CacheControlComparisonJson(TypedDict):
     werkzeug: ParserOutcomeJson
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class BenchmarkImplementation:
     """Adapter for a benchmarked implementation of the parser surface."""
 
     name: str
-    parser_resolver: Callable[[str], Parser]
+    parser_resolver: abc.Callable[[str], Parser]
 
     def parser_for(self, parser_name: str) -> Parser:
         """Resolve the parser callable for `parser_name`."""
         return self.parser_resolver(parser_name)
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class BenchmarkResult:
     """Normalized metrics for one header/workload benchmark run."""
 
@@ -147,7 +141,7 @@ class BenchmarkResult:
     calls_per_second: float
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class BenchmarkSelection:
     """Requested benchmark slice and timing parameters."""
 
@@ -227,7 +221,7 @@ def _resolve_httpx_parser(parser_name: str) -> Parser:
 
 WORKSPACE_IMPLEMENTATION = BenchmarkImplementation(
     name='workspace',
-    parser_resolver=lambda parser_name: getattr(header_parsers, parser_name),
+    parser_resolver=lambda parser_name: getattr(headers, parser_name),
 )
 WERKZEUG_IMPLEMENTATION = BenchmarkImplementation(
     name='werkzeug',
@@ -247,15 +241,17 @@ def implementation_named(
     name: SupportedImplementation,
 ) -> BenchmarkImplementation:
     """Resolve a supported implementation by stable name."""
-    if name == 'workspace':
-        return WORKSPACE_IMPLEMENTATION
-    if name == 'werkzeug':
-        return WERKZEUG_IMPLEMENTATION
-    if name == 'requests':
-        return REQUESTS_IMPLEMENTATION
-    if name == 'httpx':
-        return HTTPX_IMPLEMENTATION
-    raise ValueError(f'Unsupported implementation value: {name!r}')
+    match name:
+        case 'workspace':
+            return WORKSPACE_IMPLEMENTATION
+        case 'werkzeug':
+            return WERKZEUG_IMPLEMENTATION
+        case 'requests':
+            return REQUESTS_IMPLEMENTATION
+        case 'httpx':
+            return HTTPX_IMPLEMENTATION
+        case _ as unexpected:
+            t.assert_never(unexpected)
 
 
 def validate_implementation_support(
@@ -275,7 +271,7 @@ def validate_implementation_support(
 
 
 def common_supported_headers(
-    implementation_names: typing.Iterable[SupportedImplementation],
+    implementation_names: t.Iterable[SupportedImplementation],
 ) -> tuple[data.SupportedHeader, ...]:
     """Return headers supported by every selected implementation."""
     names = tuple(implementation_names)
@@ -349,7 +345,7 @@ def compare_link_cases() -> list[LinkComparisonJson]:
             sample=case.sample,
             strict=case.strict,
             workspace=_capture_outcome(
-                lambda case=case: header_parsers.parse_link(
+                lambda case=case: headers.parse_link(
                     case.sample,
                     strict=case.strict,
                 ),
@@ -413,9 +409,7 @@ def compare_cache_control_cases() -> list[CacheControlComparisonJson]:
             description=case.description,
             sample=case.sample,
             workspace=_capture_outcome(
-                lambda case=case: header_parsers.parse_cache_control(
-                    case.sample
-                ),
+                lambda case=case: headers.parse_cache_control(case.sample),
                 _normalize_cache_control_result,
             ),
             werkzeug=_capture_outcome(
@@ -484,8 +478,8 @@ def _consume(parsed: object) -> int:
 
 
 def _capture_outcome(
-    parser: Callable[[], object],
-    normalize: Callable[[object], object],
+    parser: abc.Callable[[], object],
+    normalize: abc.Callable[[object], object],
 ) -> ParserOutcomeJson:
     try:
         parsed = parser()
@@ -505,7 +499,7 @@ def _capture_outcome(
 
 
 def _normalize_workspace_link_result(parsed: object) -> object:
-    links = typing.cast('list[typing.Any]', parsed)
+    links = t.cast('list[t.Any]', parsed)
     return [
         {
             'target': link.target,
@@ -518,11 +512,11 @@ def _normalize_workspace_link_result(parsed: object) -> object:
 
 
 def _normalize_requests_link_result(parsed: object) -> object:
-    return [dict(link) for link in typing.cast('list[dict[str, str]]', parsed)]
+    return [dict(link) for link in t.cast('list[dict[str, str]]', parsed)]
 
 
 def _normalize_httpx_link_result(parsed: object) -> object:
-    return dict(typing.cast('dict[str | None, dict[str, str]]', parsed))
+    return dict(t.cast('dict[str | None, dict[str, str]]', parsed))
 
 
 def _select_werkzeug_best_match(
@@ -533,15 +527,15 @@ def _select_werkzeug_best_match(
     default: str | None,
 ) -> object:
     parsed = parser(accept)
-    return typing.cast(
-        'typing.Any',
+    return t.cast(
+        't.Any',
         parsed,
     ).best_match(list(available), default=default)
 
 
 def _normalize_workspace_accept_result(parsed: object) -> object:
-    selected, matched = typing.cast(
-        'tuple[typing.Any, typing.Any]',
+    selected, matched = t.cast(
+        'tuple[t.Any, t.Any]',
         parsed,
     )
     return {
@@ -551,18 +545,16 @@ def _normalize_workspace_accept_result(parsed: object) -> object:
 
 
 def _normalize_werkzeug_accept_result(parsed: object) -> object:
-    selected = typing.cast('str | None', parsed)
+    selected = t.cast('str | None', parsed)
     return {'selected': selected}
 
 
 def _normalize_cache_control_result(parsed: object) -> object:
-    return dict(
-        typing.cast('dict[str, str | int | bool | None]', parsed).items()
-    )
+    return dict(t.cast('dict[str, str | int | bool | None]', parsed).items())
 
 
 def _normalize_werkzeug_cache_control_result(parsed: object) -> object:
-    return dict(typing.cast('typing.Any', parsed).items())
+    return dict(t.cast('t.Any', parsed).items())
 
 
 def result_to_json(result: BenchmarkResult) -> BenchmarkResultJson:

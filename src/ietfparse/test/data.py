@@ -5,7 +5,7 @@ from __future__ import annotations
 import dataclasses
 import enum
 import sys
-import typing
+import typing as t
 from importlib import resources
 
 if sys.version_info >= (3, 11):
@@ -28,8 +28,8 @@ class SupportedHeader(enum.StrEnum):
 
 
 SUPPORTED_HEADERS: tuple[str, ...] = tuple(h.value for h in SupportedHeader)
-SupportedWorkload = typing.Literal['realistic', 'complex', 'large']
-SUPPORTED_WORKLOADS: tuple[str] = typing.get_args(SupportedWorkload)
+SupportedWorkload = t.Literal['realistic', 'complex', 'large']
+SUPPORTED_WORKLOADS: tuple[str] = t.get_args(SupportedWorkload)
 MAX_LARGE_SAMPLE_BYTES = 8192
 
 
@@ -80,7 +80,7 @@ class BenchmarkDataset:
 
 def load_dataset() -> BenchmarkDataset:
     """Load and validate the packaged benchmark dataset."""
-    raw = typing.cast('dict[str, object]', tomllib.loads(_read_dataset_text()))
+    raw = t.cast('dict[str, object]', tomllib.loads(_read_dataset_text()))
     return _parse_dataset(raw)
 
 
@@ -110,7 +110,7 @@ def _headers_section(raw: dict[str, object]) -> dict[str, object]:
     headers_section = raw.get('headers')
     if not isinstance(headers_section, dict):
         raise TypeError('benchmark dataset must contain a [headers] table')
-    return typing.cast('dict[str, object]', headers_section)
+    return t.cast('dict[str, object]', headers_section)
 
 
 def _validate_header_ids(headers_section: dict[str, object]) -> None:
@@ -129,7 +129,7 @@ def _parse_header_benchmark(
 ) -> HeaderBenchmark:
     if not isinstance(payload, dict):
         raise TypeError(f'{header_id!r} must be a table')
-    payload_dict = typing.cast('dict[str, object]', payload)
+    payload_dict = t.cast('dict[str, object]', payload)
 
     parser_name = _required_string(
         payload_dict.get('parser'), header_id, 'parser'
@@ -163,14 +163,14 @@ def _parse_workload_samples(
 ) -> tuple[str, ...]:
     if not isinstance(payload, dict):
         raise TypeError(f'{header_id!r}.{workload!r} must be a table')
-    payload_dict = typing.cast('dict[str, object]', payload)
+    payload_dict = t.cast('dict[str, object]', payload)
 
     samples = payload_dict.get('samples')
     if not isinstance(samples, list) or not samples:
         raise ValueError(f'{header_id!r}.{workload!r} must define samples')
     if not all(isinstance(sample, str) and sample for sample in samples):
         raise ValueError(f'{header_id!r}.{workload!r} samples must be strings')
-    sample_list = typing.cast('list[str]', samples)
+    sample_list = t.cast('list[str]', samples)
     if workload == 'large':
         _validate_large_samples(header_id=header_id, samples=sample_list)
     return tuple(sample_list)

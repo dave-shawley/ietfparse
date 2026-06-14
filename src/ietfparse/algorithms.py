@@ -11,12 +11,12 @@ described in IETF RFCs.
 from __future__ import annotations
 
 import operator
-import typing
+import typing as t
 from operator import attrgetter
 
 from ietfparse import _helpers, constants, datastructures, errors
 
-if typing.TYPE_CHECKING:
+if t.TYPE_CHECKING:
     from collections import abc
 
 
@@ -36,7 +36,7 @@ def _content_type_matches(
 MatchKey = tuple[int, int, int]
 
 
-class _Match(typing.NamedTuple):
+class _Match(t.NamedTuple):
     candidate: datastructures.ContentType
     pattern: datastructures.ContentType
     match_type: int

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import typing
+import typing as t
 
 from ietfparse import _parser, errors
 
-LinkTarget: typing.TypeAlias = str
-Parameter: typing.TypeAlias = tuple[str, str]
+LinkTarget: t.TypeAlias = str
+Parameter: t.TypeAlias = tuple[str, str]
 
 
 class ParameterParser:

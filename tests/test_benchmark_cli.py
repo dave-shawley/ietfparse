@@ -2,7 +2,7 @@ import importlib
 import json
 import pathlib
 import tempfile
-import typing
+import typing as t
 import unittest.mock
 
 from rich.text import Text
@@ -12,7 +12,7 @@ from ietfparse.test import cli, data, runner
 
 
 def _create_fake_io(*, is_tty: bool) -> unittest.mock.Mock:
-    stream = unittest.mock.Mock(spec=typing.IO)
+    stream = unittest.mock.Mock(spec=t.IO)
     stream.isatty.return_value = is_tty
     return stream
 

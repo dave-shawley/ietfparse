@@ -1,5 +1,5 @@
 import contextlib
-import typing
+import typing as t
 import unittest
 from collections import abc
 
@@ -284,7 +284,7 @@ class ImmutableSequenceTests(unittest.TestCase):
     def test_modifying_link_parameters(self) -> None:
         parsed = headers.parse_link('<>; values=one; values=two')
         self.assertEqual(len(parsed), 1)
-        params = typing.cast('list[tuple[str, str]]', parsed[0].parameters)
+        params = t.cast('list[tuple[str, str]]', parsed[0].parameters)
         with self.assert_raises_one_of(AttributeError, TypeError):
             params.append(('values', 'three'))
         with self.assert_raises_one_of(AttributeError, TypeError):
@@ -293,7 +293,7 @@ class ImmutableSequenceTests(unittest.TestCase):
     def test_modifying_indexed_result(self) -> None:
         parsed = headers.parse_link('<>; values=one; values=two')
         self.assertEqual(len(parsed), 1)
-        params = typing.cast('list[str]', parsed[0]['values'])
+        params = t.cast('list[str]', parsed[0]['values'])
         with self.assert_raises_one_of(AttributeError, TypeError):
             params.append('three')
         with self.assert_raises_one_of(AttributeError, TypeError):
@@ -304,7 +304,7 @@ class ImmutableSequenceTests(unittest.TestCase):
     def test_modifying_empty_indexed_result(self) -> None:
         parsed = headers.parse_link('<>')
         self.assertEqual(len(parsed), 1)
-        params = typing.cast('list[str]', parsed[0]['non-existent'])
+        params = t.cast('list[str]', parsed[0]['non-existent'])
         with self.assert_raises_one_of(AttributeError, TypeError):
             params.append('value')
         with self.assert_raises_one_of(AttributeError, TypeError):

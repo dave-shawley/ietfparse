@@ -136,14 +136,6 @@ class BenchmarkRunnerTests(unittest.TestCase):
             (),
         )
 
-    def test_sample_error_returns_exception_for_invalid_value(self) -> None:
-        sample_error = vars(runner)['_sample_error']
-        error = sample_error(
-            lambda _: (_ for _ in ()).throw(ValueError('bad')),
-            'value',
-        )
-        self.assertIsInstance(error, ValueError)
-
     def test_validate_samples_raises_for_invalid_fixture(self) -> None:
         validate_samples = vars(runner)['_validate_samples']
         with self.assertRaisesRegex(ValueError, 'invalid benchmark fixture'):
