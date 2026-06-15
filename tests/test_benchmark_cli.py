@@ -5,9 +5,6 @@ import tempfile
 import typing as t
 import unittest.mock
 
-from rich.text import Text
-from typer.testing import CliRunner
-
 from ietfparse.test import cli, data, runner
 
 
@@ -554,10 +551,15 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         )
 
     def test_comparison_ratio_cell_marks_workspace_slower(self) -> None:
-        cell = vars(cli)['_comparison_ratio_cell'](0.86)
-        self.assertIsInstance(cell, Text)
-        self.assertEqual(cell.plain, 'v 0.86x')
-        self.assertEqual(str(cell.style), 'red')
+        try:
+            from rich import text  # noqa: PLC0415 -- delayed import
+        except ImportError:
+            raise unittest.SkipTest('rich is not installed') from None
+        else:
+            cell = vars(cli)['_comparison_ratio_cell'](0.86)
+            self.assertIsInstance(cell, text.Text)
+            self.assertEqual(cell.plain, 'v 0.86x')
+            self.assertEqual(str(cell.style), 'red')
 
     def test_comparison_ratio_cell_marks_workspace_faster(self) -> None:
         cell = vars(cli)['_comparison_ratio_cell'](1.25)
@@ -853,7 +855,13 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
 
 class BenchmarkCliIntegrationTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.runner = CliRunner()
+        super().setUp()
+        try:
+            from typer import testing  # noqa: PLC0415 -- delayed import
+        except ImportError:
+            raise unittest.SkipTest('typer is not installed') from None
+        else:
+            self.runner = testing.CliRunner()
 
     def test_generate_autocomplete_filters_matches(self) -> None:
         generate_autocomplete = vars(cli)['_generate_autocomplete']
