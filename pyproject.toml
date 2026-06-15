@@ -70,7 +70,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.coverage.report]
-exclude_also = ["if t.TYPE_CHECKING", "\\.\\.\\."]
+exclude_also = ["if t.TYPE_CHECKING", "\\.\\.\\.", "raise AssertionError"]
 show_missing = true
 
 [tool.coverage.run]
