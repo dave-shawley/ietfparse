@@ -455,8 +455,11 @@ dev = [
     { name = "pyrefly" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "rich" },
     { name = "ruff" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
     { name = "ty" },
+    { name = "typer" },
     { name = "zensical" },
 ]
 perftest = [
@@ -484,8 +487,11 @@ dev = [
     { name = "pyrefly", specifier = ">=0.64.1" },
     { name = "pytest", specifier = "~=9.0" },
     { name = "pytest-cov", specifier = "~=7.1" },
+    { name = "rich", specifier = ">=14,<15" },
     { name = "ruff", specifier = ">=0.15" },
+    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2" },
     { name = "ty", specifier = ">=0.0.34" },
+    { name = "typer", specifier = ">=0.16,<1" },
     { name = "zensical", specifier = ">=0.0.41" },
 ]
 perftest = [

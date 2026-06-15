@@ -51,8 +51,11 @@ dev = [
   "pyrefly>=0.64.1",
   "pytest~=9.0",
   "pytest-cov~=7.1",
+  "rich>=14,<15",
   "ruff>=0.15",
+  "tomli>=2 ; python_full_version < '3.11'",
   "ty>=0.0.34",
+  "typer>=0.16,<1",
   "zensical>=0.0.41",
 ]
 perftest = [
