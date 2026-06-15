@@ -696,6 +696,160 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             ):
                 vars(cli)['_load_diffable_benchmark_payload'](path)
 
+    def test_load_diffable_benchmark_payload_requires_list_fields(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = pathlib.Path(temp_dir) / 'invalid.json'
+            path.write_text(
+                json.dumps(
+                    {
+                        'headers': ['accept'],
+                        'workloads': ['realistic'],
+                        'implementations': {'workspace': True},
+                        'results': [],
+                    }
+                )
+            )
+            with self.assertRaisesRegex(
+                TypeError,
+                'is not a run or compare implementation JSON payload',
+            ):
+                vars(cli)['_load_diffable_benchmark_payload'](path)
+
+    def test_load_diffable_benchmark_payload_requires_mapping_rows(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = pathlib.Path(temp_dir) / 'invalid.json'
+            path.write_text(
+                json.dumps(
+                    {
+                        'headers': ['accept'],
+                        'workloads': ['realistic'],
+                        'implementations': ['workspace'],
+                        'results': ['not-a-mapping'],
+                    }
+                )
+            )
+            with self.assertRaisesRegex(
+                TypeError,
+                'is not a run or compare implementation JSON payload',
+            ):
+                vars(cli)['_load_diffable_benchmark_payload'](path)
+
+    def test_comparison_summary_reports_error_and_list_counts(self) -> None:
+        comparison_summary = vars(cli)['_comparison_summary']
+        self.assertEqual(
+            comparison_summary(
+                {
+                    'status': 'error',
+                    'result': None,
+                    'error_type': 'ValueError',
+                    'error_message': 'bad input',
+                }
+            ),
+            'error:ValueError',
+        )
+        self.assertEqual(
+            comparison_summary(
+                {
+                    'status': 'ok',
+                    'result': ['a', 'b'],
+                    'error_type': None,
+                    'error_message': None,
+                }
+            ),
+            'ok:2 value(s)',
+        )
+        self.assertEqual(
+            comparison_summary(
+                {
+                    'status': 'ok',
+                    'result': {'a': 1},
+                    'error_type': None,
+                    'error_message': None,
+                }
+            ),
+            'ok',
+        )
+
+    def test_accept_summaries_report_errors_and_matches(self) -> None:
+        accept_workspace_summary = vars(cli)['_accept_workspace_summary']
+        accept_werkzeug_summary = vars(cli)['_accept_werkzeug_summary']
+        self.assertEqual(
+            accept_workspace_summary(
+                {
+                    'status': 'error',
+                    'result': None,
+                    'error_type': 'ValueError',
+                    'error_message': 'bad input',
+                }
+            ),
+            'error:ValueError',
+        )
+        self.assertEqual(
+            accept_workspace_summary(
+                {
+                    'status': 'ok',
+                    'result': {
+                        'selected': 'application/json',
+                        'matched': 'application/*',
+                    },
+                    'error_type': None,
+                    'error_message': None,
+                }
+            ),
+            'application/json <= application/*',
+        )
+        self.assertEqual(
+            accept_werkzeug_summary(
+                {
+                    'status': 'error',
+                    'result': None,
+                    'error_type': 'ValueError',
+                    'error_message': 'bad input',
+                }
+            ),
+            'error:ValueError',
+        )
+        self.assertEqual(
+            accept_werkzeug_summary(
+                {
+                    'status': 'ok',
+                    'result': {'selected': None},
+                    'error_type': None,
+                    'error_message': None,
+                }
+            ),
+            'none',
+        )
+
+    def test_cache_control_summary_reports_errors_and_json(self) -> None:
+        cache_control_summary = vars(cli)['_cache_control_summary']
+        self.assertEqual(
+            cache_control_summary(
+                {
+                    'status': 'error',
+                    'result': None,
+                    'error_type': 'ValueError',
+                    'error_message': 'bad input',
+                }
+            ),
+            'error:ValueError',
+        )
+        self.assertEqual(
+            cache_control_summary(
+                {
+                    'status': 'ok',
+                    'result': {'max-age': 60, 'public': True},
+                    'error_type': None,
+                    'error_message': None,
+                }
+            ),
+            '{"max-age": 60, "public": true}',
+        )
+
 
 class BenchmarkCliIntegrationTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -900,6 +1054,46 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         self.assertIn('"case_count": 1', result.stdout)
         self.assertIn('"case_id": "edge"', result.stdout)
 
+    def test_compare_link_command_emits_rich_output(self) -> None:
+        with unittest.mock.patch.object(
+            runner,
+            'compare_link_cases',
+            return_value=[
+                {
+                    'case_id': 'edge',
+                    'description': 'edge case',
+                    'sample': '<>',
+                    'strict': True,
+                    'workspace': {
+                        'status': 'error',
+                        'result': None,
+                        'error_type': 'ValueError',
+                        'error_message': 'bad input',
+                    },
+                    'requests': {
+                        'status': 'ok',
+                        'result': [],
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                    'httpx': {
+                        'status': 'ok',
+                        'result': {},
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                }
+            ],
+        ):
+            result = self.runner.invoke(
+                cli.app,
+                ['compare', 'link', '--format', 'rich'],
+            )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('ietfparse link comparison', result.stdout)
+        self.assertIn('error:ValueError', result.stdout)
+        self.assertIn('ok:0 value(s)', result.stdout)
+
     def test_compare_accept_command_emits_json_output(self) -> None:
         with unittest.mock.patch.object(
             runner,
@@ -937,6 +1131,64 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         self.assertIn('"case_count": 1', result.stdout)
         self.assertIn('"case_id": "accept-case"', result.stdout)
 
+    def test_compare_accept_command_emits_rich_output(self) -> None:
+        with unittest.mock.patch.object(
+            runner,
+            'compare_accept_cases',
+            return_value=[
+                {
+                    'case_id': 'accept-error',
+                    'description': 'accept error',
+                    'accept': 'application/json',
+                    'available': ['application/json'],
+                    'default': None,
+                    'workspace': {
+                        'status': 'error',
+                        'result': None,
+                        'error_type': 'ValueError',
+                        'error_message': 'bad input',
+                    },
+                    'werkzeug': {
+                        'status': 'error',
+                        'result': None,
+                        'error_type': 'LookupError',
+                        'error_message': 'boom',
+                    },
+                },
+                {
+                    'case_id': 'accept-ok',
+                    'description': 'accept ok',
+                    'accept': 'application/json',
+                    'available': ['application/json'],
+                    'default': None,
+                    'workspace': {
+                        'status': 'ok',
+                        'result': {
+                            'selected': 'application/json',
+                            'matched': 'application/*',
+                        },
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                    'werkzeug': {
+                        'status': 'ok',
+                        'result': {'selected': None},
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                },
+            ],
+        ):
+            result = self.runner.invoke(
+                cli.app,
+                ['compare', 'accept', '--format', 'rich'],
+            )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('ietfparse accept comparison', result.stdout)
+        self.assertIn('application/json <= application/*', result.stdout)
+        self.assertIn('error:LookupError', result.stdout)
+        self.assertIn('none', result.stdout)
+
     def test_compare_cache_control_command_emits_json_output(self) -> None:
         with unittest.mock.patch.object(
             runner,
@@ -968,6 +1220,57 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
         self.assertIn('"case_count": 1', result.stdout)
         self.assertIn('"case_id": "cache-control-case"', result.stdout)
+
+    def test_compare_cache_control_command_emits_rich_output(self) -> None:
+        with unittest.mock.patch.object(
+            runner,
+            'compare_cache_control_cases',
+            return_value=[
+                {
+                    'case_id': 'cache-control-error',
+                    'description': 'cache-control error',
+                    'sample': 'public',
+                    'workspace': {
+                        'status': 'error',
+                        'result': None,
+                        'error_type': 'ValueError',
+                        'error_message': 'bad input',
+                    },
+                    'werkzeug': {
+                        'status': 'ok',
+                        'result': {'public': None},
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                },
+                {
+                    'case_id': 'cache-control-ok',
+                    'description': 'cache-control ok',
+                    'sample': 'max-age=60, public',
+                    'workspace': {
+                        'status': 'ok',
+                        'result': {'max-age': 60, 'public': True},
+                        'error_type': None,
+                        'error_message': None,
+                    },
+                    'werkzeug': {
+                        'status': 'error',
+                        'result': None,
+                        'error_type': 'RuntimeError',
+                        'error_message': 'boom',
+                    },
+                },
+            ],
+        ):
+            result = self.runner.invoke(
+                cli.app,
+                ['compare', 'cache-control', '--format', 'rich'],
+            )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('ietfparse cache-control comparison', result.stdout)
+        self.assertIn('error:ValueError', result.stdout)
+        self.assertIn('error:RuntimeError', result.stdout)
+        self.assertIn('"public": null', result.stdout)
 
     def test_compare_implementation_command_emits_json_output(self) -> None:
         fake_results = [
@@ -1028,6 +1331,67 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         self.assertIn('"implementations": [', result.stdout)
         self.assertIn('"werkzeug": 80.0', result.stdout)
         self.assertIn('"vs_workspace": {', result.stdout)
+
+    def test_compare_implementation_command_emits_rich_output(self) -> None:
+        fake_results = [
+            runner.BenchmarkResult(
+                implementation='workspace',
+                header='accept',
+                workload='realistic',
+                sample_count=1,
+                byte_count=10,
+                repeat=1,
+                iterations=1,
+                median_elapsed_ns=100,
+                ns_per_call=100.0,
+                calls_per_second=1.0,
+            ),
+            runner.BenchmarkResult(
+                implementation='werkzeug',
+                header='accept',
+                workload='realistic',
+                sample_count=1,
+                byte_count=10,
+                repeat=1,
+                iterations=1,
+                median_elapsed_ns=80,
+                ns_per_call=80.0,
+                calls_per_second=1.0,
+            ),
+        ]
+        with (
+            unittest.mock.patch.object(
+                runner,
+                'common_supported_headers',
+                return_value=('accept',),
+            ),
+            unittest.mock.patch.object(
+                runner,
+                'run_benchmarks',
+                side_effect=[fake_results[:1], fake_results[1:]],
+            ),
+        ):
+            result = self.runner.invoke(
+                cli.app,
+                [
+                    'compare',
+                    'implementation',
+                    'werkzeug',
+                    '--workload',
+                    'realistic',
+                    '--iterations',
+                    '1',
+                    '--repeat',
+                    '1',
+                    '--format',
+                    'rich',
+                ],
+            )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('ietfparse implementation comparison', result.stdout)
+        self.assertIn('vs werkzeug', result.stdout)
+        self.assertIn('v 0.80x', result.stdout)
+        self.assertIn('80.0', result.stdout)
 
     def test_compare_implementation_rejects_empty_intersection(self) -> None:
         with unittest.mock.patch.object(
