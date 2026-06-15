@@ -57,6 +57,7 @@ dev = [
   "ty>=0.0.34",
   "typer>=0.16,<1",
   "zensical>=0.0.41",
+  { include-group = "perftest" },
 ]
 perftest = [
   "httpx>=0.28.1",
