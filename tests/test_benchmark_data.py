@@ -6,6 +6,9 @@ from ietfparse.test import data, runner
 
 
 class BenchmarkDatasetTests(unittest.TestCase):
+    def test_supported_headers_render_as_plain_strings(self) -> None:
+        self.assertEqual(str(data.SupportedHeader.ACCEPT), 'accept')
+
     def test_loading_packaged_dataset(self) -> None:
         dataset = data.load_dataset()
         self.assertEqual(dataset.header_ids(), data.SUPPORTED_HEADERS)

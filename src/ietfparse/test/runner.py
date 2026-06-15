@@ -9,7 +9,7 @@ import time
 import typing as t
 from collections import abc
 
-from ietfparse import algorithms, errors, headers
+from ietfparse import _compat, algorithms, errors, headers
 from ietfparse.test import accept_cases, cache_control_cases, data, link_cases
 
 Parser = abc.Callable[[str], object]
@@ -251,7 +251,8 @@ def implementation_named(
         case 'httpx':
             return HTTPX_IMPLEMENTATION
         case _ as unexpected:
-            t.assert_never(unexpected)
+            _compat.assert_never(unexpected)
+            raise AssertionError('unreachable')
 
 
 def validate_implementation_support(

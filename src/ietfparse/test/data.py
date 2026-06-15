@@ -3,18 +3,13 @@
 from __future__ import annotations
 
 import dataclasses
-import enum
-import sys
 import typing as t
 from importlib import resources
 
-if sys.version_info >= (3, 11):
-    import tomllib
-else:  # pragma: no cover -- Python < 3.11
-    import tomli as tomllib
+from ietfparse import _compat
 
 
-class SupportedHeader(enum.StrEnum):
+class SupportedHeader(_compat.StrEnum):
     """Supported header names."""
 
     ACCEPT = 'accept'
@@ -80,7 +75,9 @@ class BenchmarkDataset:
 
 def load_dataset() -> BenchmarkDataset:
     """Load and validate the packaged benchmark dataset."""
-    raw = t.cast('dict[str, object]', tomllib.loads(_read_dataset_text()))
+    raw = t.cast(
+        'dict[str, object]', _compat.tomllib.loads(_read_dataset_text())
+    )
     return _parse_dataset(raw)
 
 
