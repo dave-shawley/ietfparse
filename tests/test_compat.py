@@ -29,4 +29,4 @@ class StrEnumTests(unittest.TestCase):
         with self.assertRaisesRegex(
             AssertionError, 'Expected code to be unreachable'
         ):
-            _compat.assert_never('value')  # type: ignore[arg-type]
+            _compat.assert_never('value')  # ty: ignore[invalid-argument-type]

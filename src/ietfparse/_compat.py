@@ -10,12 +10,11 @@ __all__ = ['StrEnum', 'assert_never', 'tomllib']
 
 if sys.version_info >= (3, 11):
     import tomllib
+
+    StrEnum = enum.StrEnum
+
 else:  # pragma: no cover -- Python 3.10 fallback
     import tomli as tomllib
-
-if hasattr(enum, 'StrEnum'):
-    StrEnum = enum.StrEnum
-else:  # pragma: no cover -- Python 3.10 fallback
 
     class StrEnum(str, enum.Enum):
         """Backport of :class:`enum.StrEnum` for Python 3.10."""
