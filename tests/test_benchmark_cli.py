@@ -173,6 +173,32 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         self.assertEqual(result['workload'], 'realistic')
         self.assertEqual(result['implementation'], 'workspace')
 
+    def test_run_payload_filters_to_combinations_with_results(self) -> None:
+        payload = cli.build_run_payload(
+            results=[
+                runner.BenchmarkResult(
+                    implementation='workspace',
+                    header='accept',
+                    workload='realistic',
+                    sample_count=1,
+                    byte_count=10,
+                    repeat=1,
+                    iterations=1,
+                    median_elapsed_ns=100,
+                    ns_per_call=100.0,
+                    calls_per_second=1.0,
+                )
+            ],
+            header_ids=(
+                data.SupportedHeader.ACCEPT,
+                data.SupportedHeader.LINK,
+            ),
+            workload_ids=('browser', 'realistic'),
+            implementation_ids=('workspace',),
+        )
+        self.assertEqual(payload['headers'], ['accept'])
+        self.assertEqual(payload['workloads'], ['realistic'])
+
     def test_list_payload_includes_sample_counts(self) -> None:
         payload = cli.build_list_payload(data.load_dataset())
         self.assertEqual(payload['headers'], sorted(data.SUPPORTED_HEADERS))
@@ -311,6 +337,44 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             payload['results'][0]['vs_workspace'],
             {'werkzeug': 0.5},
         )
+
+    def test_compare_implementation_payload_skips_missing_workload_rows(
+        self,
+    ) -> None:
+        payload = cli.build_compare_implementation_payload(
+            results=[
+                runner.BenchmarkResult(
+                    implementation='workspace',
+                    header='accept',
+                    workload='realistic',
+                    sample_count=1,
+                    byte_count=10,
+                    repeat=1,
+                    iterations=1,
+                    median_elapsed_ns=100,
+                    ns_per_call=100.0,
+                    calls_per_second=1.0,
+                ),
+                runner.BenchmarkResult(
+                    implementation='werkzeug',
+                    header='accept',
+                    workload='realistic',
+                    sample_count=1,
+                    byte_count=10,
+                    repeat=1,
+                    iterations=1,
+                    median_elapsed_ns=50,
+                    ns_per_call=50.0,
+                    calls_per_second=1.0,
+                ),
+            ],
+            header_ids=(data.SupportedHeader.ACCEPT,),
+            workload_ids=('browser', 'realistic'),
+            implementation_ids=('workspace', 'werkzeug'),
+        )
+        self.assertEqual(payload['headers'], ['accept'])
+        self.assertEqual(payload['workloads'], ['realistic'])
+        self.assertEqual(len(payload['results']), 1)
 
     def test_compare_implementation_diff_payload_reports_deltas(self) -> None:
         baseline = cli.CompareImplementationPayload(
@@ -514,6 +578,35 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
                 }
             ],
         )
+
+    def test_run_payload_normalization_skips_absent_workload_rows(
+        self,
+    ) -> None:
+        payload = cli.RunPayload(
+            headers=[data.SupportedHeader.ACCEPT],
+            workloads=['browser', 'realistic'],
+            implementations=['workspace'],
+            results=[
+                runner.BenchmarkResultJson(
+                    implementation='workspace',
+                    header='accept',
+                    workload='realistic',
+                    sample_count=1,
+                    byte_count=10,
+                    repeat=1,
+                    iterations=1,
+                    median_elapsed_ns=100,
+                    ns_per_call=100.0,
+                    calls_per_second=1.0,
+                )
+            ],
+        )
+        normalized = vars(cli)['_normalize_run_payload_for_diff'](
+            payload=payload
+        )
+        self.assertEqual(normalized['headers'], ['accept'])
+        self.assertEqual(normalized['workloads'], ['realistic'])
+        self.assertEqual(len(normalized['results']), 1)
 
     def test_run_payload_normalization_requires_all_rows(self) -> None:
         payload = cli.RunPayload(

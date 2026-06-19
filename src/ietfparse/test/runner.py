@@ -301,6 +301,8 @@ def run_benchmarks(
         parser = implementation.parser_for(benchmark.parser_name)
         for workload in selection.workload_ids:
             samples = benchmark.samples_for(workload)
+            if not samples:
+                continue
             _validate_samples(
                 header_id=header_id,
                 workload=workload,
@@ -431,10 +433,13 @@ def validate_dataset(
     for benchmark in dataset.headers.values():
         parser = implementation.parser_for(benchmark.parser_name)
         for workload in data.SUPPORTED_WORKLOADS:
+            samples = benchmark.samples_for(workload)
+            if not samples:
+                continue
             _validate_samples(
                 header_id=benchmark.header_id,
                 workload=workload,
-                samples=benchmark.samples_for(workload),
+                samples=samples,
                 parser=parser,
             )
 

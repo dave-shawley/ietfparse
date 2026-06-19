@@ -23,7 +23,7 @@ class SupportedHeader(_compat.StrEnum):
 
 
 SUPPORTED_HEADERS: tuple[str, ...] = tuple(h.value for h in SupportedHeader)
-SupportedWorkload = t.Literal['realistic', 'complex', 'large']
+SupportedWorkload = t.Literal['browser', 'realistic', 'complex', 'large']
 SUPPORTED_WORKLOADS: tuple[str] = t.get_args(SupportedWorkload)
 MAX_LARGE_SAMPLE_BYTES = 8192
 
@@ -39,7 +39,11 @@ class HeaderBenchmark:
 
     def samples_for(self, workload: str) -> tuple[str, ...]:
         """Return the packaged samples for `workload`."""
-        return self.workloads[workload]
+        return self.workloads.get(workload, ())
+
+    def has_samples_for(self, workload: str) -> bool:
+        """Return whether the dataset defines samples for `workload`."""
+        return bool(self.samples_for(workload))
 
     def sample_count(self, workload: str) -> int:
         """Return the number of packaged samples for `workload`."""
@@ -138,14 +142,9 @@ def _parse_header_benchmark(
         header_id=header_id,
         parser_name=parser_name,
         description=description,
-        workloads={
-            workload: _parse_workload_samples(
-                header_id=header_id,
-                workload=workload,
-                payload=payload_dict.get(workload),
-            )
-            for workload in SUPPORTED_WORKLOADS
-        },
+        workloads=_parse_workloads(
+            header_id=header_id, payload_dict=payload_dict
+        ),
     )
 
 
@@ -155,16 +154,35 @@ def _required_string(value: object, header_id: str, field_name: str) -> str:
     return value
 
 
+def _parse_workloads(
+    *, header_id: str, payload_dict: dict[str, object]
+) -> dict[str, tuple[str, ...]]:
+    workloads: dict[str, tuple[str, ...]] = {}
+    for workload in SUPPORTED_WORKLOADS:
+        samples = _parse_workload_samples(
+            header_id=header_id,
+            workload=workload,
+            payload=payload_dict.get(workload),
+        )
+        if samples:
+            workloads[workload] = samples
+    return workloads
+
+
 def _parse_workload_samples(
     *, header_id: str, workload: str, payload: object
 ) -> tuple[str, ...]:
+    if payload is None:
+        return ()
     if not isinstance(payload, dict):
         raise TypeError(f'{header_id!r}.{workload!r} must be a table')
     payload_dict = t.cast('dict[str, object]', payload)
 
     samples = payload_dict.get('samples')
-    if not isinstance(samples, list) or not samples:
-        raise ValueError(f'{header_id!r}.{workload!r} must define samples')
+    if samples is None or samples == []:
+        return ()
+    if not isinstance(samples, list):
+        raise TypeError(f'{header_id!r}.{workload!r} must define samples')
     if not all(isinstance(sample, str) and sample for sample in samples):
         raise ValueError(f'{header_id!r}.{workload!r} samples must be strings')
     sample_list = t.cast('list[str]', samples)

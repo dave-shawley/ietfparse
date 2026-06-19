@@ -220,11 +220,18 @@ def build_run_payload(
     implementation_ids: abc.Sequence[runner.SupportedImplementation],
 ) -> RunPayload:
     """Build the stable JSON payload for `run` output."""
+    result_rows = [runner.result_to_json(result) for result in results]
+    row_keys = _ordered_benchmark_row_keys(result_rows)
     return {
-        'headers': list(header_ids),
-        'workloads': list(workload_ids),
+        'headers': _ordered_present_headers(
+            header_ids=header_ids, row_keys=row_keys
+        ),
+        'workloads': _ordered_present_workloads(
+            workload_ids=workload_ids,
+            row_keys=row_keys,
+        ),
         'implementations': list(implementation_ids),
-        'results': [runner.result_to_json(result) for result in results],
+        'results': result_rows,
     }
 
 
@@ -269,45 +276,58 @@ def build_compare_implementation_payload(
     implementation_ids: abc.Sequence[runner.SupportedImplementation],
 ) -> CompareImplementationPayload:
     """Build the stable JSON payload for `compare implementation` output."""
+    result_list = list(results)
     result_map = {
         (result.header, result.workload, result.implementation): result
-        for result in results
+        for result in result_list
     }
+    row_keys = _complete_benchmark_row_keys(
+        result_map=result_map,
+        header_ids=header_ids,
+        workload_ids=workload_ids,
+        implementation_ids=implementation_ids,
+        error_message=(
+            'compare payload is missing one or more '
+            'header/workload/implementation rows'
+        ),
+    )
     comparison_rows: list[CompareImplementationRowJson] = []
-    for header_id in header_ids:
-        for workload_id in workload_ids:
-            workspace_result = result_map[
-                (header_id, workload_id, 'workspace')
+    for header_id, workload_id in row_keys:
+        workspace_result = result_map[(header_id, workload_id, 'workspace')]
+        row_results = {
+            implementation_id: result_map[
+                (header_id, workload_id, implementation_id)
             ]
-            row_results = {
-                implementation_id: result_map[
-                    (header_id, workload_id, implementation_id)
-                ]
-                for implementation_id in implementation_ids
-            }
-            comparison_rows.append(
-                CompareImplementationRowJson(
-                    header=header_id,
-                    workload=workload_id,
-                    ns_per_call={
-                        str(implementation_id): row_results[
-                            implementation_id
-                        ].ns_per_call
-                        for implementation_id in implementation_ids
-                    },
-                    vs_workspace={
-                        str(implementation_id): row_results[
-                            implementation_id
-                        ].ns_per_call
-                        / workspace_result.ns_per_call
-                        for implementation_id in implementation_ids
-                        if implementation_id != 'workspace'
-                    },
-                )
+            for implementation_id in implementation_ids
+        }
+        comparison_rows.append(
+            CompareImplementationRowJson(
+                header=header_id,
+                workload=workload_id,
+                ns_per_call={
+                    str(implementation_id): row_results[
+                        implementation_id
+                    ].ns_per_call
+                    for implementation_id in implementation_ids
+                },
+                vs_workspace={
+                    str(implementation_id): row_results[
+                        implementation_id
+                    ].ns_per_call
+                    / workspace_result.ns_per_call
+                    for implementation_id in implementation_ids
+                    if implementation_id != 'workspace'
+                },
             )
+        )
     return {
-        'headers': list(header_ids),
-        'workloads': list(workload_ids),
+        'headers': _ordered_present_headers(
+            header_ids=header_ids, row_keys=row_keys
+        ),
+        'workloads': _ordered_present_workloads(
+            workload_ids=workload_ids,
+            row_keys=row_keys,
+        ),
         'implementations': list(implementation_ids),
         'results': comparison_rows,
     }
@@ -332,60 +352,60 @@ def build_compare_implementation_diff_payload(
             'diff requires both payloads to have the same header/workload rows'
         )
 
+    baseline_row_keys = [
+        (row['header'], row['workload']) for row in baseline['results']
+    ]
     result_rows: list[CompareImplementationDiffRowJson] = []
-    for header_id in baseline['headers']:
-        for workload_id in baseline['workloads']:
-            row_key = (header_id, workload_id)
-            baseline_row = baseline_rows[row_key]
-            candidate_row = candidate_rows[row_key]
-            result_rows.append(
-                CompareImplementationDiffRowJson(
-                    header=header_id,
-                    workload=workload_id,
-                    implementations={
-                        str(implementation_id): ImplementationDiffJson(
-                            old_ns_per_call=baseline_row['ns_per_call'][
-                                implementation_id
-                            ],
-                            new_ns_per_call=candidate_row['ns_per_call'][
-                                implementation_id
-                            ],
-                            delta_ns_per_call=(
+    for header_id, workload_id in baseline_row_keys:
+        row_key = (header_id, workload_id)
+        baseline_row = baseline_rows[row_key]
+        candidate_row = candidate_rows[row_key]
+        result_rows.append(
+            CompareImplementationDiffRowJson(
+                header=header_id,
+                workload=workload_id,
+                implementations={
+                    str(implementation_id): ImplementationDiffJson(
+                        old_ns_per_call=baseline_row['ns_per_call'][
+                            implementation_id
+                        ],
+                        new_ns_per_call=candidate_row['ns_per_call'][
+                            implementation_id
+                        ],
+                        delta_ns_per_call=(
+                            candidate_row['ns_per_call'][implementation_id]
+                            - baseline_row['ns_per_call'][implementation_id]
+                        ),
+                        ratio=(
+                            candidate_row['ns_per_call'][implementation_id]
+                            / baseline_row['ns_per_call'][implementation_id]
+                        ),
+                        percent_change=(
+                            (
                                 candidate_row['ns_per_call'][implementation_id]
                                 - baseline_row['ns_per_call'][
                                     implementation_id
                                 ]
-                            ),
-                            ratio=(
-                                candidate_row['ns_per_call'][implementation_id]
-                                / baseline_row['ns_per_call'][
-                                    implementation_id
-                                ]
-                            ),
-                            percent_change=(
-                                (
-                                    candidate_row['ns_per_call'][
-                                        implementation_id
-                                    ]
-                                    - baseline_row['ns_per_call'][
-                                        implementation_id
-                                    ]
-                                )
-                                / baseline_row['ns_per_call'][
-                                    implementation_id
-                                ]
                             )
-                            * 100,
+                            / baseline_row['ns_per_call'][implementation_id]
                         )
-                        for implementation_id in implementations
-                    },
-                )
+                        * 100,
+                    )
+                    for implementation_id in implementations
+                },
             )
+        )
     return {
         'baseline_label': baseline_label,
         'candidate_label': candidate_label,
-        'headers': list(baseline['headers']),
-        'workloads': list(baseline['workloads']),
+        'headers': _ordered_present_headers(
+            header_ids=baseline['headers'],
+            row_keys=baseline_row_keys,
+        ),
+        'workloads': _ordered_present_workloads(
+            workload_ids=baseline['workloads'],
+            row_keys=baseline_row_keys,
+        ),
         'implementations': list(implementations),
         'results': result_rows,
     }
@@ -1068,34 +1088,105 @@ def _normalize_run_payload_for_diff(
         result_map[row_key] = row
 
     comparison_rows: list[CompareImplementationRowJson] = []
-    for header_id in payload['headers']:
-        for workload_id in payload['workloads']:
-            ns_per_call: dict[str, float] = {}
-            for implementation_id in payload['implementations']:
-                row_key = (header_id, workload_id, implementation_id)
-                try:
-                    ns_per_call[implementation_id] = result_map[row_key][
-                        'ns_per_call'
-                    ]
-                except KeyError as error:
-                    raise ValueError(
-                        'run payload is missing one or more '
-                        'header/workload/implementation rows'
-                    ) from error
-            comparison_rows.append(
-                CompareImplementationRowJson(
-                    header=header_id,
-                    workload=workload_id,
-                    ns_per_call=ns_per_call,
-                    vs_workspace=_vs_workspace_ratios(ns_per_call),
-                )
+    row_keys = _complete_benchmark_row_keys(
+        result_map=result_map,
+        header_ids=payload['headers'],
+        workload_ids=payload['workloads'],
+        implementation_ids=payload['implementations'],
+        error_message=(
+            'run payload is missing one or more '
+            'header/workload/implementation rows'
+        ),
+    )
+    for header_id, workload_id in row_keys:
+        ns_per_call = {
+            implementation_id: result_map[
+                (header_id, workload_id, implementation_id)
+            ]['ns_per_call']
+            for implementation_id in payload['implementations']
+        }
+        comparison_rows.append(
+            CompareImplementationRowJson(
+                header=header_id,
+                workload=workload_id,
+                ns_per_call=ns_per_call,
+                vs_workspace=_vs_workspace_ratios(ns_per_call),
             )
+        )
     return CompareImplementationPayload(
-        headers=list(payload['headers']),
-        workloads=list(payload['workloads']),
+        headers=_ordered_present_headers(
+            header_ids=payload['headers'],
+            row_keys=row_keys,
+        ),
+        workloads=_ordered_present_workloads(
+            workload_ids=payload['workloads'],
+            row_keys=row_keys,
+        ),
         implementations=list(payload['implementations']),
         results=comparison_rows,
     )
+
+
+def _ordered_benchmark_row_keys(
+    results: abc.Iterable[runner.BenchmarkResultJson],
+) -> list[tuple[str, str]]:
+    row_keys: list[tuple[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for row in results:
+        row_key = (row['header'], row['workload'])
+        if row_key in seen:
+            continue
+        seen.add(row_key)
+        row_keys.append(row_key)
+    return row_keys
+
+
+def _ordered_present_headers(
+    *,
+    header_ids: abc.Sequence[str],
+    row_keys: abc.Iterable[tuple[str, str]],
+) -> list[str]:
+    present_headers = {header_id for header_id, _ in row_keys}
+    return [
+        header_id for header_id in header_ids if header_id in present_headers
+    ]
+
+
+def _ordered_present_workloads(
+    *,
+    workload_ids: abc.Sequence[str],
+    row_keys: abc.Iterable[tuple[str, str]],
+) -> list[str]:
+    present_workloads = {workload_id for _, workload_id in row_keys}
+    return [
+        workload_id
+        for workload_id in workload_ids
+        if workload_id in present_workloads
+    ]
+
+
+def _complete_benchmark_row_keys(
+    *,
+    result_map: dict[tuple[str, str, str], object],
+    header_ids: abc.Sequence[str],
+    workload_ids: abc.Sequence[str],
+    implementation_ids: abc.Sequence[str],
+    error_message: str,
+) -> list[tuple[str, str]]:
+    row_keys: list[tuple[str, str]] = []
+    for header_id in header_ids:
+        for workload_id in workload_ids:
+            present_implementations = [
+                implementation_id
+                for implementation_id in implementation_ids
+                if (header_id, workload_id, implementation_id) in result_map
+            ]
+            if not present_implementations:
+                continue
+            if len(present_implementations) != len(implementation_ids):
+                raise ValueError(error_message)
+            row_keys.append((header_id, workload_id))
+    return row_keys
 
 
 def _vs_workspace_ratios(

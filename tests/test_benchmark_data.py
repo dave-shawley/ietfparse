@@ -13,13 +13,12 @@ class BenchmarkDatasetTests(unittest.TestCase):
         dataset = data.load_dataset()
         self.assertEqual(dataset.header_ids(), data.SUPPORTED_HEADERS)
 
-    def test_every_supported_header_has_every_workload(self) -> None:
+    def test_supported_workload_keys_are_a_subset(self) -> None:
         dataset = data.load_dataset()
         for header_id in data.SUPPORTED_HEADERS:
             benchmark = dataset.headers[header_id]
-            self.assertEqual(
-                tuple(benchmark.workloads),
-                data.SUPPORTED_WORKLOADS,
+            self.assertTrue(
+                set(benchmark.workloads).issubset(data.SUPPORTED_WORKLOADS)
             )
 
     def test_large_samples_are_bounded(self) -> None:
@@ -82,14 +81,27 @@ class BenchmarkDatasetValidationTests(unittest.TestCase):
                 payload='bad',
             )
 
-    def test_parse_workload_samples_requires_non_empty_samples(self) -> None:
+    def test_parse_workload_samples_missing_payload_is_allowed(self) -> None:
         parse_workload_samples = vars(data)['_parse_workload_samples']
-        with self.assertRaisesRegex(ValueError, 'must define samples'):
+        self.assertEqual(
+            parse_workload_samples(
+                header_id='accept',
+                workload='realistic',
+                payload=None,
+            ),
+            (),
+        )
+
+    def test_parse_workload_samples_empty_samples_is_allowed(self) -> None:
+        parse_workload_samples = vars(data)['_parse_workload_samples']
+        self.assertEqual(
             parse_workload_samples(
                 header_id='accept',
                 workload='realistic',
                 payload={'samples': []},
-            )
+            ),
+            (),
+        )
 
     def test_parse_workload_samples_requires_string_samples(self) -> None:
         parse_workload_samples = vars(data)['_parse_workload_samples']
@@ -149,6 +161,42 @@ class BenchmarkRunnerTests(unittest.TestCase):
                 samples=('bad',),
                 parser=lambda _: (_ for _ in ()).throw(ValueError('bad')),
             )
+
+    def test_run_benchmarks_skips_missing_workload_samples(self) -> None:
+        dataset = data.BenchmarkDataset(
+            headers={
+                'accept': data.HeaderBenchmark(
+                    header_id='accept',
+                    parser_name='parse_accept',
+                    description='Accept header',
+                    workloads={'realistic': ('text/html',)},
+                )
+            }
+        )
+        results = runner.run_benchmarks(
+            dataset,
+            selection=runner.BenchmarkSelection(
+                header_ids=(data.SupportedHeader.ACCEPT,),
+                workload_ids=('browser', 'realistic'),
+                iterations=1,
+                repeat=1,
+            ),
+        )
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].workload, 'realistic')
+
+    def test_validate_dataset_skips_missing_workload_samples(self) -> None:
+        dataset = data.BenchmarkDataset(
+            headers={
+                'accept': data.HeaderBenchmark(
+                    header_id='accept',
+                    parser_name='parse_accept',
+                    description='Accept header',
+                    workloads={'realistic': ('text/html',)},
+                )
+            }
+        )
+        runner.validate_dataset(dataset)
 
     def test_run_once_returns_elapsed_time_and_checksum(self) -> None:
         run_once = vars(runner)['_run_once']

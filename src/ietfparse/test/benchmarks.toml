@@ -2,6 +2,12 @@
 parser = "parse_accept"
 description = "Accept header"
 
+[headers."accept".browser]
+samples = [
+  "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",  # safari
+  "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",  # arc
+]
+
 [headers."accept".realistic]
 samples = [
   "text/html, application/xhtml+xml;q=0.9, application/json;q=0.8, */*;q=0.1",
@@ -23,6 +29,11 @@ samples = [
 [headers."accept-charset"]
 parser = "parse_accept_charset"
 description = "Accept-Charset header"
+
+[headers."accept-charset".browser]
+samples = [
+  "utf-8",  # most browsers do not include this header
+]
 
 [headers."accept-charset".realistic]
 samples = [
@@ -46,6 +57,12 @@ samples = [
 parser = "parse_accept_encoding"
 description = "Accept-Encoding header"
 
+[headers."accept-encoding".browser]
+samples = [
+  "gzip, deflate, br, zstd, dcb, dcz",  # arc
+  "gzip, deflate, br",  # safari
+]
+
 [headers."accept-encoding".realistic]
 samples = [
   "gzip, br;q=0.9, deflate;q=0.5",
@@ -67,6 +84,11 @@ samples = [
 [headers."accept-language"]
 parser = "parse_accept_language"
 description = "Accept-Language header"
+
+[headers."accept-language".browser]
+samples = [
+  "en-US,en;q=0.9",  # arc, safari
+]
 
 [headers."accept-language".realistic]
 samples = [
