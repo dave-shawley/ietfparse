@@ -12,26 +12,30 @@ from collections import abc
 from ietfparse import _compat, algorithms, errors, headers
 from ietfparse.test import accept_cases, cache_control_cases, data, link_cases
 
+
+class SupportedImplementation(_compat.StrEnum):
+    """Supported runtime implementations."""
+
+    WORKSPACE = 'workspace'
+    WERKZEUG = 'werkzeug'
+    REQUESTS = 'requests'
+    HTTPX = 'httpx'
+
+
 Parser = abc.Callable[[str], object]
-SupportedImplementation = t.Literal[
-    'workspace', 'werkzeug', 'requests', 'httpx'
-]
-SUPPORTED_IMPLEMENTATIONS: tuple[str, ...] = t.get_args(
-    SupportedImplementation
-)
 IMPLEMENTATION_HEADERS: dict[
     SupportedImplementation, set[data.SupportedHeader]
 ] = {
-    'workspace': set(data.SupportedHeader),
-    'werkzeug': {
+    SupportedImplementation.WORKSPACE: set(data.SupportedHeader),
+    SupportedImplementation.WERKZEUG: {
         data.SupportedHeader.ACCEPT,
         data.SupportedHeader.ACCEPT_CHARSET,
         data.SupportedHeader.ACCEPT_ENCODING,
         data.SupportedHeader.ACCEPT_LANGUAGE,
         data.SupportedHeader.CACHE_CONTROL,
     },
-    'requests': {data.SupportedHeader.LINK},
-    'httpx': {data.SupportedHeader.LINK},
+    SupportedImplementation.REQUESTS: {data.SupportedHeader.LINK},
+    SupportedImplementation.HTTPX: {data.SupportedHeader.LINK},
 }
 
 
@@ -58,9 +62,9 @@ class UnsupportedHeaderError(ValueError):
 class BenchmarkResultJson(t.TypedDict):
     """Stable JSON schema for one benchmark result."""
 
-    implementation: str
-    header: str
-    workload: str
+    implementation: SupportedImplementation
+    header: data.SupportedHeader
+    workload: data.SupportedWorkload
     sample_count: int
     byte_count: int
     repeat: int
@@ -117,7 +121,7 @@ class CacheControlComparisonJson(t.TypedDict):
 class BenchmarkImplementation:
     """Adapter for a benchmarked implementation of the parser surface."""
 
-    name: str
+    name: SupportedImplementation
     parser_resolver: abc.Callable[[str], Parser]
 
     def parser_for(self, parser_name: str) -> Parser:
@@ -129,9 +133,9 @@ class BenchmarkImplementation:
 class BenchmarkResult:
     """Normalized metrics for one header/workload benchmark run."""
 
-    implementation: str
-    header: str
-    workload: str
+    implementation: SupportedImplementation
+    header: data.SupportedHeader
+    workload: data.SupportedWorkload
     sample_count: int
     byte_count: int
     repeat: int
@@ -220,25 +224,25 @@ def _resolve_httpx_parser(parser_name: str) -> Parser:
 
 
 WORKSPACE_IMPLEMENTATION = BenchmarkImplementation(
-    name='workspace',
+    name=SupportedImplementation.WORKSPACE,
     parser_resolver=lambda parser_name: getattr(headers, parser_name),
 )
 WERKZEUG_IMPLEMENTATION = BenchmarkImplementation(
-    name='werkzeug',
+    name=SupportedImplementation.WERKZEUG,
     parser_resolver=_resolve_werkzeug_parser,
 )
 REQUESTS_IMPLEMENTATION = BenchmarkImplementation(
-    name='requests',
+    name=SupportedImplementation.REQUESTS,
     parser_resolver=_resolve_requests_parser,
 )
 HTTPX_IMPLEMENTATION = BenchmarkImplementation(
-    name='httpx',
+    name=SupportedImplementation.HTTPX,
     parser_resolver=_resolve_httpx_parser,
 )
 
 
 def implementation_named(
-    name: SupportedImplementation,
+    name: str,
 ) -> BenchmarkImplementation:
     """Resolve a supported implementation by stable name."""
     match name:
@@ -251,8 +255,7 @@ def implementation_named(
         case 'httpx':
             return HTTPX_IMPLEMENTATION
         case _ as unexpected:
-            _compat.assert_never(unexpected)
-            raise AssertionError('unreachable')
+            raise ValueError(f'unknown implementation name: {unexpected!r}')
 
 
 def validate_implementation_support(

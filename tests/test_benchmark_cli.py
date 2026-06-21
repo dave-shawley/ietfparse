@@ -16,47 +16,32 @@ def _create_fake_io(*, is_tty: bool) -> unittest.mock.Mock:
 
 class BenchmarkCliSelectionTests(unittest.TestCase):
     def test_normalize_values_uses_defaults(self) -> None:
-        normalize_values = cli._normalize_values
         self.assertEqual(
-            normalize_values(
-                label='header',
-                valid=data.SUPPORTED_HEADERS,
+            cli._normalize_values(
+                label='workload',
+                valid=data.SUPPORTED_WORKLOADS,
                 values=None,
             ),
-            data.SUPPORTED_HEADERS,
+            data.SUPPORTED_WORKLOADS,
         )
 
     def test_normalize_values_lowercases_values(self) -> None:
-        normalize_values = cli._normalize_values
         self.assertEqual(
-            normalize_values(
-                label='header',
-                valid=data.SUPPORTED_HEADERS,
-                values=['ACCEPT', 'Link'],
+            cli._normalize_values(
+                label='workload',
+                valid=data.SUPPORTED_WORKLOADS,
+                values=['BROWSER', 'complex'],
             ),
-            ('accept', 'link'),
+            ('browser', 'complex'),
         )
 
     def test_normalize_values_rejects_invalid_values(self) -> None:
-        normalize_values = cli._normalize_values
-        with self.assertRaisesRegex(ValueError, 'Unsupported header value'):
-            normalize_values(
-                label='header',
-                valid=data.SUPPORTED_HEADERS,
+        with self.assertRaisesRegex(ValueError, 'Unsupported workload value'):
+            cli._normalize_values(
+                label='workload',
+                valid=data.SUPPORTED_WORKLOADS,
                 values=['bogus'],
             )
-
-    def test_single_header_selection(self) -> None:
-        self.assertEqual(cli.resolve_headers(['accept']), ('accept',))
-
-    def test_multiple_header_selection(self) -> None:
-        self.assertEqual(
-            cli.resolve_headers(['accept', 'link']),
-            ('accept', 'link'),
-        )
-
-    def test_all_headers_selected_by_default(self) -> None:
-        self.assertEqual(cli.resolve_headers(None), data.SUPPORTED_HEADERS)
 
     def test_single_workload_selection(self) -> None:
         self.assertEqual(cli.resolve_workloads(['realistic']), ('realistic',))
@@ -69,32 +54,6 @@ class BenchmarkCliSelectionTests(unittest.TestCase):
 
     def test_all_workloads_selected_by_default(self) -> None:
         self.assertEqual(cli.resolve_workloads(None), data.SUPPORTED_WORKLOADS)
-
-    def test_implementation_selection_defaults_to_workspace(self) -> None:
-        self.assertEqual(cli.resolve_implementations(None), ('workspace',))
-
-    def test_multiple_implementation_selection(self) -> None:
-        self.assertEqual(
-            cli.resolve_implementations(
-                ['WORKSPACE', 'werkzeug', 'requests', 'HTTPX']
-            ),
-            ('workspace', 'werkzeug', 'requests', 'httpx'),
-        )
-
-    def test_compare_implementation_selection_adds_workspace(self) -> None:
-        self.assertEqual(
-            cli.resolve_compare_implementations(['werkzeug', 'workspace']),
-            ('workspace', 'werkzeug'),
-        )
-
-    def test_compare_implementation_selection_requires_non_workspace(
-        self,
-    ) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            'requires at least one non-workspace implementation',
-        ):
-            cli.resolve_compare_implementations(['workspace'])
 
 
 class BenchmarkCliOutputModeTests(unittest.TestCase):
@@ -147,11 +106,14 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             results=results,
             header_ids=(data.SupportedHeader.ACCEPT,),
             workload_ids=('realistic',),
-            implementation_ids=('workspace',),
+            implementation_ids=(runner.SupportedImplementation.WORKSPACE,),
         )
-        self.assertEqual(payload['headers'], ['accept'])
+        self.assertEqual(payload['headers'], [data.SupportedHeader.ACCEPT])
         self.assertEqual(payload['workloads'], ['realistic'])
-        self.assertEqual(payload['implementations'], ['workspace'])
+        self.assertEqual(
+            payload['implementations'],
+            [runner.SupportedImplementation.WORKSPACE],
+        )
         self.assertEqual(len(payload['results']), 1)
         result = payload['results'][0]
         self.assertEqual(
@@ -169,16 +131,18 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
                 'calls_per_second',
             },
         )
-        self.assertEqual(result['header'], 'accept')
+        self.assertEqual(result['header'], data.SupportedHeader.ACCEPT)
         self.assertEqual(result['workload'], 'realistic')
-        self.assertEqual(result['implementation'], 'workspace')
+        self.assertEqual(
+            result['implementation'], runner.SupportedImplementation.WORKSPACE
+        )
 
     def test_run_payload_filters_to_combinations_with_results(self) -> None:
         payload = cli.build_run_payload(
             results=[
                 runner.BenchmarkResult(
-                    implementation='workspace',
-                    header='accept',
+                    implementation=runner.SupportedImplementation.WORKSPACE,
+                    header=data.SupportedHeader.ACCEPT,
                     workload='realistic',
                     sample_count=1,
                     byte_count=10,
@@ -194,20 +158,20 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
                 data.SupportedHeader.LINK,
             ),
             workload_ids=('browser', 'realistic'),
-            implementation_ids=('workspace',),
+            implementation_ids=(runner.SupportedImplementation.WORKSPACE,),
         )
-        self.assertEqual(payload['headers'], ['accept'])
+        self.assertEqual(payload['headers'], [data.SupportedHeader.ACCEPT])
         self.assertEqual(payload['workloads'], ['realistic'])
 
     def test_list_payload_includes_sample_counts(self) -> None:
         payload = cli.build_list_payload(data.load_dataset())
-        self.assertEqual(payload['headers'], sorted(data.SUPPORTED_HEADERS))
+        self.assertEqual(payload['headers'], sorted(data.SupportedHeader))
         self.assertEqual(
             payload['workloads'], sorted(data.SUPPORTED_WORKLOADS)
         )
         counts = payload['sample_counts']
-        self.assertEqual(counts['accept']['realistic'], 3)
-        self.assertEqual(counts['link']['complex'], 2)
+        self.assertEqual(counts[data.SupportedHeader.ACCEPT]['realistic'], 3)
+        self.assertEqual(counts[data.SupportedHeader.LINK]['complex'], 2)
 
     def test_compare_link_payload_reports_case_count(self) -> None:
         payload = cli.build_compare_link_payload(
@@ -297,8 +261,8 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         payload = cli.build_compare_implementation_payload(
             results=[
                 runner.BenchmarkResult(
-                    implementation='workspace',
-                    header='accept',
+                    implementation=runner.SupportedImplementation.WORKSPACE,
+                    header=data.SupportedHeader.ACCEPT,
                     workload='realistic',
                     sample_count=1,
                     byte_count=10,
@@ -309,8 +273,8 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
                     calls_per_second=1.0,
                 ),
                 runner.BenchmarkResult(
-                    implementation='werkzeug',
-                    header='accept',
+                    implementation=runner.SupportedImplementation.WERKZEUG,
+                    header=data.SupportedHeader.ACCEPT,
                     workload='realistic',
                     sample_count=1,
                     byte_count=10,
@@ -323,19 +287,31 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             ],
             header_ids=(data.SupportedHeader.ACCEPT,),
             workload_ids=('realistic',),
-            implementation_ids=('workspace', 'werkzeug'),
+            implementation_ids=(
+                runner.SupportedImplementation.WORKSPACE,
+                runner.SupportedImplementation.WERKZEUG,
+            ),
         )
-        self.assertEqual(payload['headers'], ['accept'])
+        self.assertEqual(payload['headers'], [data.SupportedHeader.ACCEPT])
         self.assertEqual(payload['workloads'], ['realistic'])
-        self.assertEqual(payload['implementations'], ['workspace', 'werkzeug'])
+        self.assertEqual(
+            payload['implementations'],
+            [
+                runner.SupportedImplementation.WORKSPACE,
+                runner.SupportedImplementation.WERKZEUG,
+            ],
+        )
         self.assertEqual(len(payload['results']), 1)
         self.assertEqual(
             payload['results'][0]['ns_per_call'],
-            {'workspace': 100.0, 'werkzeug': 50.0},
+            {
+                runner.SupportedImplementation.WORKSPACE: 100.0,
+                runner.SupportedImplementation.WERKZEUG: 50.0,
+            },
         )
         self.assertEqual(
             payload['results'][0]['vs_workspace'],
-            {'werkzeug': 0.5},
+            {runner.SupportedImplementation.WERKZEUG: 0.5},
         )
 
     def test_compare_implementation_payload_skips_missing_workload_rows(
@@ -344,8 +320,8 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         payload = cli.build_compare_implementation_payload(
             results=[
                 runner.BenchmarkResult(
-                    implementation='workspace',
-                    header='accept',
+                    implementation=runner.SupportedImplementation.WORKSPACE,
+                    header=data.SupportedHeader.ACCEPT,
                     workload='realistic',
                     sample_count=1,
                     byte_count=10,
@@ -356,8 +332,8 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
                     calls_per_second=1.0,
                 ),
                 runner.BenchmarkResult(
-                    implementation='werkzeug',
-                    header='accept',
+                    implementation=runner.SupportedImplementation.WERKZEUG,
+                    header=data.SupportedHeader.ACCEPT,
                     workload='realistic',
                     sample_count=1,
                     byte_count=10,
@@ -370,9 +346,12 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             ],
             header_ids=(data.SupportedHeader.ACCEPT,),
             workload_ids=('browser', 'realistic'),
-            implementation_ids=('workspace', 'werkzeug'),
+            implementation_ids=(
+                runner.SupportedImplementation.WORKSPACE,
+                runner.SupportedImplementation.WERKZEUG,
+            ),
         )
-        self.assertEqual(payload['headers'], ['accept'])
+        self.assertEqual(payload['headers'], [data.SupportedHeader.ACCEPT])
         self.assertEqual(payload['workloads'], ['realistic'])
         self.assertEqual(len(payload['results']), 1)
 
@@ -380,26 +359,42 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         baseline = cli.CompareImplementationPayload(
             headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
-            implementations=['workspace', 'werkzeug'],
+            implementations=[
+                runner.SupportedImplementation.WORKSPACE,
+                runner.SupportedImplementation.WERKZEUG,
+            ],
             results=[
                 cli.CompareImplementationRowJson(
-                    header='accept',
+                    header=data.SupportedHeader.ACCEPT,
                     workload='realistic',
-                    ns_per_call={'workspace': 100.0, 'werkzeug': 50.0},
-                    vs_workspace={'werkzeug': 0.5},
+                    ns_per_call={
+                        runner.SupportedImplementation.WORKSPACE: 100.0,
+                        runner.SupportedImplementation.WERKZEUG: 50.0,
+                    },
+                    vs_workspace={
+                        runner.SupportedImplementation.WERKZEUG: 0.5
+                    },
                 )
             ],
         )
         candidate = cli.CompareImplementationPayload(
             headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
-            implementations=['workspace', 'werkzeug'],
+            implementations=[
+                runner.SupportedImplementation.WORKSPACE,
+                runner.SupportedImplementation.WERKZEUG,
+            ],
             results=[
                 cli.CompareImplementationRowJson(
-                    header='accept',
+                    header=data.SupportedHeader.ACCEPT,
                     workload='realistic',
-                    ns_per_call={'workspace': 80.0, 'werkzeug': 60.0},
-                    vs_workspace={'werkzeug': 0.75},
+                    ns_per_call={
+                        runner.SupportedImplementation.WORKSPACE: 80.0,
+                        runner.SupportedImplementation.WERKZEUG: 60.0,
+                    },
+                    vs_workspace={
+                        runner.SupportedImplementation.WERKZEUG: 0.75
+                    },
                 )
             ],
         )
@@ -411,9 +406,17 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         )
         self.assertEqual(payload['baseline_label'], 'old.json')
         self.assertEqual(payload['candidate_label'], 'new.json')
-        self.assertEqual(payload['implementations'], ['workspace', 'werkzeug'])
         self.assertEqual(
-            payload['results'][0]['implementations']['workspace'],
+            payload['implementations'],
+            [
+                runner.SupportedImplementation.WORKSPACE,
+                runner.SupportedImplementation.WERKZEUG,
+            ],
+        )
+        self.assertEqual(
+            payload['results'][0]['implementations'][
+                runner.SupportedImplementation.WORKSPACE
+            ],
             {
                 'old_ns_per_call': 100.0,
                 'new_ns_per_call': 80.0,
@@ -423,7 +426,9 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             },
         )
         self.assertEqual(
-            payload['results'][0]['implementations']['werkzeug'],
+            payload['results'][0]['implementations'][
+                runner.SupportedImplementation.WERKZEUG
+            ],
             {
                 'old_ns_per_call': 50.0,
                 'new_ns_per_call': 60.0,
@@ -439,13 +444,13 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         baseline = cli.CompareImplementationPayload(
             headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
-            implementations=['workspace'],
+            implementations=[runner.SupportedImplementation.WORKSPACE],
             results=[],
         )
         candidate = cli.CompareImplementationPayload(
             headers=[data.SupportedHeader.LINK],
             workloads=['realistic'],
-            implementations=['workspace'],
+            implementations=[runner.SupportedImplementation.WORKSPACE],
             results=[],
         )
         with self.assertRaisesRegex(ValueError, 'same headers'):
@@ -462,13 +467,13 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         baseline = cli.CompareImplementationPayload(
             headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
-            implementations=['workspace'],
+            implementations=[runner.SupportedImplementation.WORKSPACE],
             results=[],
         )
         candidate = cli.CompareImplementationPayload(
             headers=[data.SupportedHeader.ACCEPT],
             workloads=['complex'],
-            implementations=['workspace'],
+            implementations=[runner.SupportedImplementation.WORKSPACE],
             results=[],
         )
         with self.assertRaisesRegex(ValueError, 'same workloads'):
@@ -485,13 +490,16 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         baseline = cli.CompareImplementationPayload(
             headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
-            implementations=['workspace'],
+            implementations=[runner.SupportedImplementation.WORKSPACE],
             results=[],
         )
         candidate = cli.CompareImplementationPayload(
             headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
-            implementations=['workspace', 'werkzeug'],
+            implementations=[
+                runner.SupportedImplementation.WORKSPACE,
+                runner.SupportedImplementation.WERKZEUG,
+            ],
             results=[],
         )
         with self.assertRaisesRegex(ValueError, 'same implementations'):
@@ -508,12 +516,14 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         baseline = cli.CompareImplementationPayload(
             headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
-            implementations=['workspace'],
+            implementations=[runner.SupportedImplementation.WORKSPACE],
             results=[
                 cli.CompareImplementationRowJson(
-                    header='accept',
+                    header=data.SupportedHeader.ACCEPT,
                     workload='realistic',
-                    ns_per_call={'workspace': 100.0},
+                    ns_per_call={
+                        runner.SupportedImplementation.WORKSPACE: 100.0
+                    },
                     vs_workspace={},
                 )
             ],
@@ -521,7 +531,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         candidate = cli.CompareImplementationPayload(
             headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
-            implementations=['workspace'],
+            implementations=[runner.SupportedImplementation.WORKSPACE],
             results=[],
         )
         with self.assertRaisesRegex(ValueError, 'same header/workload rows'):
@@ -536,11 +546,14 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         payload = cli.RunPayload(
             headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
-            implementations=['workspace', 'werkzeug'],
+            implementations=[
+                runner.SupportedImplementation.WORKSPACE,
+                runner.SupportedImplementation.WERKZEUG,
+            ],
             results=[
                 runner.BenchmarkResultJson(
-                    implementation='workspace',
-                    header='accept',
+                    implementation=runner.SupportedImplementation.WORKSPACE,
+                    header=data.SupportedHeader.ACCEPT,
                     workload='realistic',
                     sample_count=1,
                     byte_count=10,
@@ -551,8 +564,8 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
                     calls_per_second=1.0,
                 ),
                 runner.BenchmarkResultJson(
-                    implementation='werkzeug',
-                    header='accept',
+                    implementation=runner.SupportedImplementation.WERKZEUG,
+                    header=data.SupportedHeader.ACCEPT,
                     workload='realistic',
                     sample_count=1,
                     byte_count=10,
@@ -569,10 +582,15 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             normalized['results'],
             [
                 {
-                    'header': 'accept',
+                    'header': data.SupportedHeader.ACCEPT,
                     'workload': 'realistic',
-                    'ns_per_call': {'workspace': 100.0, 'werkzeug': 80.0},
-                    'vs_workspace': {'werkzeug': 0.8},
+                    'ns_per_call': {
+                        runner.SupportedImplementation.WORKSPACE: 100.0,
+                        runner.SupportedImplementation.WERKZEUG: 80.0,
+                    },
+                    'vs_workspace': {
+                        runner.SupportedImplementation.WERKZEUG: 0.8
+                    },
                 }
             ],
         )
@@ -583,11 +601,11 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         payload = cli.RunPayload(
             headers=[data.SupportedHeader.ACCEPT],
             workloads=['browser', 'realistic'],
-            implementations=['workspace'],
+            implementations=[runner.SupportedImplementation.WORKSPACE],
             results=[
                 runner.BenchmarkResultJson(
-                    implementation='workspace',
-                    header='accept',
+                    implementation=runner.SupportedImplementation.WORKSPACE,
+                    header=data.SupportedHeader.ACCEPT,
                     workload='realistic',
                     sample_count=1,
                     byte_count=10,
@@ -600,7 +618,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             ],
         )
         normalized = cli._normalize_run_payload_for_diff(payload=payload)
-        self.assertEqual(normalized['headers'], ['accept'])
+        self.assertEqual(normalized['headers'], [data.SupportedHeader.ACCEPT])
         self.assertEqual(normalized['workloads'], ['realistic'])
         self.assertEqual(len(normalized['results']), 1)
 
@@ -608,11 +626,14 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         payload = cli.RunPayload(
             headers=[data.SupportedHeader.ACCEPT],
             workloads=['realistic'],
-            implementations=['workspace', 'werkzeug'],
+            implementations=[
+                runner.SupportedImplementation.WORKSPACE,
+                runner.SupportedImplementation.WERKZEUG,
+            ],
             results=[
                 runner.BenchmarkResultJson(
-                    implementation='workspace',
-                    header='accept',
+                    implementation=runner.SupportedImplementation.WORKSPACE,
+                    header=data.SupportedHeader.ACCEPT,
                     workload='realistic',
                     sample_count=1,
                     byte_count=10,
@@ -635,7 +656,9 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         self,
     ) -> None:
         self.assertEqual(
-            cli._vs_workspace_ratios({'werkzeug': 80.0}),
+            cli._vs_workspace_ratios(
+                {runner.SupportedImplementation.WERKZEUG: 80.0}
+            ),
             {},
         )
 
@@ -716,9 +739,11 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             path.write_text(
                 json.dumps(
                     {
-                        'headers': ['accept'],
+                        'headers': [data.SupportedHeader.ACCEPT],
                         'workloads': ['realistic'],
-                        'implementations': ['workspace'],
+                        'implementations': [
+                            runner.SupportedImplementation.WORKSPACE
+                        ],
                         'results': [],
                     }
                 )
@@ -830,9 +855,8 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
                 cli._load_diffable_benchmark_payload(path)
 
     def test_comparison_summary_reports_error_and_list_counts(self) -> None:
-        comparison_summary = cli._comparison_summary
         self.assertEqual(
-            comparison_summary(
+            cli._comparison_summary(
                 {
                     'status': 'error',
                     'result': None,
@@ -843,7 +867,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             'error:ValueError',
         )
         self.assertEqual(
-            comparison_summary(
+            cli._comparison_summary(
                 {
                     'status': 'ok',
                     'result': ['a', 'b'],
@@ -854,7 +878,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             'ok:2 value(s)',
         )
         self.assertEqual(
-            comparison_summary(
+            cli._comparison_summary(
                 {
                     'status': 'ok',
                     'result': {'a': 1},
@@ -866,10 +890,8 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         )
 
     def test_accept_summaries_report_errors_and_matches(self) -> None:
-        accept_workspace_summary = cli._accept_workspace_summary
-        accept_werkzeug_summary = cli._accept_werkzeug_summary
         self.assertEqual(
-            accept_workspace_summary(
+            cli._accept_workspace_summary(
                 {
                     'status': 'error',
                     'result': None,
@@ -880,7 +902,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             'error:ValueError',
         )
         self.assertEqual(
-            accept_workspace_summary(
+            cli._accept_workspace_summary(
                 {
                     'status': 'ok',
                     'result': {
@@ -894,7 +916,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             'application/json <= application/*',
         )
         self.assertEqual(
-            accept_werkzeug_summary(
+            cli._accept_werkzeug_summary(
                 {
                     'status': 'error',
                     'result': None,
@@ -905,7 +927,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             'error:ValueError',
         )
         self.assertEqual(
-            accept_werkzeug_summary(
+            cli._accept_werkzeug_summary(
                 {
                     'status': 'ok',
                     'result': {'selected': None},
@@ -917,9 +939,8 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         )
 
     def test_cache_control_summary_reports_errors_and_json(self) -> None:
-        cache_control_summary = cli._cache_control_summary
         self.assertEqual(
-            cache_control_summary(
+            cli._cache_control_summary(
                 {
                     'status': 'error',
                     'result': None,
@@ -930,7 +951,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             'error:ValueError',
         )
         self.assertEqual(
-            cache_control_summary(
+            cli._cache_control_summary(
                 {
                     'status': 'ok',
                     'result': {'max-age': 60, 'public': True},
@@ -953,23 +974,27 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
             self.runner = testing.CliRunner()
 
     def test_generate_autocomplete_filters_matches(self) -> None:
-        generate_autocomplete = cli._generate_autocomplete
-        autocomplete = generate_autocomplete(data.SUPPORTED_HEADERS)
+        autocomplete = cli._generate_autocomplete(data.SupportedHeader)
         self.assertEqual(
             list(autocomplete('ac')),
             [
-                'accept',
-                'accept-charset',
-                'accept-encoding',
-                'accept-language',
+                data.SupportedHeader.ACCEPT,
+                data.SupportedHeader.ACCEPT_CHARSET,
+                data.SupportedHeader.ACCEPT_ENCODING,
+                data.SupportedHeader.ACCEPT_LANGUAGE,
             ],
         )
-        compare_autocomplete = generate_autocomplete(
-            ('accept', 'cache-control', 'implementation', 'link')
+        compare_autocomplete = cli._generate_autocomplete(
+            (
+                data.SupportedHeader.ACCEPT,
+                data.SupportedHeader.CACHE_CONTROL,
+                'implementation',
+                data.SupportedHeader.LINK,
+            )
         )
         self.assertEqual(
             list(compare_autocomplete('ca')),
-            ['cache-control'],
+            [data.SupportedHeader.CACHE_CONTROL],
         )
 
     def test_run_command_emits_json_output(self) -> None:
@@ -978,7 +1003,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
             [
                 'run',
                 '--header',
-                'accept',
+                data.SupportedHeader.ACCEPT,
                 '--workload',
                 'realistic',
                 '--iterations',
@@ -989,7 +1014,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                 'json',
             ],
         )
-        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.exit_code, 0, result.exception)
         self.assertIn('"implementation": "workspace"', result.stdout)
         self.assertIn('"header": "accept"', result.stdout)
         self.assertIn('"implementations": [', result.stdout)
@@ -998,7 +1023,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         result = self.runner.invoke(cli.app, ['list', '--format', 'rich'])
         self.assertEqual(result.exit_code, 0)
         self.assertIn('ietfparse benchmark fixtures', result.stdout)
-        self.assertIn('accept', result.stdout)
+        self.assertIn(data.SupportedHeader.ACCEPT, result.stdout)
 
     def test_list_command_emits_json_output(self) -> None:
         result = self.runner.invoke(cli.app, ['list', '--format', 'json'])
@@ -1012,7 +1037,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
             [
                 'run',
                 '--header',
-                'accept',
+                data.SupportedHeader.ACCEPT,
                 '--workload',
                 'realistic',
                 '--iterations',
@@ -1026,7 +1051,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         )
         self.assertEqual(result.exit_code, 0)
         self.assertIn('ietfparse benchmark run', result.stdout)
-        self.assertIn('accept', result.stdout)
+        self.assertIn(data.SupportedHeader.ACCEPT, result.stdout)
         self.assertIn('realist', result.stdout)
 
     def test_run_command_emits_rich_summary_output(self) -> None:
@@ -1035,7 +1060,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
             [
                 'run',
                 '--header',
-                'accept',
+                data.SupportedHeader.ACCEPT,
                 '--workload',
                 'realistic',
                 '--iterations',
@@ -1058,9 +1083,9 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
             [
                 'run',
                 '--header',
-                'accept',
+                data.SupportedHeader.ACCEPT,
                 '--implementation',
-                'requests',
+                runner.SupportedImplementation.REQUESTS,
             ],
         )
         self.assertNotEqual(result.exit_code, 0)
@@ -1077,9 +1102,9 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
             [
                 'run',
                 '--header',
-                'accept',
+                data.SupportedHeader.ACCEPT,
                 '--implementation',
-                'httpx',
+                runner.SupportedImplementation.HTTPX,
             ],
         )
         self.assertNotEqual(result.exit_code, 0)
@@ -1098,9 +1123,9 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
             [
                 'run',
                 '--header',
-                'forwarded',
+                data.SupportedHeader.FORWARDED,
                 '--implementation',
-                'werkzeug',
+                runner.SupportedImplementation.WERKZEUG,
             ],
         )
         self.assertNotEqual(result.exit_code, 0)
@@ -1122,19 +1147,19 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                     'description': 'edge case',
                     'sample': '<>',
                     'strict': True,
-                    'workspace': {
+                    runner.SupportedImplementation.WORKSPACE: {
                         'status': 'ok',
                         'result': [],
                         'error_type': None,
                         'error_message': None,
                     },
-                    'requests': {
+                    runner.SupportedImplementation.REQUESTS: {
                         'status': 'ok',
                         'result': [],
                         'error_type': None,
                         'error_message': None,
                     },
-                    'httpx': {
+                    runner.SupportedImplementation.HTTPX: {
                         'status': 'ok',
                         'result': {},
                         'error_type': None,
@@ -1145,7 +1170,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         ):
             result = self.runner.invoke(
                 cli.app,
-                ['compare', 'link', '--format', 'json'],
+                ['compare', data.SupportedHeader.LINK, '--format', 'json'],
             )
         self.assertEqual(result.exit_code, 0)
         self.assertIn('"case_count": 1', result.stdout)
@@ -1161,19 +1186,19 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                     'description': 'edge case',
                     'sample': '<>',
                     'strict': True,
-                    'workspace': {
+                    runner.SupportedImplementation.WORKSPACE: {
                         'status': 'error',
                         'result': None,
                         'error_type': 'ValueError',
                         'error_message': 'bad input',
                     },
-                    'requests': {
+                    runner.SupportedImplementation.REQUESTS: {
                         'status': 'ok',
                         'result': [],
                         'error_type': None,
                         'error_message': None,
                     },
-                    'httpx': {
+                    runner.SupportedImplementation.HTTPX: {
                         'status': 'ok',
                         'result': {},
                         'error_type': None,
@@ -1184,7 +1209,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         ):
             result = self.runner.invoke(
                 cli.app,
-                ['compare', 'link', '--format', 'rich'],
+                ['compare', data.SupportedHeader.LINK, '--format', 'rich'],
             )
         self.assertEqual(result.exit_code, 0)
         self.assertIn('ietfparse link comparison', result.stdout)
@@ -1199,10 +1224,10 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                 {
                     'case_id': 'accept-case',
                     'description': 'accept case',
-                    'accept': 'application/json',
+                    data.SupportedHeader.ACCEPT: 'application/json',
                     'available': ['application/json'],
                     'default': None,
-                    'workspace': {
+                    runner.SupportedImplementation.WORKSPACE: {
                         'status': 'ok',
                         'result': {
                             'selected': 'application/json',
@@ -1211,7 +1236,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                         'error_type': None,
                         'error_message': None,
                     },
-                    'werkzeug': {
+                    runner.SupportedImplementation.WERKZEUG: {
                         'status': 'ok',
                         'result': {'selected': 'application/json'},
                         'error_type': None,
@@ -1222,7 +1247,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         ):
             result = self.runner.invoke(
                 cli.app,
-                ['compare', 'accept', '--format', 'json'],
+                ['compare', data.SupportedHeader.ACCEPT, '--format', 'json'],
             )
         self.assertEqual(result.exit_code, 0)
         self.assertIn('"case_count": 1', result.stdout)
@@ -1236,16 +1261,16 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                 {
                     'case_id': 'accept-error',
                     'description': 'accept error',
-                    'accept': 'application/json',
+                    data.SupportedHeader.ACCEPT: 'application/json',
                     'available': ['application/json'],
                     'default': None,
-                    'workspace': {
+                    runner.SupportedImplementation.WORKSPACE: {
                         'status': 'error',
                         'result': None,
                         'error_type': 'ValueError',
                         'error_message': 'bad input',
                     },
-                    'werkzeug': {
+                    runner.SupportedImplementation.WERKZEUG: {
                         'status': 'error',
                         'result': None,
                         'error_type': 'LookupError',
@@ -1255,10 +1280,10 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                 {
                     'case_id': 'accept-ok',
                     'description': 'accept ok',
-                    'accept': 'application/json',
+                    data.SupportedHeader.ACCEPT: 'application/json',
                     'available': ['application/json'],
                     'default': None,
-                    'workspace': {
+                    runner.SupportedImplementation.WORKSPACE: {
                         'status': 'ok',
                         'result': {
                             'selected': 'application/json',
@@ -1267,7 +1292,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                         'error_type': None,
                         'error_message': None,
                     },
-                    'werkzeug': {
+                    runner.SupportedImplementation.WERKZEUG: {
                         'status': 'ok',
                         'result': {'selected': None},
                         'error_type': None,
@@ -1278,7 +1303,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         ):
             result = self.runner.invoke(
                 cli.app,
-                ['compare', 'accept', '--format', 'rich'],
+                ['compare', data.SupportedHeader.ACCEPT, '--format', 'rich'],
             )
         self.assertEqual(result.exit_code, 0)
         self.assertIn('ietfparse accept comparison', result.stdout)
@@ -1295,13 +1320,13 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                     'case_id': 'cache-control-case',
                     'description': 'cache-control case',
                     'sample': 'public',
-                    'workspace': {
+                    runner.SupportedImplementation.WORKSPACE: {
                         'status': 'ok',
                         'result': {'public': True},
                         'error_type': None,
                         'error_message': None,
                     },
-                    'werkzeug': {
+                    runner.SupportedImplementation.WERKZEUG: {
                         'status': 'ok',
                         'result': {'public': None},
                         'error_type': None,
@@ -1312,7 +1337,12 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         ):
             result = self.runner.invoke(
                 cli.app,
-                ['compare', 'cache-control', '--format', 'json'],
+                [
+                    'compare',
+                    data.SupportedHeader.CACHE_CONTROL,
+                    '--format',
+                    'json',
+                ],
             )
         self.assertEqual(result.exit_code, 0)
         self.assertIn('"case_count": 1', result.stdout)
@@ -1327,13 +1357,13 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                     'case_id': 'cache-control-error',
                     'description': 'cache-control error',
                     'sample': 'public',
-                    'workspace': {
+                    runner.SupportedImplementation.WORKSPACE: {
                         'status': 'error',
                         'result': None,
                         'error_type': 'ValueError',
                         'error_message': 'bad input',
                     },
-                    'werkzeug': {
+                    runner.SupportedImplementation.WERKZEUG: {
                         'status': 'ok',
                         'result': {'public': None},
                         'error_type': None,
@@ -1344,13 +1374,13 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                     'case_id': 'cache-control-ok',
                     'description': 'cache-control ok',
                     'sample': 'max-age=60, public',
-                    'workspace': {
+                    runner.SupportedImplementation.WORKSPACE: {
                         'status': 'ok',
                         'result': {'max-age': 60, 'public': True},
                         'error_type': None,
                         'error_message': None,
                     },
-                    'werkzeug': {
+                    runner.SupportedImplementation.WERKZEUG: {
                         'status': 'error',
                         'result': None,
                         'error_type': 'RuntimeError',
@@ -1361,7 +1391,12 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         ):
             result = self.runner.invoke(
                 cli.app,
-                ['compare', 'cache-control', '--format', 'rich'],
+                [
+                    'compare',
+                    data.SupportedHeader.CACHE_CONTROL,
+                    '--format',
+                    'rich',
+                ],
             )
         self.assertEqual(result.exit_code, 0)
         self.assertIn('ietfparse cache-control comparison', result.stdout)
@@ -1372,8 +1407,8 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
     def test_compare_implementation_command_emits_json_output(self) -> None:
         fake_results = [
             runner.BenchmarkResult(
-                implementation='workspace',
-                header='accept',
+                implementation=runner.SupportedImplementation.WORKSPACE,
+                header=data.SupportedHeader.ACCEPT,
                 workload='realistic',
                 sample_count=1,
                 byte_count=10,
@@ -1384,8 +1419,8 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                 calls_per_second=1.0,
             ),
             runner.BenchmarkResult(
-                implementation='werkzeug',
-                header='accept',
+                implementation=runner.SupportedImplementation.WERKZEUG,
+                header=data.SupportedHeader.ACCEPT,
                 workload='realistic',
                 sample_count=1,
                 byte_count=10,
@@ -1400,7 +1435,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
             unittest.mock.patch.object(
                 runner,
                 'common_supported_headers',
-                return_value=('accept',),
+                return_value=(data.SupportedHeader.ACCEPT,),
             ),
             unittest.mock.patch.object(
                 runner,
@@ -1413,7 +1448,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                 [
                     'compare',
                     'implementation',
-                    'werkzeug',
+                    runner.SupportedImplementation.WERKZEUG,
                     '--workload',
                     'realistic',
                     '--iterations',
@@ -1432,8 +1467,8 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
     def test_compare_implementation_command_emits_rich_output(self) -> None:
         fake_results = [
             runner.BenchmarkResult(
-                implementation='workspace',
-                header='accept',
+                implementation=runner.SupportedImplementation.WORKSPACE,
+                header=data.SupportedHeader.ACCEPT,
                 workload='realistic',
                 sample_count=1,
                 byte_count=10,
@@ -1444,8 +1479,8 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                 calls_per_second=1.0,
             ),
             runner.BenchmarkResult(
-                implementation='werkzeug',
-                header='accept',
+                implementation=runner.SupportedImplementation.WERKZEUG,
+                header=data.SupportedHeader.ACCEPT,
                 workload='realistic',
                 sample_count=1,
                 byte_count=10,
@@ -1460,7 +1495,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
             unittest.mock.patch.object(
                 runner,
                 'common_supported_headers',
-                return_value=('accept',),
+                return_value=(data.SupportedHeader.ACCEPT,),
             ),
             unittest.mock.patch.object(
                 runner,
@@ -1473,7 +1508,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                 [
                     'compare',
                     'implementation',
-                    'werkzeug',
+                    runner.SupportedImplementation.WERKZEUG,
                     '--workload',
                     'realistic',
                     '--iterations',
@@ -1498,7 +1533,12 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         ):
             result = self.runner.invoke(
                 cli.app,
-                ['compare', 'implementation', 'werkzeug', 'requests'],
+                [
+                    'compare',
+                    'implementation',
+                    runner.SupportedImplementation.WERKZEUG,
+                    runner.SupportedImplementation.REQUESTS,
+                ],
             )
         self.assertNotEqual(result.exit_code, 0)
         self.assertIn(
@@ -1508,28 +1548,44 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
 
     def test_diff_command_emits_json_output(self) -> None:
         baseline_payload = {
-            'headers': ['accept'],
+            'headers': [data.SupportedHeader.ACCEPT],
             'workloads': ['realistic'],
-            'implementations': ['workspace', 'werkzeug'],
+            'implementations': [
+                runner.SupportedImplementation.WORKSPACE,
+                runner.SupportedImplementation.WERKZEUG,
+            ],
             'results': [
                 {
-                    'header': 'accept',
+                    'header': data.SupportedHeader.ACCEPT,
                     'workload': 'realistic',
-                    'ns_per_call': {'workspace': 100.0, 'werkzeug': 50.0},
-                    'vs_workspace': {'werkzeug': 0.5},
+                    'ns_per_call': {
+                        runner.SupportedImplementation.WORKSPACE: 100.0,
+                        runner.SupportedImplementation.WERKZEUG: 50.0,
+                    },
+                    'vs_workspace': {
+                        runner.SupportedImplementation.WERKZEUG: 0.5
+                    },
                 }
             ],
         }
         candidate_payload = {
-            'headers': ['accept'],
+            'headers': [data.SupportedHeader.ACCEPT],
             'workloads': ['realistic'],
-            'implementations': ['workspace', 'werkzeug'],
+            'implementations': [
+                runner.SupportedImplementation.WORKSPACE,
+                runner.SupportedImplementation.WERKZEUG,
+            ],
             'results': [
                 {
-                    'header': 'accept',
+                    'header': data.SupportedHeader.ACCEPT,
                     'workload': 'realistic',
-                    'ns_per_call': {'workspace': 80.0, 'werkzeug': 60.0},
-                    'vs_workspace': {'werkzeug': 0.75},
+                    'ns_per_call': {
+                        runner.SupportedImplementation.WORKSPACE: 80.0,
+                        runner.SupportedImplementation.WERKZEUG: 60.0,
+                    },
+                    'vs_workspace': {
+                        runner.SupportedImplementation.WERKZEUG: 0.75
+                    },
                 }
             ],
         }
@@ -1556,13 +1612,13 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
 
     def test_diff_command_accepts_run_payloads(self) -> None:
         baseline_payload = {
-            'headers': ['accept'],
+            'headers': [data.SupportedHeader.ACCEPT],
             'workloads': ['realistic'],
-            'implementations': ['workspace'],
+            'implementations': [runner.SupportedImplementation.WORKSPACE],
             'results': [
                 {
-                    'implementation': 'workspace',
-                    'header': 'accept',
+                    'implementation': runner.SupportedImplementation.WORKSPACE,
+                    'header': data.SupportedHeader.ACCEPT,
                     'workload': 'realistic',
                     'sample_count': 1,
                     'byte_count': 10,
@@ -1575,13 +1631,13 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
             ],
         }
         candidate_payload = {
-            'headers': ['accept'],
+            'headers': [data.SupportedHeader.ACCEPT],
             'workloads': ['realistic'],
-            'implementations': ['workspace'],
+            'implementations': [runner.SupportedImplementation.WORKSPACE],
             'results': [
                 {
-                    'implementation': 'workspace',
-                    'header': 'accept',
+                    'implementation': runner.SupportedImplementation.WORKSPACE,
+                    'header': data.SupportedHeader.ACCEPT,
                     'workload': 'realistic',
                     'sample_count': 1,
                     'byte_count': 10,
@@ -1617,12 +1673,14 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         payload: cli.CompareImplementationPayload = {
             'headers': [data.SupportedHeader.ACCEPT],
             'workloads': ['realistic'],
-            'implementations': ['workspace'],
+            'implementations': [runner.SupportedImplementation.WORKSPACE],
             'results': [
                 {
-                    'header': 'accept',
+                    'header': data.SupportedHeader.ACCEPT,
                     'workload': 'realistic',
-                    'ns_per_call': {'workspace': 100.0},
+                    'ns_per_call': {
+                        runner.SupportedImplementation.WORKSPACE: 100.0
+                    },
                     'vs_workspace': {},
                 }
             ],
@@ -1637,9 +1695,11 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                         **payload,
                         'results': [
                             {
-                                'header': 'accept',
+                                'header': data.SupportedHeader.ACCEPT,
                                 'workload': 'realistic',
-                                'ns_per_call': {'workspace': 90.0},
+                                'ns_per_call': {
+                                    runner.SupportedImplementation.WORKSPACE: 90.0  # noqa: E501
+                                },
                                 'vs_workspace': {},
                             }
                         ],

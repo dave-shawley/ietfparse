@@ -22,7 +22,6 @@ class SupportedHeader(_compat.StrEnum):
     LINK = 'link'
 
 
-SUPPORTED_HEADERS: tuple[str, ...] = tuple(h.value for h in SupportedHeader)
 SupportedWorkload = t.Literal['browser', 'realistic', 'complex', 'large']
 SUPPORTED_WORKLOADS: tuple[str] = t.get_args(SupportedWorkload)
 MAX_LARGE_SAMPLE_BYTES = 8192
@@ -40,10 +39,6 @@ class HeaderBenchmark:
     def samples_for(self, workload: str) -> tuple[str, ...]:
         """Return the packaged samples for `workload`."""
         return self.workloads.get(workload, ())
-
-    def has_samples_for(self, workload: str) -> bool:
-        """Return whether the dataset defines samples for `workload`."""
-        return bool(self.samples_for(workload))
 
     def sample_count(self, workload: str) -> int:
         """Return the number of packaged samples for `workload`."""
@@ -102,7 +97,7 @@ def _parse_dataset(raw: dict[str, object]) -> BenchmarkDataset:
                 header_id=header_id,
                 payload=headers_section[header_id],
             )
-            for header_id in SUPPORTED_HEADERS
+            for header_id in SupportedHeader
         }
     )
 
@@ -115,8 +110,8 @@ def _headers_section(raw: dict[str, object]) -> dict[str, object]:
 
 
 def _validate_header_ids(headers_section: dict[str, object]) -> None:
-    unexpected = set(headers_section) - set(SUPPORTED_HEADERS)
-    missing = set(SUPPORTED_HEADERS) - set(headers_section)
+    unexpected = set(headers_section) - set(SupportedHeader)
+    missing = set(SupportedHeader) - set(headers_section)
     if unexpected:
         raise ValueError(
             f'unexpected header ids in dataset: {sorted(unexpected)!r}'

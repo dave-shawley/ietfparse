@@ -22,6 +22,12 @@ except ImportError as error:  # pragma: no cover -- env dependent
 
 from ietfparse.test import data, runner
 
+ResultKey = tuple[
+    data.SupportedHeader,
+    data.SupportedWorkload,
+    runner.SupportedImplementation,
+]
+
 
 class OutputFormat(str, enum.Enum):
     """Supported CLI output formats."""
@@ -71,10 +77,10 @@ class CompareCacheControlPayload(t.TypedDict):
 class CompareImplementationRowJson(t.TypedDict):
     """Stable JSON schema for one implementation comparison row."""
 
-    header: str
-    workload: str
-    ns_per_call: dict[str, float]
-    vs_workspace: dict[str, float]
+    header: data.SupportedHeader
+    workload: data.SupportedWorkload
+    ns_per_call: dict[runner.SupportedImplementation, float]
+    vs_workspace: dict[runner.SupportedImplementation, float]
 
 
 class CompareImplementationPayload(t.TypedDict):
@@ -132,20 +138,6 @@ def _normalize_values(
     return tuple(v.lower() for v in values)
 
 
-def resolve_headers(
-    selected: abc.Iterable[str] | None,
-) -> tuple[data.SupportedHeader, ...]:
-    """Normalize an optional header selection list."""
-    return t.cast(
-        'tuple[data.SupportedHeader, ...]',
-        _normalize_values(
-            label='header',
-            valid=data.SUPPORTED_HEADERS,
-            values=selected,
-        ),
-    )
-
-
 def resolve_workloads(
     selected: abc.Iterable[str] | None,
 ) -> tuple[data.SupportedWorkload, ...]:
@@ -161,37 +153,27 @@ def resolve_workloads(
 
 
 def resolve_implementations(
-    selected: abc.Iterable[str] | None,
+    selected: abc.Iterable[runner.SupportedImplementation] | None,
 ) -> tuple[runner.SupportedImplementation, ...]:
     """Normalize an optional implementation selection list."""
     if not selected:
-        return ('workspace',)
-    return t.cast(
-        'tuple[runner.SupportedImplementation, ...]',
-        _normalize_values(
-            label='implementation',
-            valid=runner.SUPPORTED_IMPLEMENTATIONS,
-            values=selected,
-        ),
-    )
+        return (runner.SupportedImplementation.WORKSPACE,)
+    return tuple(selected)
 
 
 def resolve_compare_implementations(
-    selected: abc.Iterable[str],
+    selected: abc.Iterable[runner.SupportedImplementation],
 ) -> tuple[runner.SupportedImplementation, ...]:
     """Normalize comparison implementations with workspace always included."""
-    normalized = _normalize_values(
-        label='implementation',
-        valid=runner.SUPPORTED_IMPLEMENTATIONS,
-        values=selected,
+    unique = tuple(
+        dict.fromkeys((runner.SupportedImplementation.WORKSPACE, *selected))
     )
-    unique = tuple(dict.fromkeys(('workspace', *normalized)))
-    if unique == ('workspace',):
+    if unique == (runner.SupportedImplementation.WORKSPACE,):
         raise ValueError(
             'compare implementation requires at least one non-workspace '
             'implementation'
         )
-    return t.cast('tuple[runner.SupportedImplementation, ...]', unique)
+    return unique
 
 
 def determine_output_format(
@@ -206,7 +188,7 @@ def determine_output_format(
 def build_list_payload(dataset: data.BenchmarkDataset) -> ListPayload:
     """Build the stable JSON payload for `list` output."""
     return {
-        'headers': sorted(data.SUPPORTED_HEADERS),
+        'headers': sorted(data.SupportedHeader),
         'workloads': sorted(data.SUPPORTED_WORKLOADS),
         'sample_counts': dataset.sample_counts(),
     }
@@ -293,7 +275,9 @@ def build_compare_implementation_payload(
     )
     comparison_rows: list[CompareImplementationRowJson] = []
     for header_id, workload_id in row_keys:
-        workspace_result = result_map[(header_id, workload_id, 'workspace')]
+        workspace_result = result_map[
+            (header_id, workload_id, runner.SupportedImplementation.WORKSPACE)
+        ]
         row_results = {
             implementation_id: result_map[
                 (header_id, workload_id, implementation_id)
@@ -305,16 +289,16 @@ def build_compare_implementation_payload(
                 header=header_id,
                 workload=workload_id,
                 ns_per_call={
-                    str(implementation_id): row_results[
+                    implementation_id: row_results[
                         implementation_id
                     ].ns_per_call
                     for implementation_id in implementation_ids
                 },
                 vs_workspace={
-                    str(implementation_id): row_results[
-                        implementation_id
-                    ].ns_per_call
-                    / workspace_result.ns_per_call
+                    implementation_id: (
+                        row_results[implementation_id].ns_per_call
+                        / workspace_result.ns_per_call
+                    )
                     for implementation_id in implementation_ids
                     if implementation_id != 'workspace'
                 },
@@ -438,7 +422,7 @@ def run(  # noqa: PLR0913
         typer.Option(
             '--header',
             help='Header id to benchmark. May be specified multiple times.',
-            autocompletion=_generate_autocomplete(data.SUPPORTED_HEADERS),
+            autocompletion=_generate_autocomplete(data.SupportedHeader),
         ),
     ] = None,
     workload: t.Annotated[
@@ -466,15 +450,12 @@ def run(  # noqa: PLR0913
         ),
     ] = 5,
     implementation: t.Annotated[
-        list[str] | None,
+        list[runner.SupportedImplementation] | None,
         typer.Option(
             '--implementation',
             help=(
                 'Implementation id to benchmark. '
                 'May be specified multiple times.'
-            ),
-            autocompletion=_generate_autocomplete(
-                runner.SUPPORTED_IMPLEMENTATIONS
             ),
         ),
     ] = None,
@@ -615,14 +596,11 @@ def compare_cache_control(
 @compare_app.command(name='implementation')
 def compare_implementation(
     implementation: t.Annotated[
-        list[str],
+        list[runner.SupportedImplementation],
         typer.Argument(
             help=(
                 'One or more non-workspace implementations to compare '
                 'against workspace.'
-            ),
-            autocompletion=_generate_autocomplete(
-                runner.SUPPORTED_IMPLEMENTATIONS
             ),
         ),
     ],
@@ -799,7 +777,7 @@ def _render_rich_listing(dataset: data.BenchmarkDataset) -> None:
     tbl.add_column('Description')
     for workload in data.SUPPORTED_WORKLOADS:
         tbl.add_column(workload, justify='right')
-    for header_id in data.SUPPORTED_HEADERS:
+    for header_id in data.SupportedHeader:
         benchmark = dataset.headers[header_id]
         tbl.add_row(
             header_id,
@@ -1082,7 +1060,10 @@ def _load_diffable_benchmark_payload(
 def _normalize_run_payload_for_diff(
     *, payload: RunPayload
 ) -> CompareImplementationPayload:
-    result_map: dict[tuple[str, str, str], runner.BenchmarkResultJson] = {}
+    result_map: dict[
+        ResultKey,
+        runner.BenchmarkResultJson,
+    ] = {}
     for row in payload['results']:
         row_key = (row['header'], row['workload'], row['implementation'])
         result_map[row_key] = row
@@ -1129,8 +1110,8 @@ def _normalize_run_payload_for_diff(
 
 def _ordered_benchmark_row_keys(
     results: abc.Iterable[runner.BenchmarkResultJson],
-) -> list[tuple[str, str]]:
-    row_keys: list[tuple[str, str]] = []
+) -> list[tuple[data.SupportedHeader, data.SupportedWorkload]]:
+    row_keys: list[tuple[data.SupportedHeader, data.SupportedWorkload]] = []
     seen: set[tuple[str, str]] = set()
     for row in results:
         row_key = (row['header'], row['workload'])
@@ -1143,9 +1124,9 @@ def _ordered_benchmark_row_keys(
 
 def _ordered_present_headers(
     *,
-    header_ids: abc.Sequence[str],
+    header_ids: abc.Sequence[data.SupportedHeader],
     row_keys: abc.Iterable[tuple[str, str]],
-) -> list[str]:
+) -> list[data.SupportedHeader]:
     present_headers = {header_id for header_id, _ in row_keys}
     return [
         header_id for header_id in header_ids if header_id in present_headers
@@ -1154,9 +1135,9 @@ def _ordered_present_headers(
 
 def _ordered_present_workloads(
     *,
-    workload_ids: abc.Sequence[str],
+    workload_ids: abc.Sequence[data.SupportedWorkload],
     row_keys: abc.Iterable[tuple[str, str]],
-) -> list[str]:
+) -> list[data.SupportedWorkload]:
     present_workloads = {workload_id for _, workload_id in row_keys}
     return [
         workload_id
@@ -1167,13 +1148,13 @@ def _ordered_present_workloads(
 
 def _complete_benchmark_row_keys(
     *,
-    result_map: dict[tuple[str, str, str], object],
-    header_ids: abc.Sequence[str],
-    workload_ids: abc.Sequence[str],
-    implementation_ids: abc.Sequence[str],
+    result_map: dict[ResultKey, t.Any],
+    header_ids: abc.Sequence[data.SupportedHeader],
+    workload_ids: abc.Sequence[data.SupportedWorkload],
+    implementation_ids: abc.Sequence[runner.SupportedImplementation],
     error_message: str,
-) -> list[tuple[str, str]]:
-    row_keys: list[tuple[str, str]] = []
+) -> list[tuple[data.SupportedHeader, data.SupportedWorkload]]:
+    row_keys: list[tuple[data.SupportedHeader, data.SupportedWorkload]] = []
     for header_id in header_ids:
         for workload_id in workload_ids:
             present_implementations = [
@@ -1190,11 +1171,13 @@ def _complete_benchmark_row_keys(
 
 
 def _vs_workspace_ratios(
-    ns_per_call: dict[str, float],
-) -> dict[str, float]:
+    ns_per_call: dict[runner.SupportedImplementation, float],
+) -> dict[runner.SupportedImplementation, float]:
     if 'workspace' not in ns_per_call:
         return {}
-    workspace_ns_per_call = ns_per_call['workspace']
+    workspace_ns_per_call = ns_per_call[
+        runner.SupportedImplementation.WORKSPACE
+    ]
     return {
         implementation_id: (implementation_ns_per_call / workspace_ns_per_call)
         for (

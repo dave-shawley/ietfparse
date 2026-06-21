@@ -11,11 +11,11 @@ class BenchmarkDatasetTests(unittest.TestCase):
 
     def test_loading_packaged_dataset(self) -> None:
         dataset = data.load_dataset()
-        self.assertEqual(dataset.header_ids(), data.SUPPORTED_HEADERS)
+        self.assertEqual(dataset.header_ids(), tuple(data.SupportedHeader))
 
     def test_supported_workload_keys_are_a_subset(self) -> None:
         dataset = data.load_dataset()
-        for header_id in data.SUPPORTED_HEADERS:
+        for header_id in data.SupportedHeader:
             benchmark = dataset.headers[header_id]
             self.assertTrue(
                 set(benchmark.workloads).issubset(data.SUPPORTED_WORKLOADS)
@@ -48,43 +48,36 @@ class BenchmarkDatasetValidationTests(unittest.TestCase):
         self.assertEqual(benchmark.byte_count('realistic'), expected)
 
     def test_headers_section_requires_mapping(self) -> None:
-        headers_section = data._headers_section
         with self.assertRaises(TypeError):
-            headers_section({})
+            data._headers_section({})
 
     def test_validate_header_ids_rejects_unexpected_headers(self) -> None:
-        validate_header_ids = data._validate_header_ids
         with self.assertRaisesRegex(ValueError, 'unexpected header ids'):
-            validate_header_ids({'accept': object(), 'bogus': object()})
+            data._validate_header_ids({'accept': object(), 'bogus': object()})
 
     def test_validate_header_ids_rejects_missing_headers(self) -> None:
-        validate_header_ids = data._validate_header_ids
         with self.assertRaisesRegex(ValueError, 'missing header ids'):
-            validate_header_ids({'accept': object()})
+            data._validate_header_ids({'accept': object()})
 
     def test_parse_header_benchmark_requires_table_payload(self) -> None:
-        parse_header_benchmark = data._parse_header_benchmark
         with self.assertRaises(TypeError):
-            parse_header_benchmark(header_id='accept', payload='bad')
+            data._parse_header_benchmark(header_id='accept', payload='bad')
 
     def test_required_string_rejects_missing_values(self) -> None:
-        required_string = data._required_string
         with self.assertRaisesRegex(ValueError, 'must define parser'):
-            required_string(None, 'accept', 'parser')
+            data._required_string(None, 'accept', 'parser')
 
     def test_parse_workload_samples_requires_table_payload(self) -> None:
-        parse_workload_samples = data._parse_workload_samples
         with self.assertRaises(TypeError):
-            parse_workload_samples(
+            data._parse_workload_samples(
                 header_id='accept',
                 workload='realistic',
                 payload='bad',
             )
 
     def test_parse_workload_samples_missing_payload_is_allowed(self) -> None:
-        parse_workload_samples = data._parse_workload_samples
         self.assertEqual(
-            parse_workload_samples(
+            data._parse_workload_samples(
                 header_id='accept',
                 workload='realistic',
                 payload=None,
@@ -93,9 +86,8 @@ class BenchmarkDatasetValidationTests(unittest.TestCase):
         )
 
     def test_parse_workload_samples_empty_samples_is_allowed(self) -> None:
-        parse_workload_samples = data._parse_workload_samples
         self.assertEqual(
-            parse_workload_samples(
+            data._parse_workload_samples(
                 header_id='accept',
                 workload='realistic',
                 payload={'samples': []},
@@ -104,39 +96,38 @@ class BenchmarkDatasetValidationTests(unittest.TestCase):
         )
 
     def test_parse_workload_samples_requires_string_samples(self) -> None:
-        parse_workload_samples = data._parse_workload_samples
         with self.assertRaisesRegex(ValueError, 'samples must be strings'):
-            parse_workload_samples(
+            data._parse_workload_samples(
                 header_id='accept',
                 workload='realistic',
                 payload={'samples': ['ok', 3]},
             )
 
     def test_validate_large_samples_rejects_oversized_sample(self) -> None:
-        validate_large_samples = data._validate_large_samples
         with self.assertRaisesRegex(ValueError, 'oversized samples'):
-            validate_large_samples(
+            data._validate_large_samples(
                 header_id='accept',
                 samples=['x' * (data.MAX_LARGE_SAMPLE_BYTES + 1)],
             )
 
 
 class BenchmarkRunnerTests(unittest.TestCase):
-    def test_supported_implementations_are_stable(self) -> None:
-        self.assertEqual(
-            runner.SUPPORTED_IMPLEMENTATIONS,
-            ('workspace', 'werkzeug', 'requests', 'httpx'),
-        )
-
     def test_headers_supported_by_returns_workspace_headers(self) -> None:
         self.assertSetEqual(
-            runner.IMPLEMENTATION_HEADERS['workspace'],
-            {data.SupportedHeader(v) for v in data.SUPPORTED_HEADERS},
+            runner.IMPLEMENTATION_HEADERS[
+                runner.SupportedImplementation.WORKSPACE
+            ],
+            {data.SupportedHeader(v) for v in data.SupportedHeader},
         )
 
     def test_common_supported_headers_uses_intersection(self) -> None:
         self.assertEqual(
-            runner.common_supported_headers(('workspace', 'werkzeug')),
+            runner.common_supported_headers(
+                (
+                    runner.SupportedImplementation.WORKSPACE,
+                    runner.SupportedImplementation.WERKZEUG,
+                )
+            ),
             (
                 'accept',
                 'accept-charset',
@@ -147,15 +138,18 @@ class BenchmarkRunnerTests(unittest.TestCase):
         )
         self.assertEqual(
             runner.common_supported_headers(
-                ('workspace', 'werkzeug', 'requests')
+                (
+                    runner.SupportedImplementation.WORKSPACE,
+                    runner.SupportedImplementation.WERKZEUG,
+                    runner.SupportedImplementation.REQUESTS,
+                ),
             ),
             (),
         )
 
     def test_validate_samples_raises_for_invalid_fixture(self) -> None:
-        validate_samples = runner._validate_samples
         with self.assertRaisesRegex(ValueError, 'invalid benchmark fixture'):
-            validate_samples(
+            runner._validate_samples(
                 header_id='accept',
                 workload='realistic',
                 samples=('bad',),
@@ -199,8 +193,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
         runner.validate_dataset(dataset)
 
     def test_run_once_returns_elapsed_time_and_checksum(self) -> None:
-        run_once = runner._run_once
-        elapsed_ns, checksum = run_once(
+        elapsed_ns, checksum = runner._run_once(
             samples=('a', 'bb'),
             parser=lambda value: value.upper(),
             iterations=2,
@@ -275,7 +268,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
             'only supports the following headers',
         ):
             runner.validate_implementation_support(
-                implementation_name='werkzeug',
+                implementation_name=runner.SupportedImplementation.WERKZEUG,
                 header_ids=(data.SupportedHeader.FORWARDED,),
             )
 
@@ -301,7 +294,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
             "only supports the following headers: 'link'",
         ):
             runner.validate_implementation_support(
-                implementation_name='requests',
+                implementation_name=runner.SupportedImplementation.REQUESTS,
                 header_ids=(data.SupportedHeader.ACCEPT,),
             )
 
@@ -320,7 +313,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
             "only supports the following headers: 'link'",
         ):
             runner.validate_implementation_support(
-                implementation_name='httpx',
+                implementation_name=runner.SupportedImplementation.HTTPX,
                 header_ids=(data.SupportedHeader.ACCEPT,),
             )
 
@@ -334,7 +327,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
             runner.implementation_named('httpx').parser_for('parse_accept')
 
     def test_implementation_named_rejects_unknown_name(self) -> None:
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             runner.implementation_named(
                 t.cast('runner.SupportedImplementation', 'bogus')
             )
@@ -357,7 +350,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
                 return matches[0] if matches else default
 
         implementation = runner.BenchmarkImplementation(
-            name='werkzeug',
+            name=runner.SupportedImplementation.WERKZEUG,
             parser_resolver=lambda _: lambda _: FakeWerkzeugAccept(),
         )
 
@@ -377,7 +370,7 @@ class BenchmarkRunnerTests(unittest.TestCase):
 
     def test_compare_cache_control_cases_returns_curated_results(self) -> None:
         implementation = runner.BenchmarkImplementation(
-            name='werkzeug',
+            name=runner.SupportedImplementation.WERKZEUG,
             parser_resolver=lambda _: lambda _: {'public': None},
         )
 
