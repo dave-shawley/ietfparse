@@ -26,6 +26,12 @@
 - `errors.MalformedContentType` exception explicitly identifies [HTTP-Content-Type]
   parsing failures. It is a subclass of `ValueError` for the sake of compatability.
 - `default` parameter to `algorithms.select_content_type`
+- packaged `ietfparse.test` benchmark utility for the directly supported HTTP
+  header parsers, including the `ietfparse-test` console script, the
+  `python -m ietfparse.test` entry point, implementation benchmarks, and
+  saved-result diff reporting
+- curated adjacent-library comparison suites and documentation for `Accept`,
+  `Cache-Control`, and `Link` parsing behavior
 
 ### Changed
 
@@ -60,6 +66,8 @@
   silently merging it into a malformed value.
 - `algorithms.select_content_type` changed to accept strings as well as `ContentType`
   instances
+- parser internals were simplified and optimized for token, quoted-string, and
+  list parsing hot paths, reducing overhead in the public header parsers
 
 
 ### Removed

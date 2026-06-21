@@ -51,6 +51,8 @@ jobs:
 
   test:
     runs-on: "ubuntu-latest"
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -69,6 +71,7 @@ jobs:
             "--cov-report=markdown:$GITHUB_STEP_SUMMARY" \
             --cov-report=xml
       - name: "Upload coverage data for ${{ matrix.python-version }}"
+        if: ${{ always() }}
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -76,12 +79,41 @@ jobs:
           verbose: 'true'
           report_type: "coverage"
       - name: "Upload test results for ${{ matrix.python-version }}"
+        if: ${{ always() }}
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           env_vars: PYTHON
           verbose: 'true'
           report_type: "test_results"
+      - name: "Fail when tests failed for ${{ matrix.python-version }}"
+        if: ${{ steps.run-tests.outcome == 'failure' }}
+        run: exit 1
+
+  benchmark-profile:
+    if: ${{ github.event_name == 'pull_request' }}
+    needs: test
+    runs-on: "ubuntu-latest"
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          python-version: '3.13'
+      - name: "Fetch main"
+        run: git fetch --no-tags origin main
+      - name: "Summarize accept benchmark"
+        run: |
+          uv run --frozen python tools/profile_benchmark.py \
+            accept origin/main . --format github >> "$GITHUB_STEP_SUMMARY"
+      - name: "Summarize content-type benchmark"
+        run: |
+          uv run --frozen python tools/profile_benchmark.py \
+            content-type origin/main . --format github >> "$GITHUB_STEP_SUMMARY"
 
   analysis:
     needs: sonar-ready

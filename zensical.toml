@@ -9,6 +9,8 @@ nav = [
   { "Learning" = [
     "algorithms.md",
     "header-parsing.md",
+    "benchmarks.md",
+    "comparisons.md"
   ] },
   { "Reference" = [
     { "API Reference" = [
@@ -16,7 +18,8 @@ nav = [
       "api/constants.md",
       "api/datastructures.md",
       "api/errors.md",
-      "api/headers.md"
+      "api/headers.md",
+      "api/test.md"
     ] },
     { "RFCs" = "rfcs.md" },
     { "Contributing" = "contributing.md" },

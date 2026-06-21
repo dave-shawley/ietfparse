@@ -14,12 +14,12 @@
 from __future__ import annotations
 
 import operator
-import typing
+import typing as t
 
 from ietfparse import _links, _parser, _quality, datastructures, errors
 from ietfparse._quality import LARGEST_NONMAXIMAL_QUALITY
 
-if typing.TYPE_CHECKING:
+if t.TYPE_CHECKING:
     from collections import abc
 
 _CACHE_CONTROL_BOOL_DIRECTIVES = (
@@ -32,10 +32,10 @@ _CACHE_CONTROL_BOOL_DIRECTIVES = (
     'private',
     'proxy-revalidate',
 )
-T = typing.TypeVar('T')
+T = t.TypeVar('T')
 
 
-class _QualifiedItem(typing.Generic[T]):
+class _QualifiedItem(t.Generic[T]):
     def __init__(self, value: T, quality: str | None, index: int) -> None:
         self.value = value
         self.quality = (

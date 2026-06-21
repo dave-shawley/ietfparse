@@ -30,6 +30,16 @@ classifiers = [
 Documentation = "https://dave-shawley.github.io/ietfparse/"
 "Source Code" = "https://github.com/dave-shawley/ietfparse"
 
+[project.scripts]
+ietfparse-test = "ietfparse.test.cli:app"
+
+[project.optional-dependencies]
+tests = [
+  "rich>=14,<15",
+  "tomli>=2 ; python_version < '3.11'",
+  "typer>=0.16,<1",
+]
+
 [dependency-groups]
 dev = [
   "coverage[toml]~=7.14",
@@ -41,9 +51,18 @@ dev = [
   "pyrefly>=0.64.1",
   "pytest~=9.0",
   "pytest-cov~=7.1",
+  "rich>=14,<15",
   "ruff>=0.15",
+  "tomli>=2 ; python_full_version < '3.11'",
   "ty>=0.0.34",
+  "typer>=0.16,<1",
   "zensical>=0.0.41",
+  { include-group = "perftest" },
+]
+perftest = [
+  "httpx>=0.28.1",
+  "requests>=2.33.1",
+  "werkzeug>=3.1",
 ]
 
 [build-system]
@@ -51,7 +70,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.coverage.report]
-exclude_also = ["if typing.TYPE_CHECKING", "\\.\\.\\."]
+exclude_also = ["if t.TYPE_CHECKING", "\\.\\.\\.", "raise AssertionError"]
 show_missing = true
 
 [tool.coverage.run]
@@ -96,7 +115,14 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [
   "D",  # tests don't require docs
+  "SLF001",  # allow private member access
+]
+"tools/profile_benchmark.py" = [
+  "BLE",  # required to insulate from regression test data
 ]
 
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
+
+[tool.ty.environment]
+python-version = "3.12"

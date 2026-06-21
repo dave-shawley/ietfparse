@@ -99,40 +99,39 @@ class ParameterTokenizerTests(unittest.TestCase):
         )
 
     def test_that_repeated_semicolon_delimiters_are_skipped(self) -> None:
-        parser = _parser.ParameterTokenizer(normalize_parameter_values=False)
         self.assertEqual(
-            parser.parse('; ; foo=bar;; baz=qux ;'),
+            _parser.parse_http_parameters('; ; foo=bar;; baz=qux ;'),
             [('foo', 'bar'), ('baz', 'qux')],
         )
 
     def test_that_missing_semicolon_between_parameters_raises(self) -> None:
-        parser = _parser.ParameterTokenizer()
         with self.assertRaisesRegex(
             ValueError,
             r"malformed parameter list: 'foo=bar baz=qux'",
         ):
-            parser.parse('foo=bar baz=qux')
+            _parser.parse_http_parameters('foo=bar baz=qux')
 
     def test_that_parameters_without_equals_sign_raise(self) -> None:
-        parser = _parser.ParameterTokenizer()
         with self.assertRaisesRegex(
             ValueError,
             r"malformed parameter list: 'foo'",
         ):
-            parser.parse('foo')
+            _parser.parse_http_parameters('foo')
 
     def test_that_cursor_parse_errors_are_mapped_to_value_error(self) -> None:
-        parser = _parser.ParameterTokenizer()
         with self.assertRaisesRegex(
             ValueError,
             r'malformed parameter list: \'foo="value\\\\\'',
         ):
-            parser.parse('foo="value\\')
+            _parser.parse_http_parameters('foo="value\\')
 
     def test_that_tokenizer_instances_can_be_reused(self) -> None:
-        parser = _parser.ParameterTokenizer(normalize_parameter_values=False)
-        self.assertEqual(parser.parse('foo=bar'), [('foo', 'bar')])
-        self.assertEqual(parser.parse('baz=qux'), [('baz', 'qux')])
+        self.assertEqual(
+            _parser.parse_http_parameters('foo=bar'), [('foo', 'bar')]
+        )
+        self.assertEqual(
+            _parser.parse_http_parameters('baz=qux'), [('baz', 'qux')]
+        )
 
     def test_that_fast_parameter_parser_rejects_missing_equals_sign(
         self,
@@ -161,6 +160,33 @@ class ParameterTokenizerTests(unittest.TestCase):
         ):
             _parser.parse_http_parameters('bad name=value')
 
+    def test_that_quoted_parameter_parser_requires_equals_after_name(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r'malformed parameter list: \'foo "bar"\'',
+        ):
+            _parser.parse_http_parameters('foo "bar"')
+
+    def test_that_quoted_parameter_parser_rejects_missing_value_after_ows(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r'malformed parameter list: \'ok="x"; foo=  \'',
+        ):
+            _parser.parse_http_parameters('ok="x"; foo=  ')
+
+    def test_that_quoted_parameter_parser_rejects_invalid_parameter_name(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r'malformed parameter list: \'"bad"=value\'',
+        ):
+            _parser.parse_http_parameters('"bad"=value')
+
     def test_that_fast_parameter_parser_rejects_embedded_quote_in_value(
         self,
     ) -> None:
@@ -178,6 +204,15 @@ class ParameterTokenizerTests(unittest.TestCase):
             r"malformed parameter list: 'foo=bad value'",
         ):
             _parser.parse_http_parameters('foo=bad value')
+
+    def test_that_quoted_parameter_parser_rejects_unterminated_value(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r'malformed parameter list: \'foo="value\'',
+        ):
+            _parser.parse_http_parameters('foo="value')
 
 
 class ListItemParserTests(unittest.TestCase):

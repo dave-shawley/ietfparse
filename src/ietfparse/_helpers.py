@@ -1,30 +1,30 @@
 from __future__ import annotations
 
-import typing
+import typing as t
 
 from ietfparse import headers
 
-if typing.TYPE_CHECKING:
+if t.TYPE_CHECKING:
     from collections import abc
 
     from ietfparse import datastructures
 
 
-@typing.overload
+@t.overload
 def parse_header(
-    parser_name: typing.Literal['parse_accept'], value: str
+    parser_name: t.Literal['parse_accept'], value: str
 ) -> abc.Sequence[datastructures.ContentType]: ...
 
 
-@typing.overload
+@t.overload
 def parse_header(
-    parser_name: typing.Literal['parse_content_type'], value: str
+    parser_name: t.Literal['parse_content_type'], value: str
 ) -> datastructures.ContentType: ...
 
 
-@typing.overload
+@t.overload
 def parse_header(
-    parser_name: typing.Literal['parse_link'], value: str
+    parser_name: t.Literal['parse_link'], value: str
 ) -> abc.Sequence[datastructures.LinkHeader]: ...
 
 
