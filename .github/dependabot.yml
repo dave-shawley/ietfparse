@@ -1,9 +1,11 @@
 version: 2
 updates:
   - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
       interval: "weekly"
   - package-ecosystem: "uv"
+    directory: "/"
     schedule:
       interval: "weekly"
     cooldown:
@@ -12,10 +14,24 @@ updates:
     groups:
       security:
         applies-to: security-updates
+        patterns:
+          - "*"
       # PRs for minor/patch updates development dependencies
       # group multiple dependencies into a single PR
       development-tools:
-        dependency-type: development
+        patterns:
+          - "coverage*"
+          - "mkdocs*"
+          - "pre-commit"
+          - "pyrefly"
+          - "pytest*"
+          - "pymdown-ietflinks"
+          - "rich"
+          - "ruff"
+          - "tomli"
+          - "ty"
+          - "typer"
+          - "zensical"
         update-types:
           - minor
           - patch
