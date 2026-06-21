@@ -35,7 +35,7 @@ ietfparse-test = "ietfparse.test.cli:app"
 
 [project.optional-dependencies]
 tests = [
-  "rich>=14,<15",
+  "rich>=14,<16",
   "tomli>=2 ; python_version < '3.11'",
   "typer>=0.16,<1",
 ]
@@ -51,7 +51,7 @@ dev = [
   "pyrefly>=0.64.1",
   "pytest~=9.0",
   "pytest-cov~=7.1",
-  "rich>=14,<15",
+  "rich>=14,<16",
   "ruff>=0.15",
   "tomli>=2 ; python_full_version < '3.11'",
   "ty>=0.0.34",
