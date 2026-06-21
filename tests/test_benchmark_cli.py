@@ -16,7 +16,7 @@ def _create_fake_io(*, is_tty: bool) -> unittest.mock.Mock:
 
 class BenchmarkCliSelectionTests(unittest.TestCase):
     def test_normalize_values_uses_defaults(self) -> None:
-        normalize_values = vars(cli)['_normalize_values']
+        normalize_values = cli._normalize_values
         self.assertEqual(
             normalize_values(
                 label='header',
@@ -27,7 +27,7 @@ class BenchmarkCliSelectionTests(unittest.TestCase):
         )
 
     def test_normalize_values_lowercases_values(self) -> None:
-        normalize_values = vars(cli)['_normalize_values']
+        normalize_values = cli._normalize_values
         self.assertEqual(
             normalize_values(
                 label='header',
@@ -38,7 +38,7 @@ class BenchmarkCliSelectionTests(unittest.TestCase):
         )
 
     def test_normalize_values_rejects_invalid_values(self) -> None:
-        normalize_values = vars(cli)['_normalize_values']
+        normalize_values = cli._normalize_values
         with self.assertRaisesRegex(ValueError, 'Unsupported header value'):
             normalize_values(
                 label='header',
@@ -564,9 +564,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
                 ),
             ],
         )
-        normalized = vars(cli)['_normalize_run_payload_for_diff'](
-            payload=payload
-        )
+        normalized = cli._normalize_run_payload_for_diff(payload=payload)
         self.assertEqual(
             normalized['results'],
             [
@@ -601,9 +599,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
                 )
             ],
         )
-        normalized = vars(cli)['_normalize_run_payload_for_diff'](
-            payload=payload
-        )
+        normalized = cli._normalize_run_payload_for_diff(payload=payload)
         self.assertEqual(normalized['headers'], ['accept'])
         self.assertEqual(normalized['workloads'], ['realistic'])
         self.assertEqual(len(normalized['results']), 1)
@@ -633,13 +629,13 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             'run payload is missing one or more '
             'header/workload/implementation rows',
         ):
-            vars(cli)['_normalize_run_payload_for_diff'](payload=payload)
+            cli._normalize_run_payload_for_diff(payload=payload)
 
     def test_vs_workspace_ratios_without_workspace_returns_empty_dict(
         self,
     ) -> None:
         self.assertEqual(
-            vars(cli)['_vs_workspace_ratios']({'werkzeug': 80.0}),
+            cli._vs_workspace_ratios({'werkzeug': 80.0}),
             {},
         )
 
@@ -649,25 +645,25 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         except ImportError:
             raise unittest.SkipTest('rich is not installed') from None
         else:
-            cell = vars(cli)['_comparison_ratio_cell'](0.86)
+            cell = cli._comparison_ratio_cell(0.86)
             self.assertIsInstance(cell, text.Text)
             self.assertEqual(cell.plain, 'v 0.86x')
             self.assertEqual(str(cell.style), 'red')
 
     def test_comparison_ratio_cell_marks_workspace_faster(self) -> None:
-        cell = vars(cli)['_comparison_ratio_cell'](1.25)
+        cell = cli._comparison_ratio_cell(1.25)
         self.assertEqual(cell.plain, '^ 1.25x')
         self.assertEqual(str(cell.style), 'green')
 
     def test_comparison_ratio_cell_marks_equal_ratio(self) -> None:
-        cell = vars(cli)['_comparison_ratio_cell'](1.0)
+        cell = cli._comparison_ratio_cell(1.0)
         self.assertEqual(cell.plain, '= 1.00x')
         self.assertEqual(str(cell.style), 'yellow')
 
     def test_implementation_delta_cell_marks_lower_ns_per_call_as_better(
         self,
     ) -> None:
-        cell = vars(cli)['_implementation_delta_cell'](
+        cell = cli._implementation_delta_cell(
             {
                 'old_ns_per_call': 100.0,
                 'new_ns_per_call': 80.0,
@@ -682,7 +678,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
     def test_implementation_delta_cell_marks_higher_ns_per_call_as_worse(
         self,
     ) -> None:
-        cell = vars(cli)['_implementation_delta_cell'](
+        cell = cli._implementation_delta_cell(
             {
                 'old_ns_per_call': 100.0,
                 'new_ns_per_call': 120.0,
@@ -697,7 +693,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
     def test_implementation_delta_cell_marks_equal_ns_per_call_as_equal(
         self,
     ) -> None:
-        cell = vars(cli)['_implementation_delta_cell'](
+        cell = cli._implementation_delta_cell(
             {
                 'old_ns_per_call': 100.0,
                 'new_ns_per_call': 100.0,
@@ -727,7 +723,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
                     }
                 )
             )
-            payload = vars(cli)['_load_diffable_benchmark_payload'](path)
+            payload = cli._load_diffable_benchmark_payload(path)
         self.assertEqual(payload['results'], [])
 
     def test_load_diffable_benchmark_payload_rejects_invalid_json(
@@ -737,7 +733,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
             path = pathlib.Path(temp_dir) / 'invalid.json'
             path.write_text('{')
             with self.assertRaisesRegex(ValueError, 'is not valid JSON'):
-                vars(cli)['_load_diffable_benchmark_payload'](path)
+                cli._load_diffable_benchmark_payload(path)
 
     def test_load_diffable_benchmark_payload_rejects_non_mapping(
         self,
@@ -749,7 +745,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
                 TypeError,
                 'is not a run or compare implementation JSON payload',
             ):
-                vars(cli)['_load_diffable_benchmark_payload'](path)
+                cli._load_diffable_benchmark_payload(path)
 
     def test_load_diffable_benchmark_payload_rejects_mixed_row_shapes(
         self,
@@ -789,7 +785,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
                 ValueError,
                 'is not a run or compare implementation JSON payload',
             ):
-                vars(cli)['_load_diffable_benchmark_payload'](path)
+                cli._load_diffable_benchmark_payload(path)
 
     def test_load_diffable_benchmark_payload_requires_list_fields(
         self,
@@ -810,7 +806,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
                 TypeError,
                 'is not a run or compare implementation JSON payload',
             ):
-                vars(cli)['_load_diffable_benchmark_payload'](path)
+                cli._load_diffable_benchmark_payload(path)
 
     def test_load_diffable_benchmark_payload_requires_mapping_rows(
         self,
@@ -831,10 +827,10 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
                 TypeError,
                 'is not a run or compare implementation JSON payload',
             ):
-                vars(cli)['_load_diffable_benchmark_payload'](path)
+                cli._load_diffable_benchmark_payload(path)
 
     def test_comparison_summary_reports_error_and_list_counts(self) -> None:
-        comparison_summary = vars(cli)['_comparison_summary']
+        comparison_summary = cli._comparison_summary
         self.assertEqual(
             comparison_summary(
                 {
@@ -870,8 +866,8 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         )
 
     def test_accept_summaries_report_errors_and_matches(self) -> None:
-        accept_workspace_summary = vars(cli)['_accept_workspace_summary']
-        accept_werkzeug_summary = vars(cli)['_accept_werkzeug_summary']
+        accept_workspace_summary = cli._accept_workspace_summary
+        accept_werkzeug_summary = cli._accept_werkzeug_summary
         self.assertEqual(
             accept_workspace_summary(
                 {
@@ -921,7 +917,7 @@ class BenchmarkCliPayloadTests(unittest.TestCase):
         )
 
     def test_cache_control_summary_reports_errors_and_json(self) -> None:
-        cache_control_summary = vars(cli)['_cache_control_summary']
+        cache_control_summary = cli._cache_control_summary
         self.assertEqual(
             cache_control_summary(
                 {
@@ -957,7 +953,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
             self.runner = testing.CliRunner()
 
     def test_generate_autocomplete_filters_matches(self) -> None:
-        generate_autocomplete = vars(cli)['_generate_autocomplete']
+        generate_autocomplete = cli._generate_autocomplete
         autocomplete = generate_autocomplete(data.SUPPORTED_HEADERS)
         self.assertEqual(
             list(autocomplete('ac')),

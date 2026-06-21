@@ -115,6 +115,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [
   "D",  # tests don't require docs
+  "SLF001",  # allow private member access
 ]
 
 [tool.ruff.lint.flake8-quotes]
