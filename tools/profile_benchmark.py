@@ -101,7 +101,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         '--format',
-        choices=('table', 'json'),
+        choices=('table', 'json', 'github'),
         default='table',
         help='Output format.',
     )
@@ -139,7 +139,10 @@ def main(argv: list[str] | None = None) -> int:
     git_root = pathlib.Path(args.git_root).resolve()
     header_dataset = load_header_dataset(dataset_path, args.header)
     targets = args.revisions or ['.']
-    profile_workloads = args.profile_workload or ['large']
+    if args.format == 'github':
+        profile_workloads: list[str] = []
+    else:
+        profile_workloads = args.profile_workload or ['large']
 
     with tempfile.TemporaryDirectory(prefix='ietfparse-profile-') as temp_dir:
         temp_root = pathlib.Path(temp_dir)
@@ -176,6 +179,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.format == 'json':
         json.dump(payload, sys.stdout, indent=2, sort_keys=True)
         sys.stdout.write('\n')
+    elif args.format == 'github':
+        render_github(payload)
     else:
         render_table(payload)
     return 0
@@ -330,7 +335,7 @@ def run_worker(args: argparse.Namespace) -> dict[str, t.Any]:
     parser = getattr(headers, header_dataset.parser)
     dataset = header_dataset.workloads
     workloads = list(dataset.keys())
-    profile_workloads = args.profile_workload or ['large']
+    profile_workloads = args.profile_workload
     ensure_known_workloads(profile_workloads, workloads)
 
     return {
@@ -698,6 +703,149 @@ def render_table(payload: dict[str, t.Any]) -> None:
                         f'{entry["function"]}'
                     )
             print()
+
+
+def render_github(payload: dict[str, t.Any]) -> None:
+    targets = payload['targets']
+    target_labels = [
+        github_target_label(target['label']) for target in targets
+    ]
+    comparison_title = ' vs '.join(target_labels)
+    print(f'## `{payload["header"]}` benchmark ({comparison_title})')
+    print()
+    print(f'Parser: `{payload["parser"]}`')
+    print()
+    print('| Target | Revision |')
+    print('| --- | --- |')
+    for target in targets:
+        label = github_target_label(target['label'])
+        revision = target.get('resolved_revision') or '`workspace`'
+        print(f'| {label} | `{revision}` |')
+    print()
+
+    row_maps, workload_order, failures = collect_github_rows(targets)
+    include_result = len(targets) == COMPARISON_TARGET_COUNT
+    columns = github_columns(
+        target_labels=target_labels,
+        include_result=include_result,
+    )
+    print('| ' + ' | '.join(columns) + ' |')
+    print('| ' + ' | '.join(['---', *['---:' for _ in columns[1:]]]) + ' |')
+    for workload in workload_order:
+        cells = github_workload_cells(
+            workload=workload,
+            row_maps=row_maps,
+            include_result=include_result,
+        )
+        print('| ' + ' | '.join(cells) + ' |')
+    print()
+
+    if failures:
+        print('Failures:')
+        print()
+        for failure in failures:
+            print(failure)
+        print()
+
+
+def github_target_label(label: str) -> str:
+    if label == 'workspace':
+        return 'head'
+    if label == 'origin/main':
+        return 'main'
+    return label
+
+
+COMPARISON_TARGET_COUNT = 2
+
+
+def collect_github_rows(
+    targets: list[dict[str, t.Any]],
+) -> tuple[
+    list[dict[str, dict[str, t.Any]]],
+    list[str],
+    list[str],
+]:
+    row_maps: list[dict[str, dict[str, t.Any]]] = []
+    workload_order: list[str] = []
+    failures: list[str] = []
+    for target in targets:
+        row_map, target_failures = collect_github_target_rows(target)
+        for workload in row_map:
+            if workload not in workload_order:
+                workload_order.append(workload)
+        row_maps.append(row_map)
+        failures.extend(target_failures)
+    return row_maps, workload_order, failures
+
+
+def collect_github_target_rows(
+    target: dict[str, t.Any],
+) -> tuple[dict[str, dict[str, t.Any]], list[str]]:
+    label = github_target_label(target['label'])
+    if target.get('status') == 'worker-error':
+        return {}, [f'- `{label}` worker error: {target["error"]}']
+
+    row_map: dict[str, dict[str, t.Any]] = {}
+    failures: list[str] = []
+    for result in target['results']:
+        workload = result['workload']
+        row_map[workload] = result
+        if result.get('status') == 'error':
+            failures.append(
+                f'- `{label}` `{workload}` benchmark error: {result["error"]}'
+            )
+    return row_map, failures
+
+
+def github_columns(
+    *, target_labels: list[str], include_result: bool
+) -> list[str]:
+    columns = ['Workload', *[f'{label} ns/call' for label in target_labels]]
+    if include_result:
+        columns.append('Result')
+    return columns
+
+
+def github_workload_cells(
+    *,
+    workload: str,
+    row_maps: list[dict[str, dict[str, t.Any]]],
+    include_result: bool,
+) -> list[str]:
+    cells = [workload]
+    ns_values: list[float] = []
+    for row_map in row_maps:
+        result = row_map.get(workload)
+        if result is None:
+            cells.append('n/a')
+            continue
+        if result.get('status') == 'error':
+            cells.append('ERROR')
+            continue
+        ns_per_call = t.cast('float', result['ns_per_call'])
+        ns_values.append(ns_per_call)
+        cells.append(f'{ns_per_call:.1f}')
+
+    if not include_result:
+        return cells
+    if len(ns_values) != COMPARISON_TARGET_COUNT:
+        cells.append('n/a')
+        return cells
+    cells.append(format_delta(ns_values[0], ns_values[1]))
+    return cells
+
+
+def format_delta(
+    baseline_ns_per_call: float, candidate_ns_per_call: float
+) -> str:
+    if baseline_ns_per_call == candidate_ns_per_call:
+        return 'no change'
+    ratio = (candidate_ns_per_call / baseline_ns_per_call) - 1
+    percent = abs(ratio) * 100
+    if candidate_ns_per_call < baseline_ns_per_call:
+        return f'{percent:.1f}% faster'
+    return f'{percent:.1f}% slower'
 
 
 def safe_label(value: str) -> str:
