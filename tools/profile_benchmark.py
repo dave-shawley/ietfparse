@@ -322,7 +322,8 @@ def invoke_worker(
 def run_worker(args: argparse.Namespace) -> dict[str, t.Any]:
     source_root = pathlib.Path(args.source_root).resolve()
     dataset_path = pathlib.Path(args.dataset).resolve()
-    sys.path.insert(0, str(package_import_root(source_root)))
+    import_root = package_import_root(source_root)
+    sys.path.insert(0, str(import_root))
     patch_distribution_version()
     headers = importlib.import_module('ietfparse.headers')
     header_dataset = load_header_dataset(dataset_path, args.header)
@@ -352,6 +353,7 @@ def run_worker(args: argparse.Namespace) -> dict[str, t.Any]:
                 parser=parser,
                 iterations=args.profile_iterations,
                 top=args.profile_top,
+                import_root=import_root,
             )
             for workload_id in profile_workloads
         ],
@@ -494,6 +496,7 @@ def safe_profile_workload(
     parser: t.Any,
     iterations: int,
     top: int,
+    import_root: pathlib.Path,
 ) -> dict[str, t.Any]:
     try:
         result = profile_workload(
@@ -502,6 +505,7 @@ def safe_profile_workload(
             parser=parser,
             iterations=iterations,
             top=top,
+            import_root=import_root,
         )
     except Exception as error:  # pragma: no cover -- exercised by old tags
         return {
@@ -523,6 +527,7 @@ def profile_workload(
     parser: t.Any,
     iterations: int,
     top: int,
+    import_root: pathlib.Path,
 ) -> dict[str, t.Any]:
     profiler = cProfile.Profile()
     profiler.enable()
@@ -531,7 +536,7 @@ def profile_workload(
             parser(sample)
     profiler.disable()
 
-    stats = import_profile_stats(profiler, top)
+    stats = import_profile_stats(profiler, top, import_root=import_root)
     return {
         'workload': workload_id,
         'sample_count': len(samples),
@@ -548,7 +553,10 @@ class StatsInterface(t.Protocol):
 
 
 def import_profile_stats(
-    profiler: cProfile.Profile, top: int
+    profiler: cProfile.Profile,
+    top: int,
+    *,
+    import_root: pathlib.Path,
 ) -> list[dict[str, t.Any]]:
     stats = t.cast('StatsInterface', pstats.Stats(profiler))
     sorted_functions = sorted(
@@ -570,7 +578,12 @@ def import_profile_stats(
         filename, line_number, function_name = function
         top_functions.append(
             {
-                'function': f'{filename}:{line_number}({function_name})',
+                'function': format_profile_function(
+                    filename=filename,
+                    line_number=line_number,
+                    function_name=function_name,
+                    import_root=import_root,
+                ),
                 'primitive_calls': primitive_calls,
                 'total_calls': total_calls,
                 'total_time_s': total_time,
@@ -579,6 +592,23 @@ def import_profile_stats(
         )
 
     return top_functions
+
+
+def format_profile_function(
+    *,
+    filename: str,
+    line_number: int,
+    function_name: str,
+    import_root: pathlib.Path,
+) -> str:
+    path = pathlib.Path(filename)
+    try:
+        relative_path = path.resolve().relative_to(import_root)
+    except (OSError, RuntimeError, ValueError):
+        display_path = filename
+    else:
+        display_path = f'/{relative_path.as_posix()}'
+    return f'{display_path}:{line_number}({function_name})'
 
 
 def render_table(payload: dict[str, t.Any]) -> None:
