@@ -117,6 +117,9 @@ ignore = [
   "D",  # tests don't require docs
   "SLF001",  # allow private member access
 ]
+"tools/profile_benchmark.py" = [
+  "BLE",  # required to insulate from regression test data
+]
 
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
