@@ -258,7 +258,7 @@ def materialize_revision(
         capture_output=True,
     ).stdout
     with tarfile.open(fileobj=io.BytesIO(archive), mode='r:') as tarball:
-        tarball.extractall(target_dir)
+        extract_tarball(tarball=tarball, target_dir=target_dir)
     return target_dir
 
 
@@ -384,6 +384,15 @@ def package_import_root(source_root: pathlib.Path) -> pathlib.Path:
     raise SystemExit(
         f'could not find an ietfparse package under {source_root}'
     )
+
+
+def extract_tarball(
+    *, tarball: tarfile.TarFile, target_dir: pathlib.Path
+) -> None:
+    if sys.version_info >= (3, 12):
+        tarball.extractall(target_dir, filter='data')
+        return
+    tarball.extractall(target_dir)
 
 
 @dataclasses.dataclass(frozen=True)
