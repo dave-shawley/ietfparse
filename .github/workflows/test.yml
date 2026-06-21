@@ -72,7 +72,7 @@ jobs:
             --cov-report=xml
       - name: "Upload coverage data for ${{ matrix.python-version }}"
         if: ${{ always() }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           env_vars: PYTHON
@@ -80,7 +80,7 @@ jobs:
           report_type: "coverage"
       - name: "Upload test results for ${{ matrix.python-version }}"
         if: ${{ always() }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           env_vars: PYTHON
