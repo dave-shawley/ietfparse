@@ -554,11 +554,19 @@ def profile_workload(
     }
 
 
-StatsValue = tuple[float, int, float, float, dict[str, str]]
+ProfileFunction = tuple[str, int, str]
+CallerStats = tuple[int, int, float, float]
+StatsValue = tuple[
+    int,
+    int,
+    float,
+    float,
+    dict[ProfileFunction, CallerStats],
+]
 
 
 class StatsInterface(t.Protocol):
-    stats: dict[str, StatsValue]
+    stats: dict[ProfileFunction, StatsValue]
 
 
 def import_profile_stats(
