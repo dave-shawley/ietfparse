@@ -1589,7 +1589,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                 }
             ],
         }
-        with self.runner.isolated_filesystem():
+        with self.runner.isolation():
             baseline_path = pathlib.Path('baseline.json')
             candidate_path = pathlib.Path('candidate.json')
             baseline_path.write_text(json.dumps(baseline_payload))
@@ -1649,7 +1649,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                 }
             ],
         }
-        with self.runner.isolated_filesystem():
+        with self.runner.isolation():
             baseline_path = pathlib.Path('baseline.json')
             candidate_path = pathlib.Path('candidate.json')
             baseline_path.write_text(json.dumps(baseline_payload))
@@ -1685,7 +1685,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                 }
             ],
         }
-        with self.runner.isolated_filesystem():
+        with self.runner.isolation():
             baseline_path = pathlib.Path('baseline.json')
             candidate_path = pathlib.Path('candidate.json')
             baseline_path.write_text(json.dumps(payload))
@@ -1728,7 +1728,7 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         self,
     ) -> None:
         payload: cli.CompareAcceptPayload = {'case_count': 1, 'results': []}
-        with self.runner.isolated_filesystem():
+        with self.runner.isolation():
             baseline_path = pathlib.Path('baseline.json')
             candidate_path = pathlib.Path('candidate.json')
             baseline_path.write_text(json.dumps(payload))
