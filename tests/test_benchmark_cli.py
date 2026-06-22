@@ -1589,9 +1589,9 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                 }
             ],
         }
-        with self.runner.isolation():
-            baseline_path = pathlib.Path('baseline.json')
-            candidate_path = pathlib.Path('candidate.json')
+        with tempfile.TemporaryDirectory() as tmpdir:
+            baseline_path = pathlib.Path(tmpdir) / 'baseline.json'
+            candidate_path = pathlib.Path(tmpdir) / 'candidate.json'
             baseline_path.write_text(json.dumps(baseline_payload))
             candidate_path.write_text(json.dumps(candidate_payload))
             result = self.runner.invoke(
@@ -1649,9 +1649,9 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                 }
             ],
         }
-        with self.runner.isolation():
-            baseline_path = pathlib.Path('baseline.json')
-            candidate_path = pathlib.Path('candidate.json')
+        with tempfile.TemporaryDirectory() as tmpdir:
+            baseline_path = pathlib.Path(tmpdir) / 'baseline.json'
+            candidate_path = pathlib.Path(tmpdir) / 'candidate.json'
             baseline_path.write_text(json.dumps(baseline_payload))
             candidate_path.write_text(json.dumps(candidate_payload))
             result = self.runner.invoke(
@@ -1685,9 +1685,9 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
                 }
             ],
         }
-        with self.runner.isolation():
-            baseline_path = pathlib.Path('baseline.json')
-            candidate_path = pathlib.Path('candidate.json')
+        with tempfile.TemporaryDirectory() as tmpdir:
+            baseline_path = pathlib.Path(tmpdir) / 'baseline.json'
+            candidate_path = pathlib.Path(tmpdir) / 'candidate.json'
             baseline_path.write_text(json.dumps(payload))
             candidate_path.write_text(
                 json.dumps(
@@ -1728,17 +1728,17 @@ class BenchmarkCliIntegrationTests(unittest.TestCase):
         self,
     ) -> None:
         payload: cli.CompareAcceptPayload = {'case_count': 1, 'results': []}
-        with self.runner.isolation():
-            baseline_path = pathlib.Path('baseline.json')
-            candidate_path = pathlib.Path('candidate.json')
+        with tempfile.TemporaryDirectory() as tmpdir:
+            baseline_path = pathlib.Path(tmpdir) / 'baseline.json'
+            candidate_path = pathlib.Path(tmpdir) / 'candidate.json'
             baseline_path.write_text(json.dumps(payload))
             candidate_path.write_text(json.dumps(payload))
             result = self.runner.invoke(
                 cli.app,
                 ['diff', str(baseline_path), str(candidate_path)],
             )
-        self.assertNotEqual(result.exit_code, 0)
-        self.assertIn(
-            'not a run or compare implementation JSON payload',
-            str(result.exception),
-        )
+            self.assertNotEqual(result.exit_code, 0)
+            self.assertIn(
+                'not a run or compare implementation JSON payload',
+                str(result.exception),
+            )
