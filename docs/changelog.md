@@ -2,10 +2,12 @@
 
 ## [Unreleased]
 
+## [2.0.0a1] -- 2026-06-24
+
 ### Breaking Changes
 
 - removed support for Python versions before 3.10
-- `datastructures.LinkHeader` is now immutable
+- `datastructures.LinkHeader` and its exposed parameter sequences are now immutable
 - converted positional Boolean parameters to keyword-only parameters
 
   | Function           | Parameter                  |
@@ -19,23 +21,27 @@
 ### Added
 
 - `ietfparse.constants` module -- _this contains constant ContentType instances_
-- [pre-commit](https://pre-commit.com/) utility usage
 - `datastructures.LinkHeader.rel` property
 - indexed parameter lookup in `datastructures.LinkHeader`
 - `datastructures.ImmutableSequence` helper class
-- `errors.MalformedContentType` exception explicitly identifies [HTTP-Content-Type]
-  parsing failures. It is a subclass of `ValueError` for the sake of compatability.
+- public `errors.MalformedContentType`,
+  `errors.MalformedListSegment`, and `errors.StrictHeaderParsingFailure`
+  exceptions for malformed parser inputs. `MalformedContentType` remains a
+  `ValueError` subclass for compatibility.
 - `default` parameter to `algorithms.select_content_type`
 - packaged `ietfparse.test` benchmark utility for the directly supported HTTP
   header parsers, including the `ietfparse-test` console script, the
-  `python -m ietfparse.test` entry point, implementation benchmarks, and
-  saved-result diff reporting
+  `python -m ietfparse.test` entry point, implementation benchmarks, adjacent
+  library comparisons, and saved-result diff reporting
 - curated adjacent-library comparison suites and documentation for `Accept`,
   `Cache-Control`, and `Link` parsing behavior
 
 ### Changed
 
-- `headers.parse_link` changed to honor the allow multiple `media` and `type`
+- `algorithms.select_content_type` now accepts parsed `ContentType` instances,
+  content-type strings, or a raw `Accept` header string as `requested`, and it
+  also accepts string entries in `available`
+- `headers.parse_link` changed to allow multiple `media` and `type`
   parameters as described in [RFC-8288-section-3.4.1].
 - `headers.parse_link` now preserves parentheses and escaped delimiters inside
   link targets and quoted parameter values, preserves valueless parameters, and
@@ -64,8 +70,6 @@
 - `headers.parse_list` now raises `errors.MalformedListSegment` when a
   quoted item is followed by additional non-delimited content instead of
   silently merging it into a malformed value.
-- `algorithms.select_content_type` changed to accept strings as well as `ContentType`
-  instances
 - parser internals were simplified and optimized for token, quoted-string, and
   list parsing hot paths, reducing overhead in the public header parsers
 
@@ -77,10 +81,11 @@
 
 ### Development environment changes
 
+- added [pre-commit](https://pre-commit.com/) utility usage
 - replaced setuptools with [uv](https://docs.astral.sh/uv/)
 - introduced [just](https://just.systems/)
 - switched from sphinx to [zensical](https://zensical.org/)
-- switch to the [src layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/)
+- switched to the [src layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/)
 
 ## [1.9.0] -- 2022-07-08
 
@@ -267,4 +272,5 @@ Initial implementation containing the following functionality:
 [1.7.0]: https://github.com/dave-shawley/ietfparse/compare/1.6.1...1.7.0
 [1.8.0]: https://github.com/dave-shawley/ietfparse/compare/1.7.0...1.8.0
 [1.9.0]: https://github.com/dave-shawley/ietfparse/compare/1.8.0...1.9.0
-[Unreleased]: https://github.com/dave-shawley/ietfparse/compare/1.9.0...master
+[2.0.0a1]: https://github.com/dave-shawley/ietfparse/compare/1.9.0...2.0.0a1
+[Unreleased]: https://github.com/dave-shawley/ietfparse/compare/2.0.0a1...main
