@@ -366,15 +366,12 @@ wheels = [
 ]
 
 [[package]]
-name = "griffe"
-version = "1.14.0"
+name = "griffelib"
+version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "colorama" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ec/d7/6c09dd7ce4c7837e4cdb11dce980cb45ae3cd87677298dc3b781b6bce7d3/griffe-1.14.0.tar.gz", hash = "sha256:9d2a15c1eca966d68e00517de5d69dd1bc5c9f2335ef6c1775362ba5b8651a13", size = 424684, upload-time = "2025-09-05T15:02:29.167Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/33/e4/8d187ea29c2e30b3a09505c567513077d6117861bde1fbd997a167f262ec/griffelib-2.1.0.tar.gz", hash = "sha256:762a186d2c6fd6794d4ea20d428d597ffb857cb56b66421651cbba15bdd5e813", size = 216234, upload-time = "2026-06-19T12:05:42.278Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/b1/9ff6578d789a89812ff21e4e0f80ffae20a65d5dd84e7a17873fe3b365be/griffe-1.14.0-py3-none-any.whl", hash = "sha256:0e9d52832cccf0f7188cfe585ba962d2674b241c01916d780925df34873bceb0", size = 144439, upload-time = "2025-09-05T15:02:27.511Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/d3/5268aeabf2ad82658c4e2ff3a060648d0f02f3926cb53247c0e4d0dab49e/griffelib-2.1.0-py3-none-any.whl", hash = "sha256:cc7b3d2d2865ad0b909fcc38086e3f554b5ea7acbaa7bbb7ecaa3f5dfb7d9f00", size = 142560, upload-time = "2026-06-19T12:05:38.742Z" },
 ]
 
 [[package]]
@@ -485,7 +482,7 @@ dev = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "mkdocs-material", specifier = "~=9.5" },
     { name = "mkdocstrings", extras = ["python"], specifier = ">=0.26,<2.0" },
-    { name = "mkdocstrings-python", specifier = "~=1.12" },
+    { name = "mkdocstrings-python", specifier = ">=1.12,<3.0" },
     { name = "pre-commit", specifier = "~=4.0" },
     { name = "pymdown-ietflinks", marker = "python_full_version >= '3.12'", specifier = "==0.0.0" },
     { name = "pyrefly", specifier = ">=0.64.1" },
@@ -758,17 +755,17 @@ python = [
 
 [[package]]
 name = "mkdocstrings-python"
-version = "1.18.2"
+version = "2.0.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "griffe" },
+    { name = "griffelib" },
     { name = "mkdocs-autorefs" },
     { name = "mkdocstrings" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/95/ae/58ab2bfbee2792e92a98b97e872f7c003deb903071f75d8d83aa55db28fa/mkdocstrings_python-1.18.2.tar.gz", hash = "sha256:4ad536920a07b6336f50d4c6d5603316fafb1172c5c882370cbbc954770ad323", size = 207972, upload-time = "2025-08-28T16:11:19.847Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/b4/5fed370d8ebd96e4e399460a7146ae989263f16588b05a6facd6dbd51e60/mkdocstrings_python-2.0.4.tar.gz", hash = "sha256:58c73c5d358e64e9b1673447663f4a2f8a8941e392e225fc0a0c893758cc452f", size = 199219, upload-time = "2026-06-05T08:13:01.819Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d5/8f/ce008599d9adebf33ed144e7736914385e8537f5fc686fdb7cceb8c22431/mkdocstrings_python-1.18.2-py3-none-any.whl", hash = "sha256:944fe6deb8f08f33fa936d538233c4036e9f53e840994f6146e8e94eb71b600d", size = 138215, upload-time = "2025-08-28T16:11:18.176Z" },
+    { url = "https://files.pythonhosted.org/packages/5e/e3/00ec594aef5f55522e6d373bc2ac53e53a8f5e9ae32f2d6854b0de4270f3/mkdocstrings_python-2.0.4-py3-none-any.whl", hash = "sha256:fd87c173e1e719a85997b6d4f852cdc55f36710e0ed08da3a7bd9abe79c9db00", size = 104790, upload-time = "2026-06-05T08:13:00.393Z" },
 ]
 
 [[package]]
