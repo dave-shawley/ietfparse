@@ -31,7 +31,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
-      - uses: tombi-toml/setup-tombi@90dc1ab19ff45cc28017aab8cd0093516d908532 # v1
+      - uses: tombi-toml/setup-tombi@c0035bf190feee444a3a8da06990959e72058808 # v1
         with:
           version: "0.9.17"
       - name: "Check toml files"
