@@ -257,14 +257,14 @@ class BaggageMutationTests(unittest.TestCase):
         self.assertEqual(list(baggage.get_properties('key')), [])
 
     def test_that_invalid_key_is_rejected(self) -> None:
+        baggage = datastructures.Baggage()
         with self.assertRaises(ValueError):
-            datastructures.Baggage().set('bad key', 'value')
+            baggage.set('bad key', 'value')
 
     def test_that_invalid_property_name_is_rejected(self) -> None:
+        baggage = datastructures.Baggage()
         with self.assertRaises(ValueError):
-            datastructures.Baggage().set(
-                'key', 'value', properties={'bad name': 'x'}
-            )
+            baggage.set('key', 'value', properties={'bad name': 'x'})
 
     def test_that_properties_accept_a_mapping(self) -> None:
         baggage = datastructures.Baggage()
@@ -317,5 +317,6 @@ class BaggageComparisonTests(unittest.TestCase):
         self.assertNotEqual(datastructures.Baggage({'a': '1'}), object())
 
     def test_that_it_is_unhashable(self) -> None:
+        baggage = datastructures.Baggage()
         with self.assertRaises(TypeError):
-            hash(datastructures.Baggage())
+            hash(baggage)
