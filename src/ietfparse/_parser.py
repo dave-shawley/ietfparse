@@ -18,6 +18,11 @@ class ParseError(RuntimeError):
     """Raised internally when cursor-based parsing fails."""
 
 
+def is_token(value: str) -> bool:
+    """Return :data:`True` if `value` is a non-empty RFC 7230 token."""
+    return bool(value) and _TOKEN_PATTERN.fullmatch(value) is not None
+
+
 class CursorParser:
     """Walk a string value with reusable token and quoted-string parsers."""
 

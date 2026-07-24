@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- `datastructures.Baggage` data structure representing a W3C
+  [Baggage](https://www.w3.org/TR/baggage/) header
+- `headers.parse_baggage` to parse a `Baggage` header
+- `errors.MalformedBaggage` raised for malformed `Baggage` headers in strict mode
+
 ## [2.0.0a1] -- 2026-06-24
 
 ### Breaking Changes

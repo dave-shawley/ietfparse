@@ -49,3 +49,16 @@ class MalformedContentType(StrictHeaderParsingFailure):
 
     def __init__(self, header_value: str) -> None:
         super().__init__('content-type', header_value)
+
+
+class MalformedBaggage(StrictHeaderParsingFailure):
+    """Attempted to parse a malformed ``Baggage`` header.
+
+    This is raised by [ietfparse.headers.parse_baggage][] when it is
+    called in *strict* mode and a list-member does not conform to the
+    grammar in <https://www.w3.org/TR/baggage/>.
+
+    """
+
+    def __init__(self, header_value: str) -> None:
+        super().__init__('baggage', header_value)
