@@ -18,6 +18,36 @@ class ParseError(RuntimeError):
     """Raised internally when cursor-based parsing fails."""
 
 
+def is_token(value: str) -> bool:
+    """Return :data:`True` if `value` is a non-empty RFC 7230 token."""
+    return bool(value) and _TOKEN_PATTERN.fullmatch(value) is not None
+
+
+def parse_name_value(
+    value: str, *, strip_chars: str | None = _OWS
+) -> tuple[str, str | None]:
+    """Parse a ``token [ "=" value ]`` pair.
+
+    The returned value is [None][] when the equals sign is absent and an
+    empty string when it is present without a value.  No grammar is imposed
+    on a present value so callers can apply the rules for their header.
+
+    :param value: the name/value pair to parse
+    :param strip_chars: characters removed from the ends of the name and
+        value; [None][] uses the default behavior of [str.strip][]
+    :return: the token name and optional unparsed value
+    :raise ParseError: if the name is not an RFC 7230 token
+
+    """
+    name, separator, parsed_value = value.partition('=')
+    name = name.strip(strip_chars)
+    if not name or _TOKEN_PATTERN.fullmatch(name) is None:
+        raise ParseError(f'malformed name/value input: {value!r}')
+    if separator != '=':
+        return name, None
+    return name, parsed_value.strip(strip_chars)
+
+
 class CursorParser:
     """Walk a string value with reusable token and quoted-string parsers."""
 
@@ -200,6 +230,8 @@ def _fast_parse_http_parameters(
         if not segment:
             continue
 
+        # Keep this hot path inlined rather than paying a function call for
+        # every parameter through ``parse_name_value``.
         name, sep, parameter_value = segment.partition('=')
         if sep != '=':
             raise ValueError(error_message)

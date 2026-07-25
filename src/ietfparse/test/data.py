@@ -16,6 +16,7 @@ class SupportedHeader(_compat.StrEnum):
     ACCEPT_CHARSET = 'accept-charset'
     ACCEPT_ENCODING = 'accept-encoding'
     ACCEPT_LANGUAGE = 'accept-language'
+    BAGGAGE = 'baggage'
     CACHE_CONTROL = 'cache-control'
     CONTENT_TYPE = 'content-type'
     FORWARDED = 'forwarded'

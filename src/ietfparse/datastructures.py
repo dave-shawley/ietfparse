@@ -2,6 +2,7 @@
 
 - :class:`.ContentType`: MIME ``Content-Type`` header.
 - :class:`.LinkHeader`: parsed ``Link`` header.
+- :class:`.Baggage`: parsed W3C ``Baggage`` header.
 
 This module contains data structures that were useful in
 implementing this library.  If a data structure might be
@@ -17,7 +18,7 @@ import functools
 import typing as t
 from collections import abc
 
-from ietfparse import _helpers, _quality
+from ietfparse import _baggage, _helpers, _parser, _quality
 
 if t.TYPE_CHECKING:
     import decimal
@@ -297,3 +298,170 @@ class LinkHeader:
             )
         )
         return '; '.join(formatted)
+
+
+class _BaggageMember:
+    """Internal storage for a single baggage list-member."""
+
+    __slots__ = ('properties', 'value')
+
+    def __init__(
+        self, value: str, properties: list[tuple[str, str | None]]
+    ) -> None:
+        self.value = value
+        self.properties = properties
+
+
+class Baggage(abc.MutableMapping[str, str]):
+    """A W3C ``Baggage`` header.
+
+    The ``Baggage`` header, specified by
+    <https://www.w3.org/TR/baggage/>, propagates application-defined
+    ``key=value`` pairs across service boundaries.  This class behaves
+    like an ordered [dict][] that maps a *key* to its (percent-decoded)
+    *value* while retaining the optional *properties* -- the semicolon
+    delimited metadata -- attached to each member.
+
+    ```pycon
+    >>> from ietfparse import headers
+    >>> baggage = headers.parse_baggage('userId=alice,serverNode=DF%2028')
+    >>> baggage['userId']
+    'alice'
+    >>> baggage['serverNode']
+    'DF 28'
+    ```
+
+    Values are stored and returned in their decoded form; percent-encoding
+    is applied when the header is serialized with [str][].  Keys are
+    case-sensitive [RFC-7230] tokens and duplicate keys resolve to the
+    last value seen, following [dict][] semantics.
+
+    :param initial: optional mapping or iterable of ``(key, value)`` pairs
+        (or another :class:`Baggage`) used to seed the header
+
+    """
+
+    def __init__(
+        self,
+        initial: abc.Mapping[str, str]
+        | abc.Iterable[tuple[str, str]]
+        | None = None,
+    ) -> None:
+        self._members: dict[str, _BaggageMember] = {}
+        if isinstance(initial, Baggage):
+            for key in initial:
+                self.set(
+                    key, initial[key], properties=initial.get_properties(key)
+                )
+        elif initial is not None:
+            for key, value in dict(initial).items():
+                self[key] = value
+
+    def __getitem__(self, key: str) -> str:
+        return self._members[key].value
+
+    def __setitem__(self, key: str, value: str) -> None:
+        """Set `key` to `value`, discarding any existing properties."""
+        self.set(key, value)
+
+    def __delitem__(self, key: str) -> None:
+        del self._members[key]
+
+    def __iter__(self) -> abc.Iterator[str]:
+        return iter(self._members)
+
+    def __len__(self) -> int:
+        return len(self._members)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Baggage):
+            return self.keys() == other.keys() and all(
+                self[key] == other[key]
+                and list(self.get_properties(key))
+                == list(other.get_properties(key))
+                for key in self
+            )
+        if isinstance(other, abc.Mapping):
+            return dict(self) == dict(other)
+        return NotImplemented
+
+    # unhashable -- baggage is mutable
+    __hash__: None = None  # type: ignore[assignment]
+
+    def set(
+        self,
+        key: str,
+        value: str,
+        *,
+        properties: abc.Mapping[str, str | None]
+        | abc.Iterable[tuple[str, str | None]]
+        | None = None,
+    ) -> None:
+        """Set `key` to `value` along with optional `properties`.
+
+        :param key: the case-sensitive [RFC-7230] token naming the member
+        :param value: the (decoded) value to associate with `key`
+        :param properties: optional metadata as a mapping or an iterable of
+            ``(name, value)`` pairs.  A property value of [None][] indicates
+            a valueless property such as the ``k3`` in ``k1=v1;k3``.
+        :raise ValueError: if `key` or a property name is not a valid token
+
+        """
+        if not _parser.is_token(key):
+            raise ValueError(f'invalid baggage key: {key!r}')
+        self._members[key] = _BaggageMember(
+            value, self._normalize_properties(properties)
+        )
+
+    def get_properties(self, key: str) -> abc.Sequence[tuple[str, str | None]]:
+        """Return the properties associated with `key`.
+
+        :param key: the member to look up
+        :return: a possibly empty immutable sequence of ``(name, value)``
+            pairs where a value of [None][] denotes a valueless property
+        :raise KeyError: if `key` is not present
+
+        """
+        return ImmutableSequence(self._members[key].properties)
+
+    def __str__(self) -> str:
+        return ','.join(
+            self._format_member(key, member)
+            for key, member in self._members.items()
+        )
+
+    def __repr__(self) -> str:  # pragma: no cover
+        # disabled ruff: UP032 since the f-string version is too long
+        return '<{}.{} {} members>'.format(  # noqa: UP032
+            self.__class__.__module__,
+            self.__class__.__name__,
+            len(self._members),
+        )
+
+    @staticmethod
+    def _format_member(key: str, member: _BaggageMember) -> str:
+        formatted = f'{key}={_baggage.encode_value(member.value)}'
+        for name, value in member.properties:
+            if value is None:
+                formatted += f';{name}'
+            else:
+                formatted += f';{name}={_baggage.encode_value(value)}'
+        return formatted
+
+    @staticmethod
+    def _normalize_properties(
+        properties: abc.Mapping[str, str | None]
+        | abc.Iterable[tuple[str, str | None]]
+        | None,
+    ) -> list[tuple[str, str | None]]:
+        if properties is None:
+            return []
+        # ``dict`` accepts both a mapping and an iterable of pairs; it also
+        # collapses the (spec-permitted but meaningless) duplicate property
+        # names that would otherwise appear within a single member.
+        normalized: list[tuple[str, str | None]] = []
+        for name, value in dict(properties).items():
+            if not _parser.is_token(name):
+                raise ValueError(f'invalid baggage property name: {name!r}')
+            normalized.append((name, value))
+        return normalized

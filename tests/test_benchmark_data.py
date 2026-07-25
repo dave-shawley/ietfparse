@@ -386,3 +386,49 @@ class BenchmarkRunnerTests(unittest.TestCase):
         self.assertIn('sample', results[0])
         self.assertIn('workspace', results[0])
         self.assertIn('werkzeug', results[0])
+
+
+class BaggageBenchmarkFixtureTests(unittest.TestCase):
+    def _benchmark(self) -> data.HeaderBenchmark:
+        return data.load_dataset().headers[data.SupportedHeader.BAGGAGE]
+
+    def test_baggage_uses_the_public_parser(self) -> None:
+        self.assertEqual(self._benchmark().parser_name, 'parse_baggage')
+
+    def test_baggage_defines_expected_workloads(self) -> None:
+        benchmark = self._benchmark()
+        self.assertEqual(benchmark.sample_count('browser'), 0)
+        self.assertEqual(benchmark.sample_count('realistic'), 3)
+        self.assertEqual(benchmark.sample_count('complex'), 2)
+        self.assertEqual(benchmark.sample_count('large'), 1)
+
+    def test_baggage_samples_parse(self) -> None:
+        benchmark = self._benchmark()
+        for workload in data.SUPPORTED_WORKLOADS:
+            for sample in benchmark.samples_for(workload):
+                headers.parse_baggage(sample, strict=True)
+
+    def test_large_sample_sits_at_the_spec_bounds(self) -> None:
+        (sample,) = self._benchmark().samples_for('large')
+        parsed = headers.parse_baggage(sample, strict=True)
+        self.assertEqual(len(parsed), 64)
+        self.assertLessEqual(len(sample.encode()), data.MAX_LARGE_SAMPLE_BYTES)
+
+    def test_baggage_is_a_workspace_only_benchmark(self) -> None:
+        # baggage has no comparison implementation, so it must never surface
+        # in `compare implementation` -- only in `run` under workspace.
+        self.assertIn(
+            data.SupportedHeader.BAGGAGE,
+            runner.IMPLEMENTATION_HEADERS[
+                runner.SupportedImplementation.WORKSPACE
+            ],
+        )
+        for implementation in (
+            runner.SupportedImplementation.WERKZEUG,
+            runner.SupportedImplementation.REQUESTS,
+            runner.SupportedImplementation.HTTPX,
+        ):
+            self.assertNotIn(
+                data.SupportedHeader.BAGGAGE,
+                runner.IMPLEMENTATION_HEADERS[implementation],
+            )

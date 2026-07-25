@@ -216,3 +216,107 @@ class ContentTypeComparisonTests(unittest.TestCase):
         self.assertEqual(hash(ct1), hash(ct1))
         self.assertNotEqual(hash(ct1), hash(ct2))
         self.assertEqual(hash(ct1), hash(ct3))
+
+
+class BaggageCreationTests(unittest.TestCase):
+    def test_that_it_starts_empty(self) -> None:
+        self.assertEqual(len(datastructures.Baggage()), 0)
+
+    def test_that_it_seeds_from_a_mapping(self) -> None:
+        baggage = datastructures.Baggage({'a': '1', 'b': '2'})
+        self.assertEqual(dict(baggage), {'a': '1', 'b': '2'})
+
+    def test_that_it_seeds_from_pairs(self) -> None:
+        baggage = datastructures.Baggage([('a', '1'), ('b', '2')])
+        self.assertEqual(dict(baggage), {'a': '1', 'b': '2'})
+
+    def test_that_it_copies_another_baggage_with_properties(self) -> None:
+        original = datastructures.Baggage()
+        original.set('a', '1', properties=[('ttl', '30')])
+        copy = datastructures.Baggage(original)
+        self.assertEqual(list(copy.get_properties('a')), [('ttl', '30')])
+        copy.set('a', '2')
+        self.assertEqual(original['a'], '1')
+
+
+class BaggageMutationTests(unittest.TestCase):
+    def test_that_items_can_be_set_and_read(self) -> None:
+        baggage = datastructures.Baggage()
+        baggage['key'] = 'value'
+        self.assertEqual(baggage['key'], 'value')
+
+    def test_that_items_can_be_deleted(self) -> None:
+        baggage = datastructures.Baggage({'key': 'value'})
+        del baggage['key']
+        self.assertNotIn('key', baggage)
+
+    def test_that_setitem_discards_existing_properties(self) -> None:
+        baggage = datastructures.Baggage()
+        baggage.set('key', 'value', properties=[('ttl', '30')])
+        baggage['key'] = 'new'
+        self.assertEqual(list(baggage.get_properties('key')), [])
+
+    def test_that_invalid_key_is_rejected(self) -> None:
+        baggage = datastructures.Baggage()
+        with self.assertRaises(ValueError):
+            baggage.set('bad key', 'value')
+
+    def test_that_invalid_property_name_is_rejected(self) -> None:
+        baggage = datastructures.Baggage()
+        with self.assertRaises(ValueError):
+            baggage.set('key', 'value', properties={'bad name': 'x'})
+
+    def test_that_properties_accept_a_mapping(self) -> None:
+        baggage = datastructures.Baggage()
+        baggage.set('key', 'value', properties={'ttl': '30', 'flag': None})
+        self.assertEqual(
+            list(baggage.get_properties('key')),
+            [('ttl', '30'), ('flag', None)],
+        )
+
+    def test_that_get_properties_is_immutable(self) -> None:
+        baggage = datastructures.Baggage()
+        baggage.set('key', 'value', properties=[('ttl', '30')])
+        with self.assertRaises(TypeError):
+            baggage.get_properties('key')[0] = ('nope', '0')  # type: ignore[unsupported-operation]  # pyrefly  # ty: ignore[invalid-assignment]
+
+
+class BaggageSerializationTests(unittest.TestCase):
+    def test_that_members_are_comma_separated(self) -> None:
+        baggage = datastructures.Baggage([('a', '1'), ('b', '2')])
+        self.assertEqual(str(baggage), 'a=1,b=2')
+
+    def test_that_values_are_percent_encoded(self) -> None:
+        baggage = datastructures.Baggage({'key': 'a b,c'})
+        self.assertEqual(str(baggage), 'key=a%20b%2Cc')
+
+    def test_that_properties_are_serialized(self) -> None:
+        baggage = datastructures.Baggage()
+        baggage.set(
+            'key', 'value', properties=[('ttl', '30'), ('secure', None)]
+        )
+        self.assertEqual(str(baggage), 'key=value;ttl=30;secure')
+
+
+class BaggageComparisonTests(unittest.TestCase):
+    def test_that_equal_baggage_compares_equal(self) -> None:
+        one = datastructures.Baggage({'a': '1'})
+        two = datastructures.Baggage({'a': '1'})
+        self.assertEqual(one, two)
+
+    def test_that_differing_properties_are_not_equal(self) -> None:
+        one = datastructures.Baggage()
+        one.set('a', '1', properties=[('ttl', '30')])
+        two = datastructures.Baggage({'a': '1'})
+        self.assertNotEqual(one, two)
+
+    def test_that_it_compares_equal_to_a_plain_mapping(self) -> None:
+        self.assertEqual(datastructures.Baggage({'a': '1'}), {'a': '1'})
+
+    def test_that_it_is_not_equal_to_unrelated_types(self) -> None:
+        self.assertNotEqual(datastructures.Baggage({'a': '1'}), object())
+
+    def test_that_it_is_unhashable(self) -> None:
+        baggage = datastructures.Baggage()
+        with self.assertRaises(TypeError):
+            hash(baggage)

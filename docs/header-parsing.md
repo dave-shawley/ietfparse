@@ -19,6 +19,7 @@ that you should always guard against at least this set of exceptions.
 | [Accept-Charset](#accept-charset)   | sequence of strings                                                            | [headers.parse_accept_charset][ietfparse.headers.parse_accept_charset]   |
 | [Accept-Encoding](#accept-encoding) | sequence of strings                                                            | [headers.parse_accept_encoding][ietfparse.headers.parse_accept_encoding] |
 | [Accept-Language](#accept-language) | sequence of strings                                                            | [headers.parse_accept_language][ietfparse.headers.parse_accept_language] |
+| [Baggage](#baggage)                 | [datastructures.Baggage][ietfparse.datastructures.Baggage]                     | [headers.parse_baggage][ietfparse.headers.parse_baggage]                 |
 | [Cache-Control](#cache-control)     | mapping of parameter to value                                                  | [headers.parse_cache_control][ietfparse.headers.parse_cache_control]     |
 | [Content-Type](#content-type)       | [datastructures.ContentType][ietfparse.datastructures.ContentType]             | [headers.parse_content_type][ietfparse.headers.parse_content_type]       |
 | [Forwarded](#forwarded)             | sequence of mappings                                                           | [headers.parse_forwarded][ietfparse.headers.parse_forwarded]             |
@@ -141,6 +142,42 @@ occur *before* the rejected values.
     quality value.  If additional parameters are included, they are not
     included in the response from this function.  More specifically, the
     returned list contains only the character set strings.
+
+## Baggage
+
+[headers.parse_baggage][ietfparse.headers.parse_baggage] parses the
+[Baggage](https://www.w3.org/TR/baggage/) header into a
+[datastructures.Baggage][ietfparse.datastructures.Baggage] instance. The header
+propagates application-defined `key=value` pairs across service boundaries and
+is commonly used for distributed tracing context. Values are percent-encoded on
+the wire and are decoded into the returned mapping.
+
+```pycon
+>>> from ietfparse import headers
+>>> baggage = headers.parse_baggage('userId=alice,serverNode=DF%2028;ttl=30')
+>>> baggage['userId']
+'alice'
+>>> baggage['serverNode']
+'DF 28'
+>>> list(baggage.get_properties('serverNode'))
+[('ttl', '30')]
+```
+
+The [datastructures.Baggage][ietfparse.datastructures.Baggage] class behaves like
+an ordered mapping and knows how to serialize itself back into a header value,
+re-applying percent-encoding as needed.
+
+```pycon
+>>> from ietfparse import datastructures
+>>> baggage = datastructures.Baggage()
+>>> baggage['key'] = 'value with spaces'
+>>> str(baggage)
+'key=value%20with%20spaces'
+```
+
+By default malformed list-members are skipped. Pass `strict=True` to instead
+raise [errors.MalformedBaggage][ietfparse.errors.MalformedBaggage] when a member
+does not conform to the grammar.
 
 ## Cache-Control
 

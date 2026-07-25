@@ -2,6 +2,7 @@
 
 - :func:`.parse_accept`: parse an ``Accept`` value
 - :func:`.parse_accept_charset`: parse a ``Accept-Charset`` value
+- :func:`.parse_baggage`: parse a W3C ``Baggage`` value
 - :func:`.parse_cache_control`: parse a ``Cache-Control`` value
 - :func:`.parse_content_type`: parse a ``Content-Type`` value
 - :func:`.parse_forwarded`: parse a :rfc:`7239` ``Forwarded`` value
@@ -16,7 +17,14 @@ from __future__ import annotations
 import operator
 import typing as t
 
-from ietfparse import _links, _parser, _quality, datastructures, errors
+from ietfparse import (
+    _baggage,
+    _links,
+    _parser,
+    _quality,
+    datastructures,
+    errors,
+)
 from ietfparse._quality import LARGEST_NONMAXIMAL_QUALITY
 
 if t.TYPE_CHECKING:
@@ -181,6 +189,47 @@ def parse_accept_language(header_value: str) -> list[str]:
 
     """
     return _parse_qualified_list(header_value)
+
+
+def parse_baggage(
+    header_value: str, *, strict: bool = False
+) -> datastructures.Baggage:
+    """Parse a W3C ``Baggage`` header.
+
+    The ``Baggage`` header, specified by
+    <https://www.w3.org/TR/baggage/>, carries a comma-separated list of
+    ``key=value`` members, each with optional semicolon-delimited
+    properties.  Values are percent-encoded on the wire and are decoded
+    into the returned [ietfparse.datastructures.Baggage][] instance.
+
+    ```pycon
+    >>> from ietfparse import headers
+    >>> baggage = headers.parse_baggage(
+    ...     'userId=alice,serverNode=DF%2028;ttl=30')
+    >>> baggage['serverNode']
+    'DF 28'
+    >>> list(baggage.get_properties('serverNode'))
+    [('ttl', '30')]
+    ```
+
+    :param header_value: the header value to parse
+    :param strict: if *truthy*, then a list-member that does not conform
+        to the grammar raises [ietfparse.errors.MalformedBaggage][];
+        otherwise malformed members are silently skipped
+    :return: the parsed [ietfparse.datastructures.Baggage][]
+    :raise ietfparse.errors.MalformedBaggage: if `strict` is *truthy* and
+        `header_value` contains a malformed list-member
+
+    """
+    try:
+        members = _baggage.parse_baggage_string(header_value, strict=strict)
+    except _parser.ParseError as error:
+        raise errors.MalformedBaggage(header_value) from error
+
+    baggage = datastructures.Baggage()
+    for key, value, properties in members:
+        baggage.set(key, value, properties=properties)
+    return baggage
 
 
 def parse_cache_control(

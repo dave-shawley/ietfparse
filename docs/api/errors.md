@@ -2,6 +2,7 @@
 
 ::: ietfparse.errors.RootException
 ::: ietfparse.errors.NoMatch
+::: ietfparse.errors.MalformedBaggage
 ::: ietfparse.errors.MalformedContentType
 ::: ietfparse.errors.MalformedLinkValue
 ::: ietfparse.errors.MalformedListSegment

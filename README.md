@@ -160,6 +160,7 @@ the [API Documentation] for a complete (and up tp date) list.
 *  [RFC-9110: Accept-Charset](https://www.rfc-editor.org/rfc/rfc9110#field.accept-charset)
 *  [RFC-9110: Accept-Encoding](https://www.rfc-editor.org/rfc/rfc9110#field.accept-encoding)
 *  [RFC-9110: Accept-Language](https://www.rfc-editor.org/rfc/rfc9110#field.accept-language)
+*  [W3C: Baggage](https://www.w3.org/TR/baggage/)
 *  [RFC-9111: Cache-Control](https://www.rfc-editor.org/rfc/rfc9111#field.cache-control)
 *  [RFC-9110: Content-Type](https://www.rfc-editor.org/rfc/rfc9110#field.content-type)
 *  [RFC-7239: Forwarded](https://www.rfc-editor.org/rfc/rfc7239)
