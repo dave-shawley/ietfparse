@@ -18,7 +18,7 @@ import functools
 import typing as t
 from collections import abc
 
-from ietfparse import _baggage, _helpers, _quality
+from ietfparse import _baggage, _helpers, _parser, _quality
 
 if t.TYPE_CHECKING:
     import decimal
@@ -407,7 +407,7 @@ class Baggage(abc.MutableMapping[str, str]):
         :raise ValueError: if `key` or a property name is not a valid token
 
         """
-        if not _baggage.is_token(key):
+        if not _parser.is_token(key):
             raise ValueError(f'invalid baggage key: {key!r}')
         self._members[key] = _BaggageMember(
             value, self._normalize_properties(properties)
@@ -461,7 +461,7 @@ class Baggage(abc.MutableMapping[str, str]):
         # names that would otherwise appear within a single member.
         normalized: list[tuple[str, str | None]] = []
         for name, value in dict(properties).items():
-            if not _baggage.is_token(name):
+            if not _parser.is_token(name):
                 raise ValueError(f'invalid baggage property name: {name!r}')
             normalized.append((name, value))
         return normalized

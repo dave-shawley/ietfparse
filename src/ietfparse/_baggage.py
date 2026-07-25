@@ -49,11 +49,6 @@ _VALUE_OCTETS = frozenset(
 _PERCENT_ESCAPE_LENGTH = 2
 
 
-def is_token(value: str) -> bool:
-    """Return :data:`True` if `value` is a non-empty RFC 7230 token."""
-    return _parser.is_token(value)
-
-
 def encode_value(value: str) -> str:
     """Percent-encode `value` for inclusion in a baggage header."""
     return urllib.parse.quote(value, safe=_SAFE_VALUE_CHARS)
