@@ -37,14 +37,10 @@ _SAFE_VALUE_CHARS = "!#$&'()*+-./:<=>?@[]^_`{|}~"
 
 # Matches the wire form of a ``value`` (percent-encoded ``baggage-octet``s).
 _VALUE_OCTETS = frozenset(
-    chr(code)
-    for code in (
-        0x21,
-        *range(0x23, 0x2C),
-        *range(0x2D, 0x3B),
-        *range(0x3C, 0x5C),
-        *range(0x5D, 0x7F),
-    )
+    "!#$%&'()*+-./:<=>?@[]^_`{|}~"
+    '0123456789'
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    'abcdefghijklmnopqrstuvwxyz'
 )
 _PERCENT_ESCAPE_LENGTH = 2
 
