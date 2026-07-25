@@ -8,6 +8,31 @@ class ParseErrorTests(unittest.TestCase):
         self.assertTrue(issubclass(_parser.ParseError, RuntimeError))
 
 
+class NameValueParserTests(unittest.TestCase):
+    def test_that_name_and_value_are_parsed(self) -> None:
+        self.assertEqual(
+            _parser.parse_name_value(' name = value\t'),
+            ('name', 'value'),
+        )
+
+    def test_that_absent_value_differs_from_empty_value(self) -> None:
+        self.assertEqual(_parser.parse_name_value('name'), ('name', None))
+        self.assertEqual(_parser.parse_name_value('name='), ('name', ''))
+
+    def test_that_value_may_contain_equals_sign(self) -> None:
+        self.assertEqual(
+            _parser.parse_name_value('name=one=two'),
+            ('name', 'one=two'),
+        )
+
+    def test_that_invalid_name_raises_parse_error(self) -> None:
+        with self.assertRaisesRegex(
+            _parser.ParseError,
+            r"malformed name/value input: 'bad name=value'",
+        ):
+            _parser.parse_name_value('bad name=value')
+
+
 class CursorParserTests(unittest.TestCase):
     def test_that_tokens_are_parsed_after_optional_whitespace(self) -> None:
         parser = _parser.CursorParser(' \t token')

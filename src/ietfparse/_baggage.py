@@ -110,37 +110,39 @@ def parse_baggage_string(value: str, *, strict: bool) -> list[Member]:
 
 def _parse_member(segment: str) -> Member:
     key_value, property_sep, property_str = segment.partition(';')
-    key, sep, raw_value = key_value.partition('=')
-    key = key.strip(' \t')
-    if sep != '=' or not is_token(key):
+    try:
+        key, raw_value = _parser.parse_name_value(key_value)
+    except _parser.ParseError as error:
+        raise _parser.ParseError(
+            f'malformed baggage member: {segment!r}'
+        ) from error
+    if raw_value is None:
         raise _parser.ParseError(f'malformed baggage member: {segment!r}')
 
-    value = raw_value.strip(' \t')
-    if not _valid_octets(value):
+    if not _valid_octets(raw_value):
         raise _parser.ParseError(f'malformed baggage value: {segment!r}')
 
     properties = (
         _parse_properties(property_str, segment) if property_sep else []
     )
-    return key, decode_value(value), properties
+    return key, decode_value(raw_value), properties
 
 
 def _parse_properties(property_str: str, segment: str) -> list[Property]:
     properties: list[Property] = []
     for raw_property in property_str.split(';'):
-        name, sep, raw_value = raw_property.partition('=')
-        name = name.strip(' \t')
-        if not is_token(name):
+        try:
+            name, raw_value = _parser.parse_name_value(raw_property)
+        except _parser.ParseError as error:
             raise _parser.ParseError(
                 f'malformed baggage property: {segment!r}'
-            )
-        if sep != '=':
+            ) from error
+        if raw_value is None:
             properties.append((name, None))
             continue
-        value = raw_value.strip(' \t')
-        if not _valid_octets(value):
+        if not _valid_octets(raw_value):
             raise _parser.ParseError(
                 f'malformed baggage property: {segment!r}'
             )
-        properties.append((name, decode_value(value)))
+        properties.append((name, decode_value(raw_value)))
     return properties
