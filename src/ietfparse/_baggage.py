@@ -46,6 +46,7 @@ _VALUE_OCTETS = frozenset(
         *range(0x5D, 0x7F),
     )
 )
+_PERCENT_ESCAPE_LENGTH = 2
 
 
 def is_token(value: str) -> bool:
@@ -64,7 +65,21 @@ def decode_value(value: str) -> str:
 
 
 def _valid_octets(value: str) -> bool:
-    return all(char in _VALUE_OCTETS for char in value)
+    position = 0
+    while position < len(value):
+        char = value[position]
+        if char == '%':
+            escape = value[position + 1 : position + 3]
+            if len(escape) != _PERCENT_ESCAPE_LENGTH or not all(
+                char in '0123456789abcdefABCDEF' for char in escape
+            ):
+                return False
+            position += 3
+            continue
+        if char not in _VALUE_OCTETS:
+            return False
+        position += 1
+    return True
 
 
 def parse_baggage_string(value: str, *, strict: bool) -> list[Member]:
@@ -80,7 +95,7 @@ def parse_baggage_string(value: str, *, strict: bool) -> list[Member]:
     """
     members: list[Member] = []
     for raw_member in value.split(','):
-        segment = raw_member.strip()
+        segment = raw_member.strip(' \t')
         if not segment:
             if strict:
                 raise _parser.ParseError(f'empty baggage member: {value!r}')
@@ -94,18 +109,18 @@ def parse_baggage_string(value: str, *, strict: bool) -> list[Member]:
 
 
 def _parse_member(segment: str) -> Member:
-    key_value, _, property_str = segment.partition(';')
+    key_value, property_sep, property_str = segment.partition(';')
     key, sep, raw_value = key_value.partition('=')
-    key = key.strip()
+    key = key.strip(' \t')
     if sep != '=' or not is_token(key):
         raise _parser.ParseError(f'malformed baggage member: {segment!r}')
 
-    value = raw_value.strip()
+    value = raw_value.strip(' \t')
     if not _valid_octets(value):
         raise _parser.ParseError(f'malformed baggage value: {segment!r}')
 
     properties = (
-        _parse_properties(property_str, segment) if property_str else []
+        _parse_properties(property_str, segment) if property_sep else []
     )
     return key, decode_value(value), properties
 
@@ -114,7 +129,7 @@ def _parse_properties(property_str: str, segment: str) -> list[Property]:
     properties: list[Property] = []
     for raw_property in property_str.split(';'):
         name, sep, raw_value = raw_property.partition('=')
-        name = name.strip()
+        name = name.strip(' \t')
         if not is_token(name):
             raise _parser.ParseError(
                 f'malformed baggage property: {segment!r}'
@@ -122,7 +137,7 @@ def _parse_properties(property_str: str, segment: str) -> list[Property]:
         if sep != '=':
             properties.append((name, None))
             continue
-        value = raw_value.strip()
+        value = raw_value.strip(' \t')
         if not _valid_octets(value):
             raise _parser.ParseError(
                 f'malformed baggage property: {segment!r}'

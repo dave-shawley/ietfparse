@@ -60,6 +60,16 @@ class BaggageDecodingTests(unittest.TestCase):
             '\N{LATIN SMALL LETTER E WITH ACUTE}',
         )
 
+    def test_that_malformed_percent_escapes_are_skipped_when_lenient(
+        self,
+    ) -> None:
+        for value in ('%', '%zz', '%2'):
+            with self.subTest(value=value):
+                self.assertEqual(
+                    headers.parse_baggage(f'bad={value},good=value'),
+                    {'good': 'value'},
+                )
+
 
 class BaggagePropertyParsingTests(unittest.TestCase):
     def test_that_key_value_properties_are_parsed(self) -> None:
@@ -110,6 +120,14 @@ class BaggageStrictParsingTests(unittest.TestCase):
         with self.assertRaises(errors.MalformedBaggage):
             headers.parse_baggage('key=with"quote', strict=True)
 
+    def test_that_malformed_percent_escapes_raise_when_strict(self) -> None:
+        for value in ('%', '%zz', '%2'):
+            with (
+                self.subTest(value=value),
+                self.assertRaises(errors.MalformedBaggage),
+            ):
+                headers.parse_baggage(f'key={value}', strict=True)
+
     def test_that_invalid_property_name_raises_when_strict(self) -> None:
         with self.assertRaises(errors.MalformedBaggage):
             headers.parse_baggage('key=value;bad name', strict=True)
@@ -123,6 +141,26 @@ class BaggageStrictParsingTests(unittest.TestCase):
     def test_that_empty_member_raises_when_strict(self) -> None:
         with self.assertRaises(errors.MalformedBaggage):
             headers.parse_baggage('key=value,,other=1', strict=True)
+
+    def test_that_trailing_property_delimiter_raises_when_strict(self) -> None:
+        with self.assertRaises(errors.MalformedBaggage):
+            headers.parse_baggage('key=value;', strict=True)
+
+    def test_that_trailing_property_delimiter_is_skipped_when_lenient(
+        self,
+    ) -> None:
+        self.assertEqual(
+            headers.parse_baggage('bad=value;,good=value'),
+            {'good': 'value'},
+        )
+
+    def test_that_non_ows_around_delimiters_raises_when_strict(self) -> None:
+        for value in ('key=value,\nother=1', 'key=value;\vproperty=1'):
+            with (
+                self.subTest(value=value),
+                self.assertRaises(errors.MalformedBaggage),
+            ):
+                headers.parse_baggage(value, strict=True)
 
     def test_that_malformed_baggage_is_a_value_error(self) -> None:
         with self.assertRaises(ValueError):
