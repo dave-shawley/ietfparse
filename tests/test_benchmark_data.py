@@ -281,11 +281,11 @@ class BenchmarkRunnerTests(unittest.TestCase):
             return_value=unittest.mock.Mock(),
         ):
             implementation = runner.implementation_named('werkzeug')
-        with self.assertRaisesRegex(
-            ValueError,
-            'only supports the Accept-family headers and Cache-Control',
-        ):
-            implementation.parser_for('parse_link')
+            with self.assertRaisesRegex(
+                ValueError,
+                'only supports the Accept-family headers and Cache-Control',
+            ):
+                implementation.parser_for('parse_link')
 
     def test_requests_implementation_rejects_non_link_headers(self) -> None:
         with self.assertRaisesRegex(
