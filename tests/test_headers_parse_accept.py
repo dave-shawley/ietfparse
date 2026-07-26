@@ -36,7 +36,7 @@ class ParseAcceptHeaderTests(unittest.TestCase):
         self,
     ) -> None:
         parsed = headers.parse_accept('text/plain, application/json;q=1')
-        self.assertEqual(1.0, parsed[0].quality)
+        self.assertEqual(parsed[0].quality, 1.0)
         self.assertEqual(
             parsed[0], datastructures.ContentType('application', 'json')
         )
@@ -45,7 +45,7 @@ class ParseAcceptHeaderTests(unittest.TestCase):
         self,
     ) -> None:
         parsed = headers.parse_accept('text/plain, application/json;q=1.000')
-        self.assertEqual(1.0, parsed[0].quality)
+        self.assertEqual(parsed[0].quality, 1.0)
         self.assertEqual(
             parsed[0], datastructures.ContentType('application', 'json')
         )
@@ -60,7 +60,7 @@ class ParseAcceptHeaderTests(unittest.TestCase):
 
     def test_that_quality_is_normalized_on_parsed_content_types(self) -> None:
         parsed = headers.parse_accept('application/json;q=0.1236')
-        self.assertEqual(0.124, parsed[0].quality)
+        self.assertEqual(parsed[0].quality, 0.124)
 
     def test_that_equal_quality_values_preserve_input_order(self) -> None:
         self.assertEqual(

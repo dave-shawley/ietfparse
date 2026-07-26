@@ -10,17 +10,17 @@ from ietfparse import (
 class ContentTypeCreationTests(unittest.TestCase):
     def test_that_primary_type_is_normalized(self) -> None:
         content_type = datastructures.ContentType('COntentType', 'b')
-        self.assertEqual('contenttype', content_type.content_type)
+        self.assertEqual(content_type.content_type, 'contenttype')
 
     def test_that_subtype_is_normalized(self) -> None:
         content_type = datastructures.ContentType('a', '  SubType  ')
-        self.assertEqual('subtype', content_type.content_subtype)
+        self.assertEqual(content_type.content_subtype, 'subtype')
 
     def test_that_content_suffix_is_normalized(self) -> None:
         content_type = datastructures.ContentType(
             'a', 'b', content_suffix=' JSON'
         )
-        self.assertEqual('json', content_type.content_suffix)
+        self.assertEqual(content_type.content_suffix, 'json')
 
     def test_that_parameter_names_are_casefolded(self) -> None:
         content_type = datastructures.ContentType(
@@ -32,49 +32,49 @@ class ContentTypeCreationTests(unittest.TestCase):
 class ContentTypeStringificationTests(unittest.TestCase):
     def test_that_simple_case_works(self) -> None:
         content_type = datastructures.ContentType('primary', 'subtype')
-        self.assertEqual('primary/subtype', str(content_type))
+        self.assertEqual(str(content_type), 'primary/subtype')
 
     def test_that_parameters_are_sorted_by_name(self) -> None:
         ct = datastructures.ContentType(
             'a', 'b', {'one': '1', 'two': '2', 'three': 3}
         )
-        self.assertEqual('a/b; one=1; three=3; two=2', str(ct))
+        self.assertEqual(str(ct), 'a/b; one=1; three=3; two=2')
 
     def test_that_content_suffix_is_appended(self) -> None:
         ct = datastructures.ContentType(
             'a', 'b', {'foo': 'bar'}, content_suffix='xml'
         )
-        self.assertEqual('a/b+xml; foo=bar', str(ct))
+        self.assertEqual(str(ct), 'a/b+xml; foo=bar')
 
 
 class ContentTypeQualityTests(unittest.TestCase):
     def test_that_quality_defaults_to_highest(self) -> None:
-        self.assertEqual(1.0, datastructures.ContentType('a', 'b').quality)
+        self.assertEqual(datastructures.ContentType('a', 'b').quality, 1.0)
 
     def test_that_quality_is_derived_from_q_parameter(self) -> None:
         content_type = datastructures.ContentType(
             'a', 'b', parameters={'q': '0.1236'}
         )
-        self.assertEqual(0.124, content_type.quality)
+        self.assertEqual(content_type.quality, 0.124)
 
     def test_that_quality_below_minimum_is_rejected(self) -> None:
         content_type = datastructures.ContentType(
             'a', 'b', parameters={'q': '0.0009'}
         )
-        self.assertEqual(0.0, content_type.quality)
+        self.assertEqual(content_type.quality, 0.0)
 
     def test_that_quality_above_maximum_is_treated_as_highest(self) -> None:
         content_type = datastructures.ContentType(
             'a', 'b', parameters={'q': '0.9994'}
         )
-        self.assertEqual(1.0, content_type.quality)
+        self.assertEqual(content_type.quality, 1.0)
 
     def test_that_setting_quality_overrides_parameter_value(self) -> None:
         content_type = datastructures.ContentType(
             'a', 'b', parameters={'q': '0.1'}
         )
         content_type.quality = 0.9876
-        self.assertEqual(0.988, content_type.quality)
+        self.assertEqual(content_type.quality, 0.988)
 
     def test_that_decimal_quality_rounding_uses_decimal_semantics(
         self,
@@ -82,24 +82,24 @@ class ContentTypeQualityTests(unittest.TestCase):
         content_type = datastructures.ContentType(
             'a', 'b', parameters={'q': '0.1245'}
         )
-        self.assertEqual(0.125, content_type.quality)
+        self.assertEqual(content_type.quality, 0.125)
 
     def test_that_large_decimal_quality_is_treated_as_highest(self) -> None:
         content_type = datastructures.ContentType('a', 'b')
         content_type.quality = decimal.Decimal('1E+100000')
-        self.assertEqual(1.0, content_type.quality)
+        self.assertEqual(content_type.quality, 1.0)
 
     def test_clearing_quality_override(self) -> None:
         content_type = datastructures.ContentType(
             'a', 'b', parameters={'q': '0.11111'}
         )
-        self.assertEqual(0.111, content_type.quality)
+        self.assertEqual(content_type.quality, 0.111)
 
         content_type.quality = 0.999999
-        self.assertEqual(1.0, content_type.quality)
+        self.assertEqual(content_type.quality, 1.0)
 
         content_type.quality = None
-        self.assertEqual(0.111, content_type.quality)
+        self.assertEqual(content_type.quality, 0.111)
 
     def test_that_invalid_quality_raises_value_error(self) -> None:
         content_type = datastructures.ContentType(
@@ -187,7 +187,7 @@ class ContentTypeComparisonTests(unittest.TestCase):
 
     def test_comparing_with_strings(self) -> None:
         content_type = datastructures.ContentType('text', 'plain')
-        self.assertEqual('text/plain', content_type)
+        self.assertEqual(content_type, 'text/plain')
         self.assertGreater(content_type, 'application/json')
         text_plain = datastructures.ContentType('text', 'plain')
         self.assertNotEqual(text_plain, 'text')
@@ -213,7 +213,7 @@ class ContentTypeComparisonTests(unittest.TestCase):
             'first', 'one', parameters={'2': 2, '1': 1}
         )
 
-        self.assertEqual(hash(ct1), hash(ct1))
+        self.assertIsInstance(hash(ct1), int)
         self.assertNotEqual(hash(ct1), hash(ct2))
         self.assertEqual(hash(ct1), hash(ct3))
 

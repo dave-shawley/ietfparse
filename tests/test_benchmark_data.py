@@ -275,18 +275,17 @@ class BenchmarkRunnerTests(unittest.TestCase):
     def test_werkzeug_implementation_rejects_unsupported_parser_name(
         self,
     ) -> None:
-        with (
-            unittest.mock.patch.object(
-                runner.importlib,
-                'import_module',
-                return_value=unittest.mock.Mock(),
-            ),
-            self.assertRaisesRegex(
+        with unittest.mock.patch.object(
+            runner.importlib,
+            'import_module',
+            return_value=unittest.mock.Mock(),
+        ):
+            implementation = runner.implementation_named('werkzeug')
+            with self.assertRaisesRegex(
                 ValueError,
                 'only supports the Accept-family headers and Cache-Control',
-            ),
-        ):
-            runner.implementation_named('werkzeug').parser_for('parse_link')
+            ):
+                implementation.parser_for('parse_link')
 
     def test_requests_implementation_rejects_non_link_headers(self) -> None:
         with self.assertRaisesRegex(
@@ -301,11 +300,12 @@ class BenchmarkRunnerTests(unittest.TestCase):
     def test_requests_implementation_rejects_unsupported_parser_name(
         self,
     ) -> None:
+        implementation = runner.implementation_named('requests')
         with self.assertRaisesRegex(
             ValueError,
             'only supports parse_link',
         ):
-            runner.implementation_named('requests').parser_for('parse_accept')
+            implementation.parser_for('parse_accept')
 
     def test_httpx_implementation_rejects_non_link_headers(self) -> None:
         with self.assertRaisesRegex(
@@ -320,17 +320,17 @@ class BenchmarkRunnerTests(unittest.TestCase):
     def test_httpx_implementation_rejects_unsupported_parser_name(
         self,
     ) -> None:
+        implementation = runner.implementation_named('httpx')
         with self.assertRaisesRegex(
             ValueError,
             'only supports parse_link',
         ):
-            runner.implementation_named('httpx').parser_for('parse_accept')
+            implementation.parser_for('parse_accept')
 
     def test_implementation_named_rejects_unknown_name(self) -> None:
+        name = t.cast('runner.SupportedImplementation', 'bogus')
         with self.assertRaises(ValueError):
-            runner.implementation_named(
-                t.cast('runner.SupportedImplementation', 'bogus')
-            )
+            runner.implementation_named(name)
 
     def test_compare_link_cases_returns_curated_results(self) -> None:
         results = runner.compare_link_cases()

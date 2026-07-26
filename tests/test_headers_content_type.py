@@ -20,7 +20,7 @@ class SimpleContentTypeParsingTests(unittest.TestCase):
         self.assertEqual(self.parsed.parameters, {})
 
     def test_that_no_suffix_is_foudn(self) -> None:
-        self.assertEqual(self.parsed.content_suffix, None)
+        self.assertIsNone(self.parsed.content_suffix)
 
 
 class ParsingComplexContentTypeTests(unittest.TestCase):
