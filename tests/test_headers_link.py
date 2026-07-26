@@ -1,7 +1,5 @@
-import contextlib
 import typing as t
 import unittest
-from collections import abc
 
 from ietfparse import datastructures, errors, headers
 
@@ -95,25 +93,25 @@ class LinkHeaderParsingTests(unittest.TestCase):
 
     def test_optional_white_space(self) -> None:
         parsed = headers.parse_link('<one> ; rel="one" , <two> ; rel=two')
-        self.assertEqual(2, len(parsed))
-        self.assertEqual('one', dict(parsed[0].parameters)['rel'])
-        self.assertEqual('two', dict(parsed[1].parameters)['rel'])
+        self.assertEqual(len(parsed), 2)
+        self.assertEqual(dict(parsed[0].parameters)['rel'], 'one')
+        self.assertEqual(dict(parsed[1].parameters)['rel'], 'two')
 
     def test_bad_white_space(self) -> None:
         parsed = headers.parse_link('<one>; rel = "one", <two>; rel = two')
-        self.assertEqual(2, len(parsed))
+        self.assertEqual(len(parsed), 2)
 
-        self.assertEqual('one', dict(parsed[0].parameters)['rel'])
-        self.assertEqual('<one>; rel="one"', str(parsed[0]))
+        self.assertEqual(dict(parsed[0].parameters)['rel'], 'one')
+        self.assertEqual(str(parsed[0]), '<one>; rel="one"')
 
-        self.assertEqual('two', dict(parsed[1].parameters)['rel'])
-        self.assertEqual('<two>; rel="two"', str(parsed[1]))
+        self.assertEqual(dict(parsed[1].parameters)['rel'], 'two')
+        self.assertEqual(str(parsed[1]), '<two>; rel="two"')
 
     def test_indexed_access(self) -> None:
         parsed = headers.parse_link(
             '<>; rel=one; single=one; double=two; double="three"'
         )
-        self.assertEqual(1, len(parsed))
+        self.assertEqual(len(parsed), 1)
         link = parsed[0]
         self.assertEqual(link['rel'], ['one'])
         self.assertEqual(link['single'], ['one'])
@@ -122,7 +120,7 @@ class LinkHeaderParsingTests(unittest.TestCase):
 
     def test_containment_check(self) -> None:
         parsed = headers.parse_link('<>; rel=one')
-        self.assertEqual(1, len(parsed))
+        self.assertEqual(len(parsed), 1)
 
         # ensure that these work as well... they will never
         # return in the naive implementation of __getitem__
@@ -176,7 +174,7 @@ class MalformedLinkHeaderTests(unittest.TestCase):
         parsed = headers.parse_link('<>; rel=first; rel=ignored')
         self.assertIn(('rel', 'first'), parsed[0].parameters)
         self.assertNotIn(('rel', 'ignored'), parsed[0].parameters)
-        self.assertEqual('first', parsed[0].rel)
+        self.assertEqual(parsed[0].rel, 'first')
 
     def test_that_first_media_parameters_is_used(self) -> None:
         # semantically malformed but handled appropriately
@@ -278,36 +276,36 @@ class ImmutableSequenceTests(unittest.TestCase):
     def test_modifying_target(self) -> None:
         parsed = headers.parse_link('<>; values=one; values=two')
         self.assertEqual(len(parsed), 1)
-        with self.assert_raises_one_of(AttributeError, TypeError):
+        with self.assertRaises((AttributeError, TypeError)):
             parsed[0].target = 'whatever'  # ty: ignore[invalid-assignment]
 
     def test_modifying_link_parameters(self) -> None:
         parsed = headers.parse_link('<>; values=one; values=two')
         self.assertEqual(len(parsed), 1)
         params = t.cast('list[tuple[str, str]]', parsed[0].parameters)
-        with self.assert_raises_one_of(AttributeError, TypeError):
+        with self.assertRaises((AttributeError, TypeError)):
             params.append(('values', 'three'))
-        with self.assert_raises_one_of(AttributeError, TypeError):
+        with self.assertRaises((AttributeError, TypeError)):
             params += [('values', 'four')]
 
     def test_modifying_indexed_result(self) -> None:
         parsed = headers.parse_link('<>; values=one; values=two')
         self.assertEqual(len(parsed), 1)
         params = t.cast('list[str]', parsed[0]['values'])
-        with self.assert_raises_one_of(AttributeError, TypeError):
+        with self.assertRaises((AttributeError, TypeError)):
             params.append('three')
-        with self.assert_raises_one_of(AttributeError, TypeError):
+        with self.assertRaises((AttributeError, TypeError)):
             params += ['three']
-        with self.assert_raises_one_of(AttributeError, TypeError):
+        with self.assertRaises((AttributeError, TypeError)):
             params[0] = 'one'
 
     def test_modifying_empty_indexed_result(self) -> None:
         parsed = headers.parse_link('<>')
         self.assertEqual(len(parsed), 1)
         params = t.cast('list[str]', parsed[0]['non-existent'])
-        with self.assert_raises_one_of(AttributeError, TypeError):
+        with self.assertRaises((AttributeError, TypeError)):
             params.append('value')
-        with self.assert_raises_one_of(AttributeError, TypeError):
+        with self.assertRaises((AttributeError, TypeError)):
             params += ['value']
 
     def test_sequence_expectations(self) -> None:
@@ -322,19 +320,3 @@ class ImmutableSequenceTests(unittest.TestCase):
         self.assertEqual(link['param'].index('two'), 1)
         self.assertNotEqual(link['param'], object())
         self.assertEqual(list(reversed(link['param'])), ['two', 'one'])
-
-    @contextlib.contextmanager
-    def assert_raises_one_of(
-        self, *exc_cls: type[Exception]
-    ) -> abc.Generator[None]:
-        try:
-            yield
-        except Exception as exc:
-            if isinstance(exc, exc_cls):
-                return
-            raise
-        else:
-            self.fail(
-                'Exception not raised, expected one of '
-                + ', '.join(cls.__name__ for cls in exc_cls)
-            )

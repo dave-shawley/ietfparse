@@ -90,11 +90,10 @@ class ProactiveContentNegotiationTests(ContentNegotiationTestCase):
         )
 
     def test_that_zero_quality_range_rejects_matching_candidate(self) -> None:
+        requested = headers.parse_accept('text/*;q=0, */*;q=0.5')
+        supported = [headers.parse_content_type('text/plain')]
         with self.assertRaises(errors.NoMatch):
-            algorithms.select_content_type(
-                headers.parse_accept('text/*;q=0, */*;q=0.5'),
-                [headers.parse_content_type('text/plain')],
-            )
+            algorithms.select_content_type(requested, supported)
 
     def test_that_more_specific_match_overrides_broader_rejection(
         self,
@@ -109,13 +108,12 @@ class ProactiveContentNegotiationTests(ContentNegotiationTestCase):
     def test_that_specific_rejection_overrides_broader_positive_match(
         self,
     ) -> None:
+        requested = headers.parse_accept(
+            'text/plain;q=0, text/*;q=0.5, */*;q=0.1'
+        )
+        supported = [headers.parse_content_type('text/plain')]
         with self.assertRaises(errors.NoMatch):
-            algorithms.select_content_type(
-                headers.parse_accept(
-                    'text/plain;q=0, text/*;q=0.5, */*;q=0.1'
-                ),
-                [headers.parse_content_type('text/plain')],
-            )
+            algorithms.select_content_type(requested, supported)
 
     def test_that_rejection_only_applies_to_matching_ranges(self) -> None:
         selected, matched = algorithms.select_content_type(
@@ -126,18 +124,14 @@ class ProactiveContentNegotiationTests(ContentNegotiationTestCase):
         self.assertEqual(str(matched), 'application/*')
 
     def test_that_zero_quality_is_not_matched(self) -> None:
+        supported = [headers.parse_content_type('text/javascript')]
         with self.assertRaises(errors.NoMatch):
-            algorithms.select_content_type(
-                self.requested,
-                [headers.parse_content_type('text/javascript')],
-            )
+            algorithms.select_content_type(self.requested, supported)
 
     def test_that_inappropriate_value_is_not_matched(self) -> None:
+        supported = [headers.parse_content_type('image/png')]
         with self.assertRaises(errors.NoMatch):
-            algorithms.select_content_type(
-                self.requested,
-                [headers.parse_content_type('image/png')],
-            )
+            algorithms.select_content_type(self.requested, supported)
 
     def test_that_default_is_returned_when_appropriate(self) -> None:
         selected, matched = algorithms.select_content_type(

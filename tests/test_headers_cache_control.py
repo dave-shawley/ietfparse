@@ -21,21 +21,21 @@ class CacheControlParsingTests(unittest.TestCase):
 
     def test_that_numeric_parameters_are_parsed(self) -> None:
         parsed = headers.parse_cache_control('min-fresh=20, max-age=100')
-        self.assertEqual(100, parsed['max-age'])
-        self.assertEqual(20, parsed['min-fresh'])
+        self.assertEqual(parsed['max-age'], 100)
+        self.assertEqual(parsed['min-fresh'], 20)
 
     def test_that_string_parameters_are_parsed(self) -> None:
         parsed = headers.parse_cache_control(
             'community="UCI", x-token=" foo bar "'
         )
-        self.assertEqual('UCI', parsed['community'])
-        self.assertEqual(' foo bar ', parsed['x-token'])
+        self.assertEqual(parsed['community'], 'UCI')
+        self.assertEqual(parsed['x-token'], ' foo bar ')
 
     def test_that_escaped_quotes_do_not_split_quoted_directive_values(
         self,
     ) -> None:
         parsed = headers.parse_cache_control('x-token="a\\"b,c"')
-        self.assertEqual('a\\"b,c', parsed['x-token'])
+        self.assertEqual(parsed['x-token'], 'a\\"b,c')
 
     def test_that_empty_parameter_values_are_ignored(self) -> None:
         parsed = headers.parse_cache_control('x-should-be-ignored=')
